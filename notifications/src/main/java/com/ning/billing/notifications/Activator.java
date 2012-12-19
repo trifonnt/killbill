@@ -16,16 +16,29 @@
 
 package com.ning.billing.notifications;
 
+import org.jruby.embed.ScriptingContainer;
 import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleContext;
 
 public class Activator implements BundleActivator {
 
+    private final ScriptingContainer container = new ScriptingContainer();
+
     public void start(final BundleContext context) throws Exception {
-        System.out.println("Hello world");
+        System.out.println("Hello world from Java");
+        try {
+            container.runScriptlet("puts \"Hello world from Ruby\"");
+        } catch (Throwable t) {
+            System.err.println(t.toString());
+        }
     }
 
     public void stop(final BundleContext context) throws Exception {
-        System.out.println("Goodbye World");
+        System.out.println("Goodbye World from Java");
+        try {
+            container.runScriptlet("puts \"Goodbye world from Ruby\"");
+        } catch (Throwable t) {
+            System.err.println(t.toString());
+        }
     }
 }
