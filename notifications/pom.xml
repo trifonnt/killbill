@@ -26,6 +26,10 @@
             <artifactId>killbill-api</artifactId>
         </dependency>
         <dependency>
+            <groupId>com.ning.billing</groupId>
+            <artifactId>killbill-beatrix</artifactId>
+        </dependency>
+        <dependency>
             <groupId>joda-time</groupId>
             <artifactId>joda-time</artifactId>
         </dependency>

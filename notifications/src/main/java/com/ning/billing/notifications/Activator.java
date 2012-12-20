@@ -16,18 +16,28 @@
 
 package com.ning.billing.notifications;
 
+import java.util.UUID;
+
 import org.jruby.embed.ScriptingContainer;
 import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleContext;
+
+import com.ning.billing.ObjectType;
+import com.ning.billing.beatrix.bus.api.ExtBusEvent;
+import com.ning.billing.beatrix.bus.api.ExtBusEventType;
+import com.ning.billing.beatrix.extbus.DefaultBusEvent;
 
 public class Activator implements BundleActivator {
 
     private final ScriptingContainer container = new ScriptingContainer();
 
     public void start(final BundleContext context) throws Exception {
-        System.out.println("Hello world from Java");
-        container.runScriptlet("puts \"Hello world from Ruby\"\n" +
-                               "require 'gemrepo.jar'\n" +
+        final ExtBusEvent event = new DefaultBusEvent(ExtBusEventType.INVOICE_CREATION, ObjectType.INVOICE, UUID.randomUUID(),
+                                                      UUID.randomUUID(), UUID.randomUUID());
+        System.out.println("Killbill generated event " + event.toString());
+
+        container.put("$kb_event", event);
+        container.runScriptlet("require 'gemrepo.jar'\n" +
                                "require 'irc'");
     }
 

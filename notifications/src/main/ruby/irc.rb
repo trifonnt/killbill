@@ -27,7 +27,7 @@ bot = Cinch::Bot.new do
   end
 
   on :join do |m|
-    m.reply 'Hello World from a JRuby OSGI plugin'
+    m.reply "JRuby received event #{$kb_event.toString}"
     exit
   end
 end
