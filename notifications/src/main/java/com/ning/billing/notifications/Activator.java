@@ -26,19 +26,13 @@ public class Activator implements BundleActivator {
 
     public void start(final BundleContext context) throws Exception {
         System.out.println("Hello world from Java");
-        try {
-            container.runScriptlet("puts \"Hello world from Ruby\"");
-        } catch (Throwable t) {
-            System.err.println(t.toString());
-        }
+        container.runScriptlet("puts \"Hello world from Ruby\"\n" +
+                               "require 'gemrepo.jar'\n" +
+                               "require 'irc'");
     }
 
     public void stop(final BundleContext context) throws Exception {
         System.out.println("Goodbye World from Java");
-        try {
-            container.runScriptlet("puts \"Goodbye world from Ruby\"");
-        } catch (Throwable t) {
-            System.err.println(t.toString());
-        }
+        container.runScriptlet("puts \"Goodbye world from Ruby\"");
     }
 }

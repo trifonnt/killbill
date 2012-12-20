@@ -547,6 +547,7 @@
                                 <!-- exclude mustache template files -->
                                 <exclude>**/*.mustache</exclude>
                                 <exclude>examples/**</exclude>
+                                <exclude>Gemfile.lock</exclude>
                             </excludes>
                         </configuration>
                     </execution>
