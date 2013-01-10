@@ -46,6 +46,11 @@
             <artifactId>guava</artifactId>
         </dependency>
         <dependency>
+            <groupId>org.bouncycastle</groupId>
+            <artifactId>bcpkix-jdk15on</artifactId>
+            <version>1.47</version>
+        </dependency>
+        <dependency>
             <groupId>org.jruby</groupId>
             <artifactId>jruby-complete</artifactId>
             <version>1.7.1</version>
@@ -87,13 +92,35 @@
                 </executions>
             </plugin>
             <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-antrun-plugin</artifactId>
+                <version>1.7</version>
+                <executions>
+                    <execution>
+                        <id>prepare-assembly-build</id>
+                        <phase>package</phase>
+                        <configuration>
+                            <target>
+                                <echo message="Extracting gem repo" />
+                                <unzip src="${project.build.directory}/${project.artifactId}-${project.version}-gemrepo.jar" dest="${project.build.directory}/gemrepo" />
+                            </target>
+                        </configuration>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
                 <groupId>org.apache.felix</groupId>
                 <artifactId>maven-bundle-plugin</artifactId>
                 <extensions>true</extensions>
                 <configuration>
                     <instructions>
                         <Bundle-Activator>com.ning.billing.notifications.Activator</Bundle-Activator>
-                        <Import-Package>*;resolution:=optional,javax.management,javax.crypto,javax.net.ssl,javax.security.auth.x500</Import-Package>
+                        <Import-Package>
+                            *;resolution:=optional,javax.management,javax.crypto,javax.net.ssl,javax.security.auth.x500,org.bouncycastle;resolution:=optional
+                        </Import-Package>
                     </instructions>
                 </configuration>
                 <executions>

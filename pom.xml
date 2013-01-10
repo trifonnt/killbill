@@ -548,6 +548,7 @@
                                 <exclude>**/*.mustache</exclude>
                                 <exclude>examples/**</exclude>
                                 <exclude>Gemfile.lock</exclude>
+                                <exclude>src/main/ruby/kbadmin/**</exclude>
                             </excludes>
                         </configuration>
                     </execution>
