@@ -48,7 +48,7 @@
         <module>invoice</module>
         <module>junction</module>
         <module>meter</module>
-        <module>notifications</module>
+        <module>osgi-jruby-bundle</module>
         <module>overdue</module>
         <module>payment</module>
         <module>usage</module>
@@ -202,7 +202,7 @@
             </dependency>
             <dependency>
                 <groupId>com.ning.billing</groupId>
-                <artifactId>killbill-notifications</artifactId>
+                <artifactId>killbill-osgi-jruby-bundle</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
