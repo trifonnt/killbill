@@ -30,6 +30,7 @@ import javax.inject.Named;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.joda.time.LocalDate;
+import org.killbill.billing.ErrorCode;
 import org.killbill.billing.ObjectType;
 import org.killbill.billing.usage.api.UsageUserApi;
 import org.killbill.billing.util.api.TagApiException;
@@ -263,6 +264,15 @@ public class TestIntegrationBase extends BeatrixTestSuiteWithEmbeddedDB {
         log.debug("afterMethod callcontext classLoader = " + (Thread.currentThread().getContextClassLoader() != null ? Thread.currentThread().getContextClassLoader().toString() : "null"));
 
         log.debug("DONE WITH TEST");
+    }
+
+    protected void checkNoMoreInvoiceToGenerate(final Account account) {
+        try {
+            invoiceUserApi.triggerInvoiceGeneration(account.getId(), clock.getUTCToday(), false, callContext);
+            fail("Should not have generated an extra invoice");
+        } catch (InvoiceApiException e) {
+            assertEquals(e.getCode(), ErrorCode.INVOICE_NOTHING_TO_DO.getCode());
+        }
     }
 
     protected void verifyTestResult(final UUID accountId, final UUID subscriptionId,
