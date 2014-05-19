@@ -25,22 +25,28 @@ import org.killbill.billing.util.config.catalog.ValidatingConfig;
 import org.killbill.billing.util.config.catalog.ValidationErrors;
 
 @XmlAccessorType(XmlAccessType.NONE)
-public class DefaultTransition extends ValidatingConfig<DefaultStateMachineConfig> implements Transition {
+public class DefaultLinkStateMachine extends ValidatingConfig<DefaultStateMachineConfig> implements LinkStateMachine {
+
+    @XmlElement(name="initialStateMachine", required = true)
+    @XmlIDREF
+    private DefaultStateMachine initialStateMachine;
 
     @XmlElement(name="initialState", required = true)
     @XmlIDREF
     private DefaultState initialState;
 
-    @XmlElement(name="operation", required = true)
+    @XmlElement(name="finalStateMachine", required = true)
     @XmlIDREF
-    private DefaultOperation operation;
-
-    @XmlElement(name="operationResult", required = true)
-    private OperationResult operationResult;
+    private DefaultStateMachine finalStateMachine;
 
     @XmlElement(name="finalState", required = true)
     @XmlIDREF
     private DefaultState finalState;
+
+    @Override
+    public StateMachine getInitialStateMachine() {
+        return initialStateMachine;
+    }
 
     @Override
     public State getInitialState() {
@@ -48,13 +54,8 @@ public class DefaultTransition extends ValidatingConfig<DefaultStateMachineConfi
     }
 
     @Override
-    public Operation getOperation() {
-        return operation;
-    }
-
-    @Override
-    public OperationResult getOperationResult() {
-        return operationResult;
+    public StateMachine getFinalStateMachine() {
+        return finalStateMachine;
     }
 
     @Override
@@ -67,16 +68,16 @@ public class DefaultTransition extends ValidatingConfig<DefaultStateMachineConfi
         return errors;
     }
 
+    public void setInitialStateMachine(final DefaultStateMachine initialStateMachine) {
+        this.initialStateMachine = initialStateMachine;
+    }
+
     public void setInitialState(final DefaultState initialState) {
         this.initialState = initialState;
     }
 
-    public void setOperation(final DefaultOperation operation) {
-        this.operation = operation;
-    }
-
-    public void setOperationResult(final OperationResult operationResult) {
-        this.operationResult = operationResult;
+    public void setFinalStateMachine(final DefaultStateMachine finalStateMachine) {
+        this.finalStateMachine = finalStateMachine;
     }
 
     public void setFinalState(final DefaultState finalState) {

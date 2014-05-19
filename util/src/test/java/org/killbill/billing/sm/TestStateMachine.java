@@ -17,6 +17,7 @@
 package org.killbill.billing.sm;
 
 import org.killbill.billing.util.config.catalog.XMLLoader;
+import org.killbill.billing.util.sm.DefaultStateMachine;
 import org.killbill.billing.util.sm.DefaultStateMachineConfig;
 import org.killbill.billing.util.sm.OperationResult;
 import org.testng.Assert;
@@ -29,28 +30,61 @@ public class TestStateMachine {
     @Test(groups = "fast")
     public void testStateMachine() {
         try {
-            final DefaultStateMachineConfig sm = XMLLoader.getObjectFromString(Resources.getResource("PaymentStates.xml").toExternalForm(), DefaultStateMachineConfig.class);
+            final DefaultStateMachineConfig sms = XMLLoader.getObjectFromString(Resources.getResource("PaymentStates.xml").toExternalForm(), DefaultStateMachineConfig.class);
 
-            Assert.assertEquals(sm.getStates().length, 3);
-            Assert.assertEquals(sm.getStates()[0].getName(), "INIT");
-            Assert.assertEquals(sm.getStates()[1].getName(), "SUCCESS");
-            Assert.assertEquals(sm.getStates()[2].getName(), "FAILED");
+            Assert.assertEquals(sms.getStateMachines().length, 2);
 
-            Assert.assertEquals(sm.getOperations().length, 3);
-            Assert.assertEquals(sm.getOperations()[0].getName(), "Authorize");
-            Assert.assertEquals(sm.getOperations()[1].getName(), "Capture");
-            Assert.assertEquals(sm.getOperations()[2].getName(), "Payment");
+            final DefaultStateMachine sm1 = sms.getStateMachines()[0];
 
-            Assert.assertEquals(sm.getTransitions().length, 2);
-            Assert.assertEquals(sm.getTransitions()[0].getInitialState().getName(), "INIT");
-            Assert.assertEquals(sm.getTransitions()[0].getOperation().getName(), "Authorize");
-            Assert.assertEquals(sm.getTransitions()[0].getOperationResult(), OperationResult.SUCCESS);
-            Assert.assertEquals(sm.getTransitions()[0].getFinalState().getName(), "SUCCESS");
+            Assert.assertEquals(sm1.getStates().length, 3);
+            Assert.assertEquals(sm1.getStates()[0].getName(), "AUTH_INIT");
+            Assert.assertEquals(sm1.getStates()[1].getName(), "AUTH_SUCCESS");
+            Assert.assertEquals(sm1.getStates()[2].getName(), "AUTH_FAILED");
 
-            Assert.assertEquals(sm.getTransitions()[1].getInitialState().getName(), "INIT");
-            Assert.assertEquals(sm.getTransitions()[1].getOperation().getName(), "Authorize");
-            Assert.assertEquals(sm.getTransitions()[1].getOperationResult(), OperationResult.FAILURE);
-            Assert.assertEquals(sm.getTransitions()[1].getFinalState().getName(), "FAILED");
+            Assert.assertEquals(sm1.getOperations().length, 1);
+            Assert.assertEquals(sm1.getOperations()[0].getName(), "OP_AUTHORIZE");
+
+            Assert.assertEquals(sm1.getTransitions().length, 2);
+            Assert.assertEquals(sm1.getTransitions()[0].getInitialState().getName(), "AUTH_INIT");
+            Assert.assertEquals(sm1.getTransitions()[0].getOperation().getName(), "OP_AUTHORIZE");
+            Assert.assertEquals(sm1.getTransitions()[0].getOperationResult(), OperationResult.SUCCESS);
+            Assert.assertEquals(sm1.getTransitions()[0].getFinalState().getName(), "AUTH_SUCCESS");
+
+            Assert.assertEquals(sm1.getTransitions()[1].getInitialState().getName(), "AUTH_INIT");
+            Assert.assertEquals(sm1.getTransitions()[1].getOperation().getName(), "OP_AUTHORIZE");
+            Assert.assertEquals(sm1.getTransitions()[1].getOperationResult(), OperationResult.FAILURE);
+            Assert.assertEquals(sm1.getTransitions()[1].getFinalState().getName(), "AUTH_FAILED");
+
+            final DefaultStateMachine sm2 = sms.getStateMachines()[1];
+
+            Assert.assertEquals(sm2.getStates().length, 3);
+            Assert.assertEquals(sm2.getStates()[0].getName(), "CAPTURE_INIT");
+            Assert.assertEquals(sm2.getStates()[1].getName(), "CAPTURE_SUCCESS");
+            Assert.assertEquals(sm2.getStates()[2].getName(), "CAPTURE_FAILED");
+
+            Assert.assertEquals(sm2.getOperations().length, 1);
+            Assert.assertEquals(sm2.getOperations()[0].getName(), "OP_CAPTURE");
+
+            Assert.assertEquals(sm2.getTransitions().length, 2);
+            Assert.assertEquals(sm2.getTransitions()[0].getInitialState().getName(), "CAPTURE_INIT");
+            Assert.assertEquals(sm2.getTransitions()[0].getOperation().getName(), "OP_CAPTURE");
+            Assert.assertEquals(sm2.getTransitions()[0].getOperationResult(), OperationResult.SUCCESS);
+            Assert.assertEquals(sm2.getTransitions()[0].getFinalState().getName(), "CAPTURE_SUCCESS");
+
+            Assert.assertEquals(sm2.getTransitions()[1].getInitialState().getName(), "CAPTURE_INIT");
+            Assert.assertEquals(sm2.getTransitions()[1].getOperation().getName(), "OP_CAPTURE");
+            Assert.assertEquals(sm2.getTransitions()[1].getOperationResult(), OperationResult.FAILURE);
+            Assert.assertEquals(sm2.getTransitions()[1].getFinalState().getName(), "CAPTURE_FAILED");
+
+            Assert.assertEquals(sms.getLinkStateMachines().length, 1);
+
+            Assert.assertEquals(sms.getLinkStateMachines()[0].getInitialState().getName(), "AUTH_SUCCESS");
+            Assert.assertEquals(sms.getLinkStateMachines()[0].getInitialStateMachine().getName(), "AUTHORIZE");
+
+            Assert.assertEquals(sms.getLinkStateMachines()[0].getFinalState().getName(), "CAPTURE_INIT");
+            Assert.assertEquals(sms.getLinkStateMachines()[0].getFinalStateMachine().getName(), "CAPTURE");
+
+
 
         } catch (Exception e) {
             Assert.fail(e.toString());

@@ -16,8 +16,10 @@
 
 package org.killbill.billing.util.sm;
 
-public interface StateMachineConfig {
+public interface StateMachine {
 
-    public StateMachine[] getStateMachines();
-    public LinkStateMachine[] getLinkStateMachines();
+    public String getName();
+    public State [] getStates();
+    public Transition [] getTransitions();
+    public Operation [] getOperations();
 }

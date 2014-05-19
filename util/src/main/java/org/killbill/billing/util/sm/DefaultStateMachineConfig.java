@@ -29,48 +29,34 @@ import org.killbill.billing.util.config.catalog.ValidationErrors;
 @XmlAccessorType(XmlAccessType.NONE)
 public class DefaultStateMachineConfig extends ValidatingConfig<DefaultStateMachineConfig> implements StateMachineConfig {
 
-    @XmlElementWrapper(name = "states", required = true)
-    @XmlElement(name = "state", required = true)
-    private DefaultState[] states;
+    @XmlElementWrapper(name = "stateMachines", required = true)
+    @XmlElement(name = "stateMachine", required = true)
+    private DefaultStateMachine[] stateMachines;
 
-    @XmlElementWrapper(name = "transitions", required = true)
-    @XmlElement(name = "transition", required = true)
-    private DefaultTransition[] transitions;
 
-    @XmlElementWrapper(name = "operations", required = true)
-    @XmlElement(name = "operation", required = true)
-    private DefaultOperation[] operations;
+    @XmlElementWrapper(name = "linkStateMachines", required = true)
+    @XmlElement(name = "linkStateMachine", required = true)
+    private DefaultLinkStateMachine[] linkStateMachines;
 
     @Override
     public ValidationErrors validate(final DefaultStateMachineConfig root, final ValidationErrors errors) {
         return errors;
     }
 
-    @Override
-    public State[] getStates() {
-        return states;
+    public DefaultStateMachine[] getStateMachines() {
+        return stateMachines;
     }
 
     @Override
-    public Transition[] getTransitions() {
-        return transitions;
+    public LinkStateMachine[] getLinkStateMachines() {
+        return linkStateMachines;
     }
 
-    @Override
-    public Operation[] getOperations() {
-        return operations;
+    public void setStateMachines(final DefaultStateMachine[] stateMachines) {
+        this.stateMachines = stateMachines;
     }
 
-    public void setStates(final DefaultState[] states) {
-        this.states = states;
-    }
-
-    public void setTransitions(final DefaultTransition[] transitions) {
-        this.transitions = transitions;
-    }
-
-    public void setOperations(final DefaultOperation[] operations) {
-        this.operations = operations;
+    public void setLinkStateMachines(final DefaultLinkStateMachine[] linkStateMachines) {
+        this.linkStateMachines = linkStateMachines;
     }
 }
-
