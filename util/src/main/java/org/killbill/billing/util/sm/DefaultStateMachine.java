@@ -16,19 +16,23 @@
 
 package org.killbill.billing.util.sm;
 
+import java.net.URI;
+
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlElementWrapper;
 import javax.xml.bind.annotation.XmlID;
-import javax.xml.bind.annotation.XmlRootElement;
 
-import org.killbill.billing.util.config.catalog.ValidatingConfig;
 import org.killbill.billing.util.config.catalog.ValidationErrors;
 
+import com.google.common.base.Predicate;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterables;
+
 @XmlAccessorType(XmlAccessType.NONE)
-public class DefaultStateMachine extends ValidatingConfig<DefaultStateMachineConfig> implements StateMachine {
+public class DefaultStateMachine extends StateMachineValidatingConfig<DefaultStateMachineConfig> implements StateMachine {
 
     @XmlAttribute(required = true)
     @XmlID
@@ -45,6 +49,24 @@ public class DefaultStateMachine extends ValidatingConfig<DefaultStateMachineCon
     @XmlElementWrapper(name = "operations", required = true)
     @XmlElement(name = "operation", required = true)
     private DefaultOperation[] operations;
+
+    private DefaultStateMachineConfig stateMachineConfig;
+
+    @Override
+    public void initialize(final DefaultStateMachineConfig root, final URI uri) {
+        stateMachineConfig = root;
+        for (DefaultState cur : states) {
+            cur.initialize(root, uri);
+            cur.setStateMachine(this);
+        }
+        for (DefaultTransition cur : transitions) {
+            cur.initialize(root, uri);
+            cur.setStateMachine(this);
+        }
+        for (DefaultOperation cur : operations) {
+            cur.initialize(root, uri);
+        }
+    }
 
     @Override
     public ValidationErrors validate(final DefaultStateMachineConfig root, final ValidationErrors errors) {
@@ -71,6 +93,21 @@ public class DefaultStateMachine extends ValidatingConfig<DefaultStateMachineCon
         return operations;
     }
 
+    @Override
+    public State getState(final String stateName) throws MissingEntryException {
+        return (State) getEntry(states, stateName);
+    }
+
+    @Override
+    public Transition getTransition(final String transitionName) throws MissingEntryException {
+        return (Transition) getEntry(transitions, transitionName);
+    }
+
+    @Override
+    public Operation getOperation(final String operationName) throws MissingEntryException {
+        return (Operation) getEntry(operations, operationName);
+    }
+
     public void setStates(final DefaultState[] states) {
         this.states = states;
     }
@@ -81,6 +118,31 @@ public class DefaultStateMachine extends ValidatingConfig<DefaultStateMachineCon
 
     public void setOperations(final DefaultOperation[] operations) {
         this.operations = operations;
+    }
+
+    public DefaultStateMachineConfig getStateMachineConfig() {
+        return stateMachineConfig;
+    }
+
+    public void setStateMachineConfig(final DefaultStateMachineConfig stateMachineConfig) {
+        this.stateMachineConfig = stateMachineConfig;
+    }
+
+    public DefaultTransition findTransition(final State initialState, final Operation operation, final OperationResult operationResult)
+            throws MissingEntryException {
+        try {
+            return Iterables.tryFind(ImmutableList.<DefaultTransition>copyOf(transitions), new Predicate<DefaultTransition>() {
+                @Override
+                public boolean apply(final DefaultTransition input) {
+                    return input.getInitialState().getName().equals(initialState.getName()) &&
+                           input.getOperation().getName().equals(operation.getName()) &&
+                           input.getOperationResult().equals(operationResult);
+                }
+            }).get();
+        } catch (IllegalStateException e) {
+            throw new MissingEntryException("Missing transition for initialState " + initialState.getName() +
+                                            ", operation = " + operation.getName() + ", result = " + operationResult, e);
+        }
     }
 }
 

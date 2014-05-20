@@ -16,32 +16,38 @@
 
 package org.killbill.billing.util.sm;
 
+import java.net.URI;
+
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlIDREF;
 
-import org.killbill.billing.util.config.catalog.ValidatingConfig;
 import org.killbill.billing.util.config.catalog.ValidationErrors;
 
 @XmlAccessorType(XmlAccessType.NONE)
-public class DefaultLinkStateMachine extends ValidatingConfig<DefaultStateMachineConfig> implements LinkStateMachine {
+public class DefaultLinkStateMachine extends StateMachineValidatingConfig<DefaultStateMachineConfig> implements LinkStateMachine {
 
-    @XmlElement(name="initialStateMachine", required = true)
+    @XmlElement(name = "initialStateMachine", required = true)
     @XmlIDREF
     private DefaultStateMachine initialStateMachine;
 
-    @XmlElement(name="initialState", required = true)
+    @XmlElement(name = "initialState", required = true)
     @XmlIDREF
     private DefaultState initialState;
 
-    @XmlElement(name="finalStateMachine", required = true)
+    @XmlElement(name = "finalStateMachine", required = true)
     @XmlIDREF
     private DefaultStateMachine finalStateMachine;
 
-    @XmlElement(name="finalState", required = true)
+    @XmlElement(name = "finalState", required = true)
     @XmlIDREF
     private DefaultState finalState;
+
+    @Override
+    public String getName() {
+        return initialStateMachine.getName() + "-" + finalStateMachine.getName();
+    }
 
     @Override
     public StateMachine getInitialStateMachine() {
@@ -64,6 +70,10 @@ public class DefaultLinkStateMachine extends ValidatingConfig<DefaultStateMachin
     }
 
     @Override
+    public void initialize(final DefaultStateMachineConfig root, final URI uri) {
+    }
+
+    @Override
     public ValidationErrors validate(final DefaultStateMachineConfig root, final ValidationErrors errors) {
         return errors;
     }
@@ -83,4 +93,5 @@ public class DefaultLinkStateMachine extends ValidatingConfig<DefaultStateMachin
     public void setFinalState(final DefaultState finalState) {
         this.finalState = finalState;
     }
+
 }

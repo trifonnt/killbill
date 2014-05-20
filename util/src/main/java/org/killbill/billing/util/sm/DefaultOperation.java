@@ -16,16 +16,18 @@
 
 package org.killbill.billing.util.sm;
 
+import java.net.URI;
+
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlID;
 
-import org.killbill.billing.util.config.catalog.ValidatingConfig;
 import org.killbill.billing.util.config.catalog.ValidationErrors;
 
 @XmlAccessorType(XmlAccessType.NONE)
-public class DefaultOperation extends ValidatingConfig<DefaultStateMachineConfig> implements Operation {
+public class DefaultOperation extends StateMachineValidatingConfig<DefaultStateMachineConfig> implements Operation {
+
     @XmlAttribute(required = true)
     @XmlID
     private String name;
@@ -33,6 +35,15 @@ public class DefaultOperation extends ValidatingConfig<DefaultStateMachineConfig
     @Override
     public String getName() {
         return name;
+    }
+
+    @Override
+    public OperationResult run(final OperationCallback cb) {
+        return cb.doOperationCallback();
+    }
+
+    @Override
+    public void initialize(final DefaultStateMachineConfig root, final URI uri) {
     }
 
     @Override

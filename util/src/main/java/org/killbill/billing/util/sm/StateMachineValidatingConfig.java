@@ -16,13 +16,21 @@
 
 package org.killbill.billing.util.sm;
 
-public interface StateMachine extends StateMachineEntry {
+import javax.xml.bind.annotation.XmlAccessType;
+import javax.xml.bind.annotation.XmlAccessorType;
 
-    public State [] getStates();
-    public Transition [] getTransitions();
-    public Operation [] getOperations();
+import org.killbill.billing.util.config.catalog.ValidatingConfig;
 
-    public State getState(final String stateName) throws MissingEntryException;
-    public Transition getTransition(final String transitionName) throws MissingEntryException;
-    public Operation getOperation(final String operationName) throws MissingEntryException;
+@XmlAccessorType(XmlAccessType.NONE)
+public abstract class StateMachineValidatingConfig<Context> extends ValidatingConfig<Context> {
+
+    protected StateMachineEntry getEntry(final StateMachineEntry [] entries, final String entryName) throws MissingEntryException {
+        for (StateMachineEntry cur : entries) {
+            if (cur.getName().equals(entryName)) {
+                return cur;
+            }
+        }
+        throw new MissingEntryException("Unknown entry " + entryName);
+    }
+
 }

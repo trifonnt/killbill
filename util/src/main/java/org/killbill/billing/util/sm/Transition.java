@@ -16,7 +16,7 @@
 
 package org.killbill.billing.util.sm;
 
-public interface Transition {
+public interface Transition extends StateMachineEntry {
 
     public State getInitialState();
 

@@ -19,5 +19,9 @@ package org.killbill.billing.util.sm;
 public interface StateMachineConfig {
 
     public StateMachine[] getStateMachines();
+
     public LinkStateMachine[] getLinkStateMachines();
+
+    public StateMachine getStateMachine(final String stateMachineName) throws MissingEntryException;
+    public LinkStateMachine getLinkStateMachine(final String linkStateMachineName) throws MissingEntryException;
 }

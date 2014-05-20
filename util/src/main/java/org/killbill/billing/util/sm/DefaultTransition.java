@@ -16,31 +16,39 @@
 
 package org.killbill.billing.util.sm;
 
+import java.net.URI;
+
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlIDREF;
 
-import org.killbill.billing.util.config.catalog.ValidatingConfig;
 import org.killbill.billing.util.config.catalog.ValidationErrors;
 
 @XmlAccessorType(XmlAccessType.NONE)
-public class DefaultTransition extends ValidatingConfig<DefaultStateMachineConfig> implements Transition {
+public class DefaultTransition extends StateMachineValidatingConfig<DefaultStateMachineConfig> implements Transition {
 
-    @XmlElement(name="initialState", required = true)
+    @XmlElement(name = "initialState", required = true)
     @XmlIDREF
     private DefaultState initialState;
 
-    @XmlElement(name="operation", required = true)
+    @XmlElement(name = "operation", required = true)
     @XmlIDREF
     private DefaultOperation operation;
 
-    @XmlElement(name="operationResult", required = true)
+    @XmlElement(name = "operationResult", required = true)
     private OperationResult operationResult;
 
-    @XmlElement(name="finalState", required = true)
+    @XmlElement(name = "finalState", required = true)
     @XmlIDREF
     private DefaultState finalState;
+
+    private DefaultStateMachine stateMachine;
+
+    @Override
+    public String getName() {
+        return initialState.getName() + "-" + operation.getName() + "-" + operationResult;
+    }
 
     @Override
     public State getInitialState() {
@@ -62,6 +70,18 @@ public class DefaultTransition extends ValidatingConfig<DefaultStateMachineConfi
         return finalState;
     }
 
+    public DefaultStateMachine getStateMachine() {
+        return stateMachine;
+    }
+
+    public void setStateMachine(final DefaultStateMachine stateMachine) {
+        this.stateMachine = stateMachine;
+    }
+
+    @Override
+    public void initialize(final DefaultStateMachineConfig root, final URI uri) {
+    }
+
     @Override
     public ValidationErrors validate(final DefaultStateMachineConfig root, final ValidationErrors errors) {
         return errors;
@@ -81,5 +101,10 @@ public class DefaultTransition extends ValidatingConfig<DefaultStateMachineConfi
 
     public void setFinalState(final DefaultState finalState) {
         this.finalState = finalState;
+    }
+
+    public static Transition findTransition(final State initialState, final Operation operation, final OperationResult operationResult)
+            throws MissingEntryException {
+        return ((DefaultState) initialState).getStateMachine().findTransition(initialState, operation, operationResult);
     }
 }

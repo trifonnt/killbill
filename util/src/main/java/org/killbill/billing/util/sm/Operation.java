@@ -16,6 +16,11 @@
 
 package org.killbill.billing.util.sm;
 
-public interface Operation {
-    public String getName();
+public interface Operation extends StateMachineEntry {
+
+    public OperationResult run(OperationCallback cb);
+
+    public interface OperationCallback {
+        public OperationResult doOperationCallback();
+    }
 }

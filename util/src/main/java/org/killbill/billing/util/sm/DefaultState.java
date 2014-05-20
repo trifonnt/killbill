@@ -16,20 +16,28 @@
 
 package org.killbill.billing.util.sm;
 
+import java.net.URI;
+
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlID;
 
-import org.killbill.billing.util.config.catalog.ValidatingConfig;
 import org.killbill.billing.util.config.catalog.ValidationErrors;
+import org.killbill.billing.util.sm.Operation.OperationCallback;
 
 @XmlAccessorType(XmlAccessType.NONE)
-public class DefaultState extends ValidatingConfig<DefaultStateMachineConfig> implements State {
+public class DefaultState extends StateMachineValidatingConfig<DefaultStateMachineConfig> implements State {
 
     @XmlAttribute(required = true)
     @XmlID
     private String name;
+
+    private DefaultStateMachine stateMachine;
+
+    @Override
+    public void initialize(final DefaultStateMachineConfig root, final URI uri) {
+    }
 
     @Override
     public ValidationErrors validate(final DefaultStateMachineConfig root, final ValidationErrors errors) {
@@ -41,7 +49,28 @@ public class DefaultState extends ValidatingConfig<DefaultStateMachineConfig> im
         return name;
     }
 
+    @Override
+    public void runOperation(final Operation operation, final OperationCallback operationCallback, final EnteringStateCallback enteringStateCallback, final LeavingStateCallback leavingStateCallback)
+            throws MissingEntryException {
+        leavingStateCallback.leavingState(this);
+        try {
+
+            final OperationResult result = operation.run(operationCallback);
+            final Transition transition = DefaultTransition.findTransition(this, operation, result);
+            enteringStateCallback.enteringState(transition.getFinalState());
+        } finally {
+        }
+    }
+
     public void setName(final String name) {
         this.name = name;
+    }
+
+    public DefaultStateMachine getStateMachine() {
+        return stateMachine;
+    }
+
+    public void setStateMachine(final DefaultStateMachine stateMachine) {
+        this.stateMachine = stateMachine;
     }
 }

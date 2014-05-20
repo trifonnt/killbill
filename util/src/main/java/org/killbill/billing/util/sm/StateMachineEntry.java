@@ -16,13 +16,7 @@
 
 package org.killbill.billing.util.sm;
 
-public interface StateMachine extends StateMachineEntry {
+public interface StateMachineEntry {
 
-    public State [] getStates();
-    public Transition [] getTransitions();
-    public Operation [] getOperations();
-
-    public State getState(final String stateName) throws MissingEntryException;
-    public Transition getTransition(final String transitionName) throws MissingEntryException;
-    public Operation getOperation(final String operationName) throws MissingEntryException;
+    public String getName();
 }

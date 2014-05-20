@@ -16,7 +16,7 @@
 
 package org.killbill.billing.util.sm;
 
-public interface LinkStateMachine {
+public interface LinkStateMachine extends StateMachineEntry{
 
     public StateMachine getInitialStateMachine();
 
