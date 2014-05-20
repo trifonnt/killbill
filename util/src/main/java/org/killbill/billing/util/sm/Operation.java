@@ -18,7 +18,7 @@ package org.killbill.billing.util.sm;
 
 public interface Operation extends StateMachineEntry {
 
-    public OperationResult run(OperationCallback cb);
+    public OperationResult run(OperationCallback cb) throws OperationException;
 
     public interface OperationCallback {
         public OperationResult doOperationCallback();

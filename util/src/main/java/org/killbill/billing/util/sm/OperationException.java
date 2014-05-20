@@ -16,10 +16,24 @@
 
 package org.killbill.billing.util.sm;
 
-public enum OperationResult {
-    PENDING,
-    SUCCESS,
-    FAILURE,
-    EXCEPTION,
-    TIMEOUT
+public class OperationException extends Exception {
+
+    public OperationException() {
+    }
+
+    public OperationException(final String message) {
+        super(message);
+    }
+
+    public OperationException(final String message, final Throwable cause) {
+        super(message, cause);
+    }
+
+    public OperationException(final Throwable cause) {
+        super(cause);
+    }
+
+    public OperationException(final String message, final Throwable cause, final boolean enableSuppression, final boolean writableStackTrace) {
+        super(message, cause, enableSuppression, writableStackTrace);
+    }
 }

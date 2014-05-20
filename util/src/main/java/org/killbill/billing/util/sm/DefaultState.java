@@ -55,8 +55,14 @@ public class DefaultState extends StateMachineValidatingConfig<DefaultStateMachi
         leavingStateCallback.leavingState(this);
         try {
 
-            final OperationResult result = operation.run(operationCallback);
-            final Transition transition = DefaultTransition.findTransition(this, operation, result);
+            final OperationResult result;
+            Transition transition;
+            try {
+                result = operation.run(operationCallback);
+                transition = DefaultTransition.findTransition(this, operation, result);
+            } catch (OperationException e) {
+                transition = null;
+            }
             enteringStateCallback.enteringState(transition.getFinalState());
         } finally {
         }
