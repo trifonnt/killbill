@@ -21,6 +21,6 @@ public interface Operation extends StateMachineEntry {
     public OperationResult run(OperationCallback cb) throws OperationException;
 
     public interface OperationCallback {
-        public OperationResult doOperationCallback();
+        public OperationResult doOperationCallback() throws OperationException;
     }
 }

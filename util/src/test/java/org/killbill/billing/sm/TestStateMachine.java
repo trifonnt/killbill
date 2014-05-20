@@ -21,6 +21,7 @@ import org.killbill.billing.util.sm.DefaultStateMachine;
 import org.killbill.billing.util.sm.DefaultStateMachineConfig;
 import org.killbill.billing.util.sm.Operation;
 import org.killbill.billing.util.sm.Operation.OperationCallback;
+import org.killbill.billing.util.sm.OperationException;
 import org.killbill.billing.util.sm.OperationResult;
 import org.killbill.billing.util.sm.State;
 import org.killbill.billing.util.sm.State.EnteringStateCallback;
@@ -109,7 +110,7 @@ public class TestStateMachine {
             state.runOperation(operation,
                                new OperationCallback() {
                                    @Override
-                                   public OperationResult doOperationCallback() {
+                                   public OperationResult doOperationCallback() throws OperationException {
                                        return OperationResult.SUCCESS;
                                    }
                                },
@@ -131,7 +132,7 @@ public class TestStateMachine {
             state.runOperation(operation,
                                new OperationCallback() {
                                    @Override
-                                   public OperationResult doOperationCallback() {
+                                   public OperationResult doOperationCallback() throws OperationException {
                                        return OperationResult.FAILURE;
                                    }
                                },
@@ -140,6 +141,28 @@ public class TestStateMachine {
                                    public void enteringState(final State newState) {
                                        logger.info("Entering state " + newState.getName());
                                        Assert.assertEquals(newState.getName(), "CAPTURE_FAILED");
+                                   }
+                               },
+                               new LeavingStateCallback() {
+                                   @Override
+                                   public void leavingState(final State oldState) {
+                                       logger.info("Leaving state " + oldState.getName());
+                                       Assert.assertEquals(oldState.getName(), "CAPTURE_INIT");
+                                   }
+                               });
+
+            state.runOperation(operation,
+                               new OperationCallback() {
+                                   @Override
+                                   public OperationResult doOperationCallback() throws OperationException {
+                                       throw new OperationException();
+                                   }
+                               },
+                               new EnteringStateCallback() {
+                                   @Override
+                                   public void enteringState(final State newState) {
+                                       logger.info("Entering state " + newState.getName());
+                                       Assert.assertEquals(newState.getName(), "CAPTURE_ERRORED");
                                    }
                                },
                                new LeavingStateCallback() {

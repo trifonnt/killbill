@@ -38,7 +38,7 @@ public class DefaultOperation extends StateMachineValidatingConfig<DefaultStateM
     }
 
     @Override
-    public OperationResult run(final OperationCallback cb) {
+    public OperationResult run(final OperationCallback cb) throws OperationException {
         return cb.doOperationCallback();
     }
 
