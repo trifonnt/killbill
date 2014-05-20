@@ -25,6 +25,7 @@
                 <state name="AUTH_PENDING"/>
                 <state name="AUTH_SUCCESS"/>
                 <state name="AUTH_FAILED"/>
+                <state name="AUTH_ERRORED"/>
             </states>
             <transitions>
                 <transition>
@@ -57,6 +58,12 @@
                     <operationResult>FAILURE</operationResult>
                     <finalState>AUTH_FAILED</finalState>
                 </transition>
+                <transition>
+                    <initialState>AUTH_PENDING</initialState>
+                    <operation>OP_AUTHORIZE</operation>
+                    <operationResult>EXCEPTION</operationResult>
+                    <finalState>AUTH_ERRORED</finalState>
+                </transition>
             </transitions>
             <operations>
                 <operation name="OP_AUTHORIZE"/>
@@ -68,6 +75,7 @@
                 <state name="CAPTURE_INIT"/>
                 <state name="CAPTURE_SUCCESS"/>
                 <state name="CAPTURE_FAILED"/>
+                <state name="CAPTURE_ERRORED"/>
             </states>
             <transitions>
                 <transition>
@@ -82,6 +90,12 @@
                     <operationResult>FAILURE</operationResult>
                     <finalState>CAPTURE_FAILED</finalState>
                 </transition>
+                <transition>
+                    <initialState>CAPTURE_INIT</initialState>
+                    <operation>OP_CAPTURE</operation>
+                    <operationResult>EXCEPTION</operationResult>
+                    <finalState>CAPTURE_ERRORED</finalState>
+                </transition>
             </transitions>
             <operations>
                 <operation name="OP_CAPTURE"/>
@@ -93,6 +107,7 @@
                 <state name="PURCHASE_INIT"/>
                 <state name="PURCHASE_SUCCESS"/>
                 <state name="PURCHASE_FAILED"/>
+                <state name="PURCHASE_ERRORED"/>
             </states>
             <transitions>
                 <transition>
@@ -107,6 +122,12 @@
                     <operationResult>FAILURE</operationResult>
                     <finalState>PURCHASE_FAILED</finalState>
                 </transition>
+                <transition>
+                    <initialState>PURCHASE_INIT</initialState>
+                    <operation>OP_PURCHASE</operation>
+                    <operationResult>EXCEPTION</operationResult>
+                    <finalState>PURCHASE_ERRORED</finalState>
+                </transition>
             </transitions>
             <operations>
                 <operation name="OP_PURCHASE"/>
@@ -118,6 +139,7 @@
                 <state name="REFUND_INIT"/>
                 <state name="REFUND_SUCCESS"/>
                 <state name="REFUND_FAILED"/>
+                <state name="REFUND_ERRORED"/>
             </states>
             <transitions>
                 <transition>
@@ -132,6 +154,12 @@
                     <operationResult>FAILURE</operationResult>
                     <finalState>REFUND_FAILED</finalState>
                 </transition>
+                <transition>
+                    <initialState>REFUND_INIT</initialState>
+                    <operation>OP_REFUND</operation>
+                    <operationResult>EXCEPTION</operationResult>
+                    <finalState>REFUND_ERRORED</finalState>
+                </transition>
             </transitions>
             <operations>
                 <operation name="OP_REFUND"/>
@@ -143,6 +171,7 @@
                 <state name="VOID_INIT"/>
                 <state name="VOID_SUCCESS"/>
                 <state name="VOID_FAILED"/>
+                <state name="VOID_ERRORED"/>
             </states>
             <transitions>
                 <transition>
@@ -157,6 +186,12 @@
                     <operationResult>FAILURE</operationResult>
                     <finalState>VOID_FAILED</finalState>
                 </transition>
+                <transition>
+                    <initialState>VOID_INIT</initialState>
+                    <operation>OP_VOID</operation>
+                    <operationResult>EXCEPTION</operationResult>
+                    <finalState>VOID_ERRORED</finalState>
+                </transition>
             </transitions>
             <operations>
                 <operation name="OP_VOID"/>
@@ -168,6 +203,7 @@
                 <state name="CHARGEBACK_INIT"/>
                 <state name="CHARGEBACK_SUCCESS"/>
                 <state name="CHARGEBACK_FAILED"/>
+                <state name="CHARGEBACK_ERRORED"/>
             </states>
             <transitions>
                 <transition>
@@ -181,6 +217,12 @@
                     <operation>OP_CHARGEBACK</operation>
                     <operationResult>FAILURE</operationResult>
                     <finalState>CHARGEBACK_FAILED</finalState>
+                </transition>
+                <transition>
+                    <initialState>CHARGEBACK_INIT</initialState>
+                    <operation>OP_CHARGEBACK</operation>
+                    <operationResult>EXCEPTION</operationResult>
+                    <finalState>CHARGEBACK_ERRORED</finalState>
                 </transition>
             </transitions>
             <operations>

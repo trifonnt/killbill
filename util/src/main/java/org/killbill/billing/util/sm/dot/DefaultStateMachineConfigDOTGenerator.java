@@ -105,6 +105,7 @@ public class DefaultStateMachineConfigDOTGenerator {
         final String color;
         switch (transition.getOperationResult()) {
             case FAILURE:
+            case EXCEPTION:
                 color = "red";
                 break;
             case SUCCESS:
