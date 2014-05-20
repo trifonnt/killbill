@@ -18,6 +18,7 @@
 package org.killbill.billing.util.sm;
 
 import org.killbill.billing.util.UtilTestSuiteNoDB;
+import org.killbill.billing.util.sm.dot.DOTBuilder;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 

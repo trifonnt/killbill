@@ -17,8 +17,8 @@
 package org.killbill.billing.util.sm;
 
 public enum OperationResult {
+    PENDING,
     SUCCESS,
     FAILURE,
     TIMEOUT
 }
-

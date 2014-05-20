@@ -22,7 +22,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
-import org.killbill.billing.util.sm.DOTBuilder;
 import org.killbill.billing.util.sm.LinkStateMachine;
 import org.killbill.billing.util.sm.State;
 import org.killbill.billing.util.sm.StateMachine;
@@ -53,7 +52,8 @@ public class DefaultStateMachineConfigDOTGenerator {
 
     public void build() {
         dot = new DOTBuilder(name);
-        dot.open(ImmutableMap.<String, String>of("splines", "false"));
+        dot.open();
+        //dot.open(ImmutableMap.<String, String>of("splines", "false"));
 
         for (final StateMachine stateMachine : config.getStateMachines()) {
             final Set<String> initialStates = Helpers.findInitialStates(stateMachine);

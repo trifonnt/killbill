@@ -15,7 +15,7 @@
  * under the License.
  */
 
-package org.killbill.billing.util.sm;
+package org.killbill.billing.util.sm.dot;
 
 import java.util.HashMap;
 import java.util.Map;
