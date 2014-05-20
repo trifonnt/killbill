@@ -16,6 +16,19 @@
 
 package org.killbill.billing.util.sm;
 
-public interface State {
-    public String getName();
+import org.killbill.billing.util.sm.Operation.OperationCallback;
+
+public interface State extends StateMachineEntry {
+
+    public interface EnteringStateCallback {
+        public void enteringState(final State newState);
+    }
+
+    public interface LeavingStateCallback {
+        public void leavingState(final State oldState);
+    }
+
+    public void runOperation(final Operation operation, final OperationCallback operationCallback,  final EnteringStateCallback enteringStateCallback, final LeavingStateCallback leavingStateCallback)
+            throws MissingEntryException;
+
 }

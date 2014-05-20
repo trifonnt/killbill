@@ -16,41 +16,63 @@
 
 package org.killbill.billing.util.sm;
 
+import java.net.URI;
+
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlElementWrapper;
 import javax.xml.bind.annotation.XmlRootElement;
 
-import org.killbill.billing.util.config.catalog.ValidatingConfig;
 import org.killbill.billing.util.config.catalog.ValidationErrors;
 
 @XmlRootElement(name = "stateMachineConfig")
 @XmlAccessorType(XmlAccessType.NONE)
-public class DefaultStateMachineConfig extends ValidatingConfig<DefaultStateMachineConfig> implements StateMachineConfig {
+public class DefaultStateMachineConfig extends StateMachineValidatingConfig<DefaultStateMachineConfig> implements StateMachineConfig {
 
     @XmlElementWrapper(name = "stateMachines", required = true)
     @XmlElement(name = "stateMachine", required = true)
     private DefaultStateMachine[] stateMachines;
-
 
     @XmlElementWrapper(name = "linkStateMachines", required = true)
     @XmlElement(name = "linkStateMachine", required = true)
     private DefaultLinkStateMachine[] linkStateMachines;
 
     @Override
+    public void initialize(final DefaultStateMachineConfig root, final URI uri) {
+        for (DefaultStateMachine cur : stateMachines) {
+            cur.initialize(root, uri);
+        }
+        for (DefaultLinkStateMachine cur : linkStateMachines) {
+            cur.initialize(root, uri);
+        }
+    }
+
+    @Override
     public ValidationErrors validate(final DefaultStateMachineConfig root, final ValidationErrors errors) {
         return errors;
     }
 
-    public DefaultStateMachine[] getStateMachines() {
-        return stateMachines;
+    @Override
+    public StateMachine getStateMachine(final String stateMachineName) throws MissingEntryException {
+        return (StateMachine) getEntry(stateMachines, stateMachineName);
+    }
+
+
+    @Override
+    public LinkStateMachine getLinkStateMachine(final String linkStateMachineName) throws MissingEntryException {
+        return (LinkStateMachine) getEntry(linkStateMachines, linkStateMachineName);
     }
 
     @Override
     public LinkStateMachine[] getLinkStateMachines() {
         return linkStateMachines;
     }
+
+    public DefaultStateMachine[] getStateMachines() {
+        return stateMachines;
+    }
+
 
     public void setStateMachines(final DefaultStateMachine[] stateMachines) {
         this.stateMachines = stateMachines;
