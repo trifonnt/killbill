@@ -36,7 +36,7 @@ import org.killbill.billing.overdue.config.OverdueConfig;
 import org.killbill.billing.overdue.glue.DefaultOverdueModule;
 import org.killbill.billing.overdue.listener.OverdueListener;
 import org.killbill.billing.overdue.wrapper.OverdueWrapperFactory;
-import org.killbill.billing.util.config.catalog.XMLLoader;
+import org.killbill.xmlloader.XMLLoader;
 import org.killbill.billing.util.svcsapi.bus.BusService;
 
 import com.google.inject.Inject;

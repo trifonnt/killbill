@@ -21,7 +21,7 @@ import java.net.URISyntaxException;
 import java.util.Properties;
 
 import org.killbill.billing.osgi.api.OSGIConfigProperties;
-import org.killbill.billing.util.config.catalog.UriAccessor;
+import org.killbill.xmlloader.UriAccessor;
 import org.skife.config.ConfigSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

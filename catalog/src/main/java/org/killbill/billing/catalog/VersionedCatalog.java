@@ -51,8 +51,8 @@ import org.killbill.billing.catalog.api.Product;
 import org.killbill.billing.catalog.api.StaticCatalog;
 import org.killbill.billing.catalog.api.Unit;
 import org.killbill.clock.Clock;
-import org.killbill.billing.util.config.catalog.ValidatingConfig;
-import org.killbill.billing.util.config.catalog.ValidationErrors;
+import org.killbill.xmlloader.ValidatingConfig;
+import org.killbill.xmlloader.ValidationErrors;
 
 
 @XmlRootElement(name = "catalog")
