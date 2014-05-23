@@ -30,6 +30,8 @@ import org.killbill.billing.payment.api.PaymentApiException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.base.Objects;
+
 public class PluginDispatcher<T> {
 
     private static final Logger log = LoggerFactory.getLogger(PluginDispatcher.class);
@@ -44,6 +46,7 @@ public class PluginDispatcher<T> {
         this.executor = executor;
     }
 
+    // TODO Once we switch fully to automata, should this throw PaymentPluginApiException instead?
     public T dispatchWithTimeout(final Callable<T> task) throws PaymentApiException, TimeoutException {
         return dispatchWithTimeout(task, timeoutSeconds, DEEFAULT_PLUGIN_TIMEOUT_UNIT);
     }
@@ -58,7 +61,7 @@ public class PluginDispatcher<T> {
             if (e.getCause() instanceof PaymentApiException) {
                 throw (PaymentApiException) e.getCause();
             } else {
-                throw new PaymentApiException(ErrorCode.PAYMENT_INTERNAL_ERROR, e.getMessage());
+                throw new PaymentApiException(Objects.firstNonNull(e.getCause(), e), ErrorCode.PAYMENT_INTERNAL_ERROR, e.getMessage());
             }
         } catch (final InterruptedException e) {
             Thread.currentThread().interrupt();

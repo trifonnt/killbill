@@ -63,7 +63,7 @@ public class DirectPaymentTransactionModelDao extends EntityBase implements Enti
         this(UUID.randomUUID(), createdDate, updatedDate, directPaymentId, transactionType, effectiveDate, paymentStatus, amount, currency, gatewayErrorCode, gatewayErrorMsg);
     }
 
-        public UUID getDirectPaymentId() {
+    public UUID getDirectPaymentId() {
         return directPaymentId;
     }
 

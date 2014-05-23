@@ -30,6 +30,17 @@ import javax.annotation.Nullable;
 import javax.inject.Inject;
 
 import org.joda.time.DateTime;
+import org.killbill.automaton.DefaultStateMachineConfig;
+import org.killbill.automaton.MissingEntryException;
+import org.killbill.automaton.Operation;
+import org.killbill.automaton.Operation.OperationCallback;
+import org.killbill.automaton.OperationException;
+import org.killbill.automaton.OperationResult;
+import org.killbill.automaton.State;
+import org.killbill.automaton.State.EnteringStateCallback;
+import org.killbill.automaton.State.LeavingStateCallback;
+import org.killbill.automaton.StateMachine;
+import org.killbill.automaton.StateMachineConfig;
 import org.killbill.billing.ErrorCode;
 import org.killbill.billing.account.api.Account;
 import org.killbill.billing.account.api.AccountInternalApi;
@@ -46,6 +57,14 @@ import org.killbill.billing.payment.api.PaymentApiException;
 import org.killbill.billing.payment.api.PaymentStatus;
 import org.killbill.billing.payment.api.PluginProperty;
 import org.killbill.billing.payment.api.TransactionType;
+import org.killbill.billing.payment.core.sm.AuthorizeCompleted;
+import org.killbill.billing.payment.core.sm.AuthorizeInitiated;
+import org.killbill.billing.payment.core.sm.AuthorizeOperation;
+import org.killbill.billing.payment.core.sm.CaptureCompleted;
+import org.killbill.billing.payment.core.sm.CaptureInitiated;
+import org.killbill.billing.payment.core.sm.CaptureOperation;
+import org.killbill.billing.payment.core.sm.DirectPaymentAutomatonDAOHelper;
+import org.killbill.billing.payment.core.sm.DirectPaymentStateContext;
 import org.killbill.billing.payment.dao.DirectPaymentModelDao;
 import org.killbill.billing.payment.dao.DirectPaymentTransactionModelDao;
 import org.killbill.billing.payment.dao.PaymentDao;
@@ -65,15 +84,18 @@ import org.killbill.billing.util.entity.dao.DefaultPaginationHelper.SourcePagina
 import org.killbill.bus.api.PersistentBus;
 import org.killbill.clock.Clock;
 import org.killbill.commons.locker.GlobalLocker;
+import org.killbill.xmlloader.XMLLoader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Function;
+import com.google.common.base.Objects;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Ordering;
+import com.google.common.io.Resources;
 import com.google.inject.name.Named;
 
 import static org.killbill.billing.payment.glue.PaymentModule.PLUGIN_EXECUTOR_NAMED;
@@ -84,7 +106,9 @@ public class DirectPaymentProcessor extends ProcessorBase {
 
     private final Clock clock;
 
+    private final StateMachineConfig stateMachineConfig;
     private final PluginDispatcher<DirectPayment> paymentPluginDispatcher;
+    private final PluginDispatcher<OperationResult> SMPaymentPluginDispatcher;
     private final InternalCallContextFactory internalCallContextFactory;
 
     private static final Logger log = LoggerFactory.getLogger(DirectPaymentProcessor.class);
@@ -107,43 +131,61 @@ public class DirectPaymentProcessor extends ProcessorBase {
         this.internalCallContextFactory = internalCallContextFactory;
         final long paymentPluginTimeoutSec = TimeUnit.SECONDS.convert(paymentConfig.getPaymentPluginTimeout().getPeriod(), paymentConfig.getPaymentPluginTimeout().getUnit());
         this.paymentPluginDispatcher = new PluginDispatcher<DirectPayment>(paymentPluginTimeoutSec, executor);
+        this.SMPaymentPluginDispatcher = new PluginDispatcher<OperationResult>(paymentPluginTimeoutSec, executor);
+
+        try {
+            stateMachineConfig = XMLLoader.getObjectFromString(Resources.getResource("PaymentStates.xml").toExternalForm(), DefaultStateMachineConfig.class);
+        } catch (final Exception e) {
+            throw new IllegalStateException(e);
+        }
     }
 
-    public DirectPayment createAuthorization(final Account account, @Nullable final UUID directPaymentId, final BigDecimal amount, final Currency currency, final String externalKey, final Iterable<PluginProperty> properties, final CallContext context, final InternalCallContext callContext) throws PaymentApiException {
-        return initiateDirectPayment(TransactionType.AUTHORIZE,
-                                     new PluginWrapper() {
-                                         @Override
-                                         public PaymentInfoPlugin doPluginOperation(final PaymentPluginApi plugin, final Account account, final BigDecimal amount, final UUID directPaymentId, final Iterable<PluginProperty> properties, final CallContext callContext) throws PaymentPluginApiException {
-                                             return plugin.authorizePayment(account.getId(), directPaymentId, account.getPaymentMethodId(), amount, currency, properties, callContext);
-                                         }
-                                     },
-                                     directPaymentId,
-                                     externalKey,
-                                     account,
-                                     amount,
-                                     currency,
-                                     properties,
-                                     context,
-                                     callContext
-                                    );
+    public DirectPayment createAuthorization(final Account account, @Nullable final UUID directPaymentId, final BigDecimal amount, final Currency currency, final String directPaymentExternalKey, final Iterable<PluginProperty> properties, final CallContext context, final InternalCallContext callContext) throws PaymentApiException {
+        final String directPaymentTransactionExternalKey = directPaymentExternalKey; // TODO API change
+        final UUID paymentMethodId = account.getPaymentMethodId(); // TODO API change
+
+        final DateTime utcNow = clock.getUTCNow();
+        final DirectPaymentStateContext directPaymentStateContext = new DirectPaymentStateContext(directPaymentId, directPaymentExternalKey, directPaymentTransactionExternalKey, TransactionType.AUTHORIZE, account, paymentMethodId, amount, currency);
+        final DirectPaymentAutomatonDAOHelper daoHelper = new DirectPaymentAutomatonDAOHelper(directPaymentStateContext, utcNow, paymentDao, pluginRegistry, callContext);
+        directPaymentStateContext.setPaymentMethodId(Objects.firstNonNull(paymentMethodId, daoHelper.getDefaultPaymentMethodId(account)));
+
+        // Retrieve as a safety check
+        if (directPaymentId != null) {
+            daoHelper.getDirectPayment();
+        }
+
+        final AuthorizeOperation authorizeOperation = new AuthorizeOperation(account, daoHelper, locker, SMPaymentPluginDispatcher, properties, directPaymentStateContext, callContext, context);
+        final AuthorizeInitiated authorizeInitiated = new AuthorizeInitiated(daoHelper, directPaymentStateContext);
+        final AuthorizeCompleted authorizeCompleted = new AuthorizeCompleted(daoHelper, directPaymentStateContext);
+
+        runStateMachineOperation("AUTHORIZE", "AUTH_INIT", "OP_AUTHORIZE", authorizeInitiated, authorizeOperation, authorizeCompleted);
+
+        final DirectPaymentTransactionModelDao directPaymentTransactionModelDao = directPaymentStateContext.getDirectPaymentTransactionModelDao();
+        return toDirectPayment(directPaymentTransactionModelDao.getDirectPaymentId(), directPaymentStateContext.getPaymentInfoPlugin(), callContext);
     }
 
     public DirectPayment createCapture(final Account account, final UUID directPaymentId, final BigDecimal amount, final Currency currency, final Iterable<PluginProperty> properties, final CallContext context, final InternalCallContext callContext) throws PaymentApiException {
-        return createDirectPayment(TransactionType.CAPTURE,
-                                   new PluginWrapper() {
-                                       @Override
-                                       public PaymentInfoPlugin doPluginOperation(final PaymentPluginApi plugin, final Account account, final BigDecimal amount, final UUID directPaymentId, final Iterable<PluginProperty> properties, final CallContext callContext) throws PaymentPluginApiException {
-                                           return plugin.capturePayment(account.getId(), directPaymentId, account.getPaymentMethodId(), amount, currency, properties, callContext);
-                                       }
-                                   },
-                                   directPaymentId,
-                                   account,
-                                   amount,
-                                   currency,
-                                   properties,
-                                   context,
-                                   callContext
-                                  );
+        final String directPaymentTransactionExternalKey = null; // TODO API change
+        final UUID paymentMethodId = account.getPaymentMethodId(); // TODO API change
+
+        final DateTime utcNow = clock.getUTCNow();
+        final DirectPaymentStateContext directPaymentStateContext = new DirectPaymentStateContext(directPaymentId, directPaymentTransactionExternalKey, TransactionType.CAPTURE, account, paymentMethodId, amount, currency);
+        final DirectPaymentAutomatonDAOHelper daoHelper = new DirectPaymentAutomatonDAOHelper(directPaymentStateContext, utcNow, paymentDao, pluginRegistry, callContext);
+        directPaymentStateContext.setPaymentMethodId(Objects.firstNonNull(paymentMethodId, daoHelper.getDefaultPaymentMethodId(account)));
+
+        // Retrieve as a safety check
+        daoHelper.getDirectPayment();
+
+        final CaptureOperation captureOperation = new CaptureOperation(account, daoHelper, locker, SMPaymentPluginDispatcher, properties, directPaymentStateContext, callContext, context);
+        final CaptureInitiated captureInitiated = new CaptureInitiated(daoHelper, directPaymentStateContext);
+        final CaptureCompleted captureCompleted = new CaptureCompleted(daoHelper, directPaymentStateContext);
+
+        // TODO Retrieve state from DB
+        runStateMachineOperation("AUTHORIZE", "AUTH_SUCCESS", "CAPTURE", "OP_CAPTURE", captureInitiated, captureOperation, captureCompleted);
+
+        final DirectPaymentTransactionModelDao directPaymentTransactionModelDao = directPaymentStateContext.getDirectPaymentTransactionModelDao();
+//        return toDirectPayment(directPaymentTransactionModelDao.getDirectPaymentId(), directPaymentStateContext.getPaymentInfoPlugin(), callContext);
+        return getPayment(directPaymentId, true, properties, context, callContext);
     }
 
     public DirectPayment createPurchase(final Account account, @Nullable final UUID directPaymentId, final BigDecimal amount, final Currency currency, final String externalKey, final Iterable<PluginProperty> properties, final CallContext context, final InternalCallContext callContext) throws PaymentApiException {
@@ -319,6 +361,36 @@ public class DirectPaymentProcessor extends ProcessorBase {
                                   );
     }
 
+    private void runStateMachineOperation(final String initialStateMachineName, final String initialStateName, final String operationName,
+                                          final LeavingStateCallback leavingStateCallback, final OperationCallback operationCallback, final EnteringStateCallback enteringStateCallback) throws PaymentApiException {
+        runStateMachineOperation(initialStateMachineName, initialStateName, initialStateMachineName, operationName, leavingStateCallback, operationCallback, enteringStateCallback);
+    }
+
+    private void runStateMachineOperation(final String initialStateMachineName, final String initialStateName,
+                                          final String operationStateMachineName, final String operationName,
+                                          final LeavingStateCallback leavingStateCallback, final OperationCallback operationCallback, final EnteringStateCallback enteringStateCallback) throws PaymentApiException {
+        try {
+            final StateMachine initialStateMachine = stateMachineConfig.getStateMachine(initialStateMachineName);
+            final State initialState = initialStateMachine.getState(initialStateName);
+
+            final StateMachine operationStateMachine = stateMachineConfig.getStateMachine(operationStateMachineName);
+            final Operation operation = operationStateMachine.getOperation(operationName);
+
+            initialState.runOperation(operation, operationCallback, enteringStateCallback, leavingStateCallback);
+        } catch (final MissingEntryException e) {
+            // TODO ErrorCode State Machine?
+            throw new PaymentApiException(e.getCause(), ErrorCode.PAYMENT_INTERNAL_ERROR, e.getMessage());
+        } catch (final OperationException e) {
+            if (e.getCause() == null) {
+                throw new PaymentApiException(e, ErrorCode.PAYMENT_INTERNAL_ERROR, e.getMessage());
+            } else if (e.getCause() instanceof PaymentApiException) {
+                throw (PaymentApiException) e.getCause();
+            } else {
+                throw new PaymentApiException(e.getCause(), ErrorCode.PAYMENT_INTERNAL_ERROR, e.getMessage());
+            }
+        }
+    }
+
     private DirectPayment toDirectPayment(final UUID directPaymentId, @Nullable final PaymentInfoPlugin pluginInfo, final InternalTenantContext tenantContext) {
         final DirectPaymentModelDao paymentModelDao = paymentDao.getDirectPayment(directPaymentId, tenantContext);
         if (paymentModelDao == null) {
@@ -377,31 +449,7 @@ public class DirectPaymentProcessor extends ProcessorBase {
 
                                                                                                               @Override
                                                                                                               public DirectPayment doOperation() throws PaymentApiException {
-                                                                                                                  final DateTime utcNow = clock.getUTCNow();
-                                                                                                                  final DirectPaymentModelDao paymentModelDao;
-                                                                                                                  final DirectPaymentTransactionModelDao paymentTransactionModelDao;
-                                                                                                                  if (directPaymentId == null) {
-                                                                                                                      final UUID paymentMethodId = getDefaultPaymentMethodId(account);
-                                                                                                                      final DirectPaymentModelDao pmd = new DirectPaymentModelDao(utcNow, utcNow, account.getId(), paymentMethodId, externalKey);
-                                                                                                                      final DirectPaymentTransactionModelDao ptmd = new DirectPaymentTransactionModelDao(utcNow, utcNow, pmd.getId(),
-                                                                                                                                                                                                         transactionType, utcNow, PaymentStatus.UNKNOWN,
-                                                                                                                                                                                                         amount, currency, null, null);
-
-                                                                                                                      paymentModelDao = paymentDao.insertDirectPaymentWithFirstTransaction(pmd, ptmd, callContext);
-                                                                                                                      paymentTransactionModelDao = paymentDao.getDirectTransactionsForAccount(account.getId(), callContext).get(0);
-                                                                                                                  } else {
-                                                                                                                      paymentModelDao = paymentDao.getDirectPayment(directPaymentId, callContext);
-                                                                                                                      if (paymentModelDao == null) {
-                                                                                                                          throw new PaymentApiException(ErrorCode.PAYMENT_NO_SUCH_PAYMENT, directPaymentId);
-                                                                                                                      }
-
-                                                                                                                      final DirectPaymentTransactionModelDao ptmd = new DirectPaymentTransactionModelDao(utcNow, utcNow, directPaymentId,
-                                                                                                                                                                                                         transactionType, utcNow, PaymentStatus.UNKNOWN,
-                                                                                                                                                                                                         amount, currency, null, null);
-                                                                                                                      paymentTransactionModelDao = paymentDao.updateDirectPaymentWithNewTransaction(directPaymentId, ptmd, callContext);
-                                                                                                                  }
-
-                                                                                                                  return getDirectPayment(pluginWrapper, account, amount, currency, paymentModelDao.getId(), paymentTransactionModelDao.getId(), properties, context, callContext);
+                                                                                                                  return createOrUpdateDirectPayment(directPaymentId, account, externalKey, transactionType, amount, currency, callContext, pluginWrapper, properties, context);
                                                                                                               }
                                                                                                           }
             ));
@@ -411,6 +459,34 @@ public class DirectPaymentProcessor extends ProcessorBase {
         } catch (final RuntimeException e) {
             throw new PaymentApiException(ErrorCode.PAYMENT_INTERNAL_ERROR, null);
         }
+    }
+
+    private DirectPayment createOrUpdateDirectPayment(final UUID directPaymentId, final Account account, final String externalKey, final TransactionType transactionType, final BigDecimal amount, final Currency currency, final InternalCallContext callContext, final PluginWrapper pluginWrapper, final Iterable<PluginProperty> properties, final CallContext context) throws PaymentApiException {
+        final DateTime utcNow = clock.getUTCNow();
+        final DirectPaymentModelDao paymentModelDao;
+        final DirectPaymentTransactionModelDao paymentTransactionModelDao;
+        if (directPaymentId == null) {
+            final UUID paymentMethodId = getDefaultPaymentMethodId(account);
+            final DirectPaymentModelDao pmd = new DirectPaymentModelDao(utcNow, utcNow, account.getId(), paymentMethodId, externalKey);
+            final DirectPaymentTransactionModelDao ptmd = new DirectPaymentTransactionModelDao(utcNow, utcNow, pmd.getId(),
+                                                                                               transactionType, utcNow, PaymentStatus.UNKNOWN,
+                                                                                               amount, currency, null, null);
+
+            paymentModelDao = paymentDao.insertDirectPaymentWithFirstTransaction(pmd, ptmd, callContext);
+            paymentTransactionModelDao = paymentDao.getDirectTransactionsForAccount(account.getId(), callContext).get(0);
+        } else {
+            paymentModelDao = paymentDao.getDirectPayment(directPaymentId, callContext);
+            if (paymentModelDao == null) {
+                throw new PaymentApiException(ErrorCode.PAYMENT_NO_SUCH_PAYMENT, directPaymentId);
+            }
+
+            final DirectPaymentTransactionModelDao ptmd = new DirectPaymentTransactionModelDao(utcNow, utcNow, directPaymentId,
+                                                                                               transactionType, utcNow, PaymentStatus.UNKNOWN,
+                                                                                               amount, currency, null, null);
+            paymentTransactionModelDao = paymentDao.updateDirectPaymentWithNewTransaction(directPaymentId, ptmd, callContext);
+        }
+
+        return getDirectPayment(pluginWrapper, account, amount, currency, paymentModelDao.getId(), paymentTransactionModelDao.getId(), properties, context, callContext);
     }
 
     private DirectPayment createDirectPayment(final TransactionType transactionType, final PluginWrapper pluginWrapper, final UUID directPaymentId,

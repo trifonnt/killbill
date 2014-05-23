@@ -97,6 +97,10 @@
         </dependency>
         <dependency>
             <groupId>org.kill-bill.commons</groupId>
+            <artifactId>killbill-automaton</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.kill-bill.commons</groupId>
             <artifactId>killbill-clock</artifactId>
         </dependency>
         <dependency>
@@ -124,6 +128,10 @@
             <artifactId>killbill-queue</artifactId>
             <type>test-jar</type>
             <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.kill-bill.commons</groupId>
+            <artifactId>killbill-xmlloader</artifactId>
         </dependency>
         <dependency>
             <groupId>org.mockito</groupId>
