@@ -321,8 +321,7 @@ public class TestPaymentDao extends PaymentTestSuiteWithEmbeddedDB {
         assertNull(savedTransaction.getGatewayErrorCode());
         assertNull(savedTransaction.getGatewayErrorMsg());
 
-        paymentDao.updateDirectPaymentAndTransactionOnCompletion(dpmd.getId(), PaymentStatus.SUCCESS, BigDecimal.TEN, Currency.USD, dptmd.getId(), "100", "Excellent", internalCallContext);
-
+        paymentDao.updateDirectPaymentAndTransactionOnCompletion(dpmd.getId(), PaymentStatus.SUCCESS, BigDecimal.TEN, Currency.USD, dptmd.getId(), "100", "Excellent", "AUTH_SUCCESS", internalCallContext);
 
         savedDirectPayment = paymentDao.getDirectPayment(dpmd.getId(), internalCallContext);
         assertNotNull(savedDirectPayment);

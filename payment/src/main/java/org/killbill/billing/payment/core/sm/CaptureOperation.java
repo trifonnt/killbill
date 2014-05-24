@@ -18,14 +18,10 @@
 package org.killbill.billing.payment.core.sm;
 
 import org.killbill.automaton.OperationResult;
-import org.killbill.billing.account.api.Account;
-import org.killbill.billing.callcontext.InternalCallContext;
 import org.killbill.billing.payment.api.PaymentApiException;
-import org.killbill.billing.payment.api.PluginProperty;
 import org.killbill.billing.payment.dispatcher.PluginDispatcher;
 import org.killbill.billing.payment.plugin.api.PaymentInfoPlugin;
 import org.killbill.billing.payment.plugin.api.PaymentPluginApiException;
-import org.killbill.billing.util.callcontext.CallContext;
 import org.killbill.commons.locker.GlobalLocker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,10 +30,10 @@ public class CaptureOperation extends DirectPaymentOperation {
 
     private final Logger logger = LoggerFactory.getLogger(CaptureOperation.class);
 
-    public CaptureOperation(final Account account, final DirectPaymentAutomatonDAOHelper daoHelper,
+    public CaptureOperation(final DirectPaymentAutomatonDAOHelper daoHelper,
                             final GlobalLocker locker, final PluginDispatcher<OperationResult> paymentPluginDispatcher,
-                            final Iterable<PluginProperty> properties, final DirectPaymentStateContext directPaymentStateContext, final InternalCallContext internalCallContext, final CallContext callContext) throws PaymentApiException {
-        super(account, daoHelper, locker, paymentPluginDispatcher, properties, directPaymentStateContext, internalCallContext, callContext);
+                            final DirectPaymentStateContext directPaymentStateContext) throws PaymentApiException {
+        super(daoHelper, locker, paymentPluginDispatcher, directPaymentStateContext);
     }
 
     @Override
@@ -48,7 +44,7 @@ public class CaptureOperation extends DirectPaymentOperation {
                                      directPaymentStateContext.getPaymentMethodId(),
                                      directPaymentStateContext.getAmount(),
                                      directPaymentStateContext.getCurrency(),
-                                     properties,
-                                     callContext);
+                                     directPaymentStateContext.getProperties(),
+                                     directPaymentStateContext.getCallContext());
     }
 }

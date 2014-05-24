@@ -8,7 +8,6 @@ defaultOrderBy(prefix) ::= <<
 order by <prefix>effective_date ASC, <recordIdField(prefix)> ASC
 >>
 
-
 tableFields(prefix) ::= <<
   <prefix>transaction_type
 , <prefix>effective_date
@@ -39,7 +38,6 @@ tableValues() ::= <<
 , :updatedDate
 >>
 
-
 updateTransactionStatus() ::= <<
 update <tableName()>
 set payment_status = :paymentStatus
@@ -51,5 +49,3 @@ where id = :id
 <AND_CHECK_TENANT()>
 ;
 >>
-
-

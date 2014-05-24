@@ -16,10 +16,7 @@
 
 package org.killbill.billing.payment.dao;
 
-import java.util.List;
-
 import org.killbill.billing.callcontext.InternalCallContext;
-import org.killbill.billing.callcontext.InternalTenantContext;
 import org.killbill.billing.payment.api.DirectPaymentTransaction;
 import org.killbill.billing.util.audit.ChangeType;
 import org.killbill.billing.util.entity.dao.Audited;
@@ -27,7 +24,6 @@ import org.killbill.billing.util.entity.dao.EntitySqlDao;
 import org.killbill.billing.util.entity.dao.EntitySqlDaoStringTemplate;
 import org.skife.jdbi.v2.sqlobject.Bind;
 import org.skife.jdbi.v2.sqlobject.BindBean;
-import org.skife.jdbi.v2.sqlobject.SqlQuery;
 import org.skife.jdbi.v2.sqlobject.SqlUpdate;
 
 @EntitySqlDaoStringTemplate
@@ -36,21 +32,8 @@ public interface DirectTransactionSqlDao extends EntitySqlDao<DirectPaymentTrans
     @SqlUpdate
     @Audited(ChangeType.UPDATE)
     void updateTransactionStatus(@Bind("id") final String transactionId,
-                                    @Bind("paymentStatus") final String paymentStatus,
-                                    @Bind("gatewayErrorCode") final String gatewayErrorCode,
-                                    @Bind("gatewayErrorMsg") final String gatewayErrorMsg,
-                                    @BindBean final InternalCallContext context);
-
-    /*
-    @SqlQuery
-    @SmartFetchSize(shouldStream = true)
-    public Iterator<DirectPaymentTransactionModelDao> getByPluginName(@Bind("pluginName") final String pluginName,
-                                                    @Bind("offset") final Long offset,
-                                                    @Bind("rowCount") final Long rowCount,
-                                                    @BindBean final InternalTenantContext context);
-
-    @SqlQuery
-    public Long getCountByPluginName(@Bind("pluginName") final String pluginName,
-                                     @BindBean final InternalTenantContext context);
-                                     */
+                                 @Bind("paymentStatus") final String paymentStatus,
+                                 @Bind("gatewayErrorCode") final String gatewayErrorCode,
+                                 @Bind("gatewayErrorMsg") final String gatewayErrorMsg,
+                                 @BindBean final InternalCallContext context);
 }

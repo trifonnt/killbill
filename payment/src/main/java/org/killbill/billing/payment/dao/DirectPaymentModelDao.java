@@ -34,6 +34,7 @@ public class DirectPaymentModelDao extends EntityBase implements EntityModelDao<
     private Integer paymentNumber;
     private UUID paymentMethodId;
     private String externalKey;
+    private String currentStateName;
 
     public DirectPaymentModelDao() { /* For the DAO mapper */ }
 
@@ -81,13 +82,24 @@ public class DirectPaymentModelDao extends EntityBase implements EntityModelDao<
         this.externalKey = externalKey;
     }
 
+    public String getCurrentStateName() {
+        return currentStateName;
+    }
+
+    public void setCurrentStateName(final String currentStateName) {
+        this.currentStateName = currentStateName;
+    }
+
     @Override
     public String toString() {
-        return "DirectPaymentModelDao{" +
-               "accountId=" + accountId +
-               ", paymentNumber=" + paymentNumber +
-               ", paymentMethodId=" + paymentMethodId +
-               '}';
+        final StringBuilder sb = new StringBuilder("DirectPaymentModelDao{");
+        sb.append("accountId=").append(accountId);
+        sb.append(", paymentNumber=").append(paymentNumber);
+        sb.append(", paymentMethodId=").append(paymentMethodId);
+        sb.append(", externalKey='").append(externalKey).append('\'');
+        sb.append(", currentStateName='").append(currentStateName).append('\'');
+        sb.append('}');
+        return sb.toString();
     }
 
     @Override
@@ -95,7 +107,7 @@ public class DirectPaymentModelDao extends EntityBase implements EntityModelDao<
         if (this == o) {
             return true;
         }
-        if (!(o instanceof DirectPaymentModelDao)) {
+        if (o == null || getClass() != o.getClass()) {
             return false;
         }
         if (!super.equals(o)) {
@@ -107,12 +119,19 @@ public class DirectPaymentModelDao extends EntityBase implements EntityModelDao<
         if (accountId != null ? !accountId.equals(that.accountId) : that.accountId != null) {
             return false;
         }
+        if (currentStateName != null ? !currentStateName.equals(that.currentStateName) : that.currentStateName != null) {
+            return false;
+        }
+        if (externalKey != null ? !externalKey.equals(that.externalKey) : that.externalKey != null) {
+            return false;
+        }
         if (paymentMethodId != null ? !paymentMethodId.equals(that.paymentMethodId) : that.paymentMethodId != null) {
             return false;
         }
         if (paymentNumber != null ? !paymentNumber.equals(that.paymentNumber) : that.paymentNumber != null) {
             return false;
         }
+
         return true;
     }
 
@@ -122,6 +141,8 @@ public class DirectPaymentModelDao extends EntityBase implements EntityModelDao<
         result = 31 * result + (accountId != null ? accountId.hashCode() : 0);
         result = 31 * result + (paymentNumber != null ? paymentNumber.hashCode() : 0);
         result = 31 * result + (paymentMethodId != null ? paymentMethodId.hashCode() : 0);
+        result = 31 * result + (externalKey != null ? externalKey.hashCode() : 0);
+        result = 31 * result + (currentStateName != null ? currentStateName.hashCode() : 0);
         return result;
     }
 

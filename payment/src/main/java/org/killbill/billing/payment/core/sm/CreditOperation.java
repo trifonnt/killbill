@@ -26,25 +26,23 @@ import org.killbill.commons.locker.GlobalLocker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class AuthorizeOperation extends DirectPaymentOperation {
+public class CreditOperation extends DirectPaymentOperation {
 
-    private final Logger logger = LoggerFactory.getLogger(AuthorizeOperation.class);
+    private final Logger logger = LoggerFactory.getLogger(CreditOperation.class);
 
-    public AuthorizeOperation(final DirectPaymentAutomatonDAOHelper daoHelper,
-                              final GlobalLocker locker, final PluginDispatcher<OperationResult> paymentPluginDispatcher,
-                              final DirectPaymentStateContext directPaymentStateContext) throws PaymentApiException {
+    public CreditOperation(final DirectPaymentAutomatonDAOHelper daoHelper,
+                           final GlobalLocker locker, final PluginDispatcher<OperationResult> paymentPluginDispatcher,
+                           final DirectPaymentStateContext directPaymentStateContext) throws PaymentApiException {
         super(daoHelper, locker, paymentPluginDispatcher, directPaymentStateContext);
     }
 
     @Override
     protected PaymentInfoPlugin doPluginOperation() throws PaymentPluginApiException {
-        logger.debug("Starting AUTHORIZE for payment {} ({} {})", directPaymentStateContext.getDirectPaymentId(), directPaymentStateContext.getAmount(), directPaymentStateContext.getCurrency());
-        return plugin.authorizePayment(directPaymentStateContext.getAccount().getId(),
-                                       directPaymentStateContext.getDirectPaymentId(),
-                                       directPaymentStateContext.getPaymentMethodId(),
-                                       directPaymentStateContext.getAmount(),
-                                       directPaymentStateContext.getCurrency(),
-                                       directPaymentStateContext.getProperties(),
-                                       directPaymentStateContext.getCallContext());
+        logger.debug("Starting CREDIT for payment {} ({} {})", directPaymentStateContext.getDirectPaymentId(), directPaymentStateContext.getAmount(), directPaymentStateContext.getCurrency());
+        return plugin.voidPayment(directPaymentStateContext.getAccount().getId(),
+                                  directPaymentStateContext.getDirectPaymentId(),
+                                  directPaymentStateContext.getPaymentMethodId(),
+                                  directPaymentStateContext.getProperties(),
+                                  directPaymentStateContext.getCallContext());
     }
 }

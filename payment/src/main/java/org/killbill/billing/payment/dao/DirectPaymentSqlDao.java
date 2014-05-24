@@ -39,6 +39,12 @@ public interface DirectPaymentSqlDao extends EntitySqlDao<DirectPaymentModelDao,
     void updateDirectPaymentForNewTransaction(@Bind("id") final String directPaymentId,
                                               @BindBean final InternalCallContext context);
 
+    @SqlUpdate
+    @Audited(ChangeType.UPDATE)
+    void updateCurrentPaymentStateName(@Bind("id") final String directPaymentId,
+                                       @Bind("currentStateName") final String currentStateName,
+                                       @BindBean final InternalCallContext context);
+
     @SqlQuery
     @SmartFetchSize(shouldStream = true)
     public Iterator<DirectPaymentModelDao> getByPluginName(@Bind("pluginName") final String pluginName,

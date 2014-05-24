@@ -56,7 +56,7 @@ public abstract class DirectPaymentEnteringStateCallback implements EnteringStat
         Preconditions.checkState(directPaymentTransactionId != null);
 
         final PaymentStatus paymentStatus = processOperationResult(operationResult);
-        daoHelper.processPaymentInfoPlugin(paymentStatus, paymentInfoPlugin, directPaymentTransactionId);
+        daoHelper.processPaymentInfoPlugin(paymentStatus, paymentInfoPlugin, directPaymentTransactionId, newState.getName());
     }
 
     protected PaymentStatus processOperationResult(final OperationResult operationResult) {

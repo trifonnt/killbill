@@ -23,11 +23,14 @@ import java.util.UUID;
 import javax.annotation.Nullable;
 
 import org.killbill.billing.account.api.Account;
+import org.killbill.billing.callcontext.InternalCallContext;
 import org.killbill.billing.catalog.api.Currency;
 import org.killbill.billing.payment.api.PaymentApiException;
+import org.killbill.billing.payment.api.PluginProperty;
 import org.killbill.billing.payment.api.TransactionType;
 import org.killbill.billing.payment.dao.DirectPaymentTransactionModelDao;
 import org.killbill.billing.payment.plugin.api.PaymentInfoPlugin;
+import org.killbill.billing.util.callcontext.CallContext;
 
 public class DirectPaymentStateContext {
 
@@ -46,17 +49,23 @@ public class DirectPaymentStateContext {
     protected final BigDecimal amount;
     protected final Currency currency;
     protected final TransactionType transactionType;
+    protected final Iterable<PluginProperty> properties;
+    protected final InternalCallContext internalCallContext;
+    protected final CallContext callContext;
 
     // Use to create new transactions only
     public DirectPaymentStateContext(@Nullable final UUID directPaymentId, @Nullable final String directPaymentTransactionExternalKey, final TransactionType transactionType,
-                                     final Account account, @Nullable final UUID paymentMethodId, final BigDecimal amount, final Currency currency) throws PaymentApiException {
-        this(directPaymentId, null, directPaymentTransactionExternalKey, transactionType, account, paymentMethodId, amount, currency);
+                                     final Account account, @Nullable final UUID paymentMethodId, final BigDecimal amount, final Currency currency, final Iterable<PluginProperty> properties,
+                                     final InternalCallContext internalCallContext, final CallContext callContext) throws PaymentApiException {
+        this(directPaymentId, null, directPaymentTransactionExternalKey, transactionType, account, paymentMethodId,
+             amount, currency, properties, internalCallContext, callContext);
     }
 
     // Used to create new payment and transactions
     public DirectPaymentStateContext(@Nullable final UUID directPaymentId, @Nullable final String directPaymentExternalKey,
                                      @Nullable final String directPaymentTransactionExternalKey, final TransactionType transactionType,
-                                     final Account account, @Nullable final UUID paymentMethodId, final BigDecimal amount, final Currency currency) throws PaymentApiException {
+                                     final Account account, @Nullable final UUID paymentMethodId, final BigDecimal amount, final Currency currency,
+                                     final Iterable<PluginProperty> properties, final InternalCallContext internalCallContext, final CallContext callContext) throws PaymentApiException {
         this.directPaymentId = directPaymentId;
         this.directPaymentExternalKey = directPaymentExternalKey;
         this.directPaymentTransactionExternalKey = directPaymentTransactionExternalKey;
@@ -65,6 +74,9 @@ public class DirectPaymentStateContext {
         this.paymentMethodId = paymentMethodId;
         this.amount = amount;
         this.currency = currency;
+        this.properties = properties;
+        this.internalCallContext = internalCallContext;
+        this.callContext = callContext;
     }
 
     public void setPaymentMethodId(final UUID paymentMethodId) {
@@ -117,5 +129,17 @@ public class DirectPaymentStateContext {
 
     public TransactionType getTransactionType() {
         return transactionType;
+    }
+
+    public Iterable<PluginProperty> getProperties() {
+        return properties;
+    }
+
+    public InternalCallContext getInternalCallContext() {
+        return internalCallContext;
+    }
+
+    public CallContext getCallContext() {
+        return callContext;
     }
 }

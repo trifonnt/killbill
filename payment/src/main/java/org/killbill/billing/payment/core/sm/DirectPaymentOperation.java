@@ -20,16 +20,12 @@ package org.killbill.billing.payment.core.sm;
 import org.killbill.automaton.OperationException;
 import org.killbill.automaton.OperationResult;
 import org.killbill.billing.ErrorCode;
-import org.killbill.billing.account.api.Account;
-import org.killbill.billing.callcontext.InternalCallContext;
 import org.killbill.billing.payment.api.PaymentApiException;
-import org.killbill.billing.payment.api.PluginProperty;
 import org.killbill.billing.payment.core.ProcessorBase.WithAccountLockCallback;
 import org.killbill.billing.payment.dispatcher.PluginDispatcher;
 import org.killbill.billing.payment.plugin.api.PaymentInfoPlugin;
 import org.killbill.billing.payment.plugin.api.PaymentPluginApi;
 import org.killbill.billing.payment.plugin.api.PaymentPluginApiException;
-import org.killbill.billing.util.callcontext.CallContext;
 import org.killbill.commons.locker.GlobalLocker;
 
 // Encapsulates the payment specific logic
@@ -37,17 +33,13 @@ public abstract class DirectPaymentOperation extends PluginOperation {
 
     protected final DirectPaymentStateContext directPaymentStateContext;
     protected final PaymentPluginApi plugin;
-    protected final Iterable<PluginProperty> properties;
-    protected final CallContext callContext;
 
-    protected DirectPaymentOperation(final Account account, final DirectPaymentAutomatonDAOHelper daoHelper,
-                                     final GlobalLocker locker, final PluginDispatcher<OperationResult> paymentPluginDispatcher,
-                                     final Iterable<PluginProperty> properties, final DirectPaymentStateContext directPaymentStateContext, final InternalCallContext internalCallContext, final CallContext callContext) throws PaymentApiException {
-        super(account, locker, paymentPluginDispatcher);
+    protected DirectPaymentOperation(final DirectPaymentAutomatonDAOHelper daoHelper, final GlobalLocker locker,
+                                     final PluginDispatcher<OperationResult> paymentPluginDispatcher,
+                                     final DirectPaymentStateContext directPaymentStateContext) throws PaymentApiException {
+        super(locker, paymentPluginDispatcher, directPaymentStateContext);
         this.directPaymentStateContext = directPaymentStateContext;
-        this.plugin = daoHelper.getPaymentProviderPlugin(internalCallContext);
-        this.properties = properties;
-        this.callContext = callContext;
+        this.plugin = daoHelper.getPaymentProviderPlugin(directPaymentStateContext.getInternalCallContext());
     }
 
     @Override

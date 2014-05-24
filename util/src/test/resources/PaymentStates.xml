@@ -64,6 +64,12 @@
                     <operationResult>EXCEPTION</operationResult>
                     <finalState>AUTH_ERRORED</finalState>
                 </transition>
+                <transition>
+                    <initialState>AUTH_INIT</initialState>
+                    <operation>OP_AUTHORIZE</operation>
+                    <operationResult>EXCEPTION</operationResult>
+                    <finalState>AUTH_ERRORED</finalState>
+                </transition>
             </transitions>
             <operations>
                 <operation name="OP_AUTHORIZE"/>
@@ -166,6 +172,38 @@
             </operations>
         </stateMachine>
 
+        <stateMachine name="CREDIT">
+            <states>
+                <state name="CREDIT_INIT"/>
+                <state name="CREDIT_SUCCESS"/>
+                <state name="CREDIT_FAILED"/>
+                <state name="CREDIT_ERRORED"/>
+            </states>
+            <transitions>
+                <transition>
+                    <initialState>CREDIT_INIT</initialState>
+                    <operation>OP_CREDIT</operation>
+                    <operationResult>SUCCESS</operationResult>
+                    <finalState>CREDIT_SUCCESS</finalState>
+                </transition>
+                <transition>
+                    <initialState>CREDIT_INIT</initialState>
+                    <operation>OP_CREDIT</operation>
+                    <operationResult>FAILURE</operationResult>
+                    <finalState>CREDIT_FAILED</finalState>
+                </transition>
+                <transition>
+                    <initialState>CREDIT_INIT</initialState>
+                    <operation>OP_CREDIT</operation>
+                    <operationResult>EXCEPTION</operationResult>
+                    <finalState>CREDIT_ERRORED</finalState>
+                </transition>
+            </transitions>
+            <operations>
+                <operation name="OP_CREDIT"/>
+            </operations>
+        </stateMachine>
+
         <stateMachine name="VOID">
             <states>
                 <state name="VOID_INIT"/>
@@ -259,6 +297,12 @@
         <linkStateMachine>
             <initialStateMachine>CAPTURE</initialStateMachine>
             <initialState>CAPTURE_SUCCESS</initialState>
+            <finalStateMachine>CREDIT</finalStateMachine>
+            <finalState>CREDIT_INIT</finalState>
+        </linkStateMachine>
+        <linkStateMachine>
+            <initialStateMachine>CAPTURE</initialStateMachine>
+            <initialState>CAPTURE_SUCCESS</initialState>
             <finalStateMachine>CAPTURE</finalStateMachine>
             <finalState>CAPTURE_INIT</finalState>
         </linkStateMachine>
@@ -279,6 +323,30 @@
             <initialState>REFUND_FAILED</initialState>
             <finalStateMachine>REFUND</finalStateMachine>
             <finalState>REFUND_INIT</finalState>
+        </linkStateMachine>
+        <linkStateMachine>
+            <initialStateMachine>CREDIT</initialStateMachine>
+            <initialState>CREDIT_SUCCESS</initialState>
+            <finalStateMachine>CREDIT</finalStateMachine>
+            <finalState>CREDIT_INIT</finalState>
+        </linkStateMachine>
+        <linkStateMachine>
+            <initialStateMachine>CREDIT</initialStateMachine>
+            <initialState>CREDIT_FAILED</initialState>
+            <finalStateMachine>CREDIT</finalStateMachine>
+            <finalState>CREDIT_INIT</finalState>
+        </linkStateMachine>
+        <linkStateMachine>
+            <initialStateMachine>CREDIT</initialStateMachine>
+            <initialState>CREDIT_SUCCESS</initialState>
+            <finalStateMachine>VOID</finalStateMachine>
+            <finalState>VOID_INIT</finalState>
+        </linkStateMachine>
+        <linkStateMachine>
+            <initialStateMachine>CREDIT</initialStateMachine>
+            <initialState>CREDIT_FAILED</initialState>
+            <finalStateMachine>VOID</finalStateMachine>
+            <finalState>VOID_INIT</finalState>
         </linkStateMachine>
         <linkStateMachine>
             <initialStateMachine>PURCHASE</initialStateMachine>

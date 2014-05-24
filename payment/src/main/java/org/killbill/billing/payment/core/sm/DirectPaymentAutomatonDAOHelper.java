@@ -74,7 +74,8 @@ public class DirectPaymentAutomatonDAOHelper {
         return paymentTransactionModelDao;
     }
 
-    public void processPaymentInfoPlugin(final PaymentStatus paymentStatus, @Nullable final PaymentInfoPlugin paymentInfoPlugin, final UUID directPaymentTransactionId) {
+    public void processPaymentInfoPlugin(final PaymentStatus paymentStatus, @Nullable final PaymentInfoPlugin paymentInfoPlugin,
+                                         final UUID directPaymentTransactionId, final String currentPaymentStateName) {
         paymentDao.updateDirectPaymentAndTransactionOnCompletion(directPaymentStateContext.getDirectPaymentId(),
                                                                  paymentStatus,
                                                                  directPaymentStateContext.getAmount(),
@@ -82,6 +83,7 @@ public class DirectPaymentAutomatonDAOHelper {
                                                                  directPaymentTransactionId,
                                                                  paymentInfoPlugin == null ? null : paymentInfoPlugin.getGatewayErrorCode(),
                                                                  paymentInfoPlugin == null ? null : paymentInfoPlugin.getGatewayError(),
+                                                                 currentPaymentStateName,
                                                                  internalCallContext);
     }
 

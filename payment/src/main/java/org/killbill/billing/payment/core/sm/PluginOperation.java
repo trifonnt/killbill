@@ -41,19 +41,22 @@ public abstract class PluginOperation implements OperationCallback {
 
     private final Logger logger = LoggerFactory.getLogger(PluginOperation.class);
 
-    private final Account account;
     private final GlobalLocker locker;
     private final PluginDispatcher<OperationResult> paymentPluginDispatcher;
+    private final DirectPaymentStateContext directPaymentStateContext;
 
-    protected PluginOperation(final Account account, final GlobalLocker locker, final PluginDispatcher<OperationResult> paymentPluginDispatcher) {
-        this.account = account;
+    protected PluginOperation(final GlobalLocker locker,
+                              final PluginDispatcher<OperationResult> paymentPluginDispatcher,
+                              final DirectPaymentStateContext directPaymentStateContext) {
         this.locker = locker;
         this.paymentPluginDispatcher = paymentPluginDispatcher;
+        this.directPaymentStateContext = directPaymentStateContext;
     }
 
     protected abstract PaymentInfoPlugin doPluginOperation() throws PaymentPluginApiException;
 
     protected OperationResult dispatchWithTimeout(final WithAccountLockCallback<OperationResult> callback) throws OperationException {
+        final Account account = directPaymentStateContext.getAccount();
         logger.debug("Dispatching plugin call for account {}", account.getExternalKey());
 
         try {
