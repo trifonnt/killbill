@@ -29,6 +29,16 @@ import org.killbill.billing.util.entity.Pagination;
 
 public interface PaymentDao {
 
+    public PaymentAttemptModelDao insertPaymentAttempt(PaymentAttemptModelDao attempt, InternalCallContext context);
+
+    public void updatePaymentAttempt(UUID paymentAttemptId, String state, InternalCallContext context);
+
+    public PaymentAttemptModelDao getPaymentAttemptByExternalKey(String externalKey, InternalTenantContext context);
+
+
+    /////
+
+
     public Pagination<DirectPaymentModelDao> getDirectPayments(String pluginName, Long offset, Long limit, InternalTenantContext context);
 
     public DirectPaymentModelDao insertDirectPaymentWithFirstTransaction(DirectPaymentModelDao directPayment, DirectPaymentTransactionModelDao directPaymentTransaction, InternalCallContext context);

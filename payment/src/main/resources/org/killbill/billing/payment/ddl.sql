@@ -54,17 +54,27 @@ CREATE TABLE payment_history (
 CREATE INDEX payment_history_target_record_id ON payment_history(target_record_id);
 CREATE INDEX payment_history_tenant_account_record_id ON payment_history(tenant_record_id, account_record_id);
 
+
+  <prefix>direct_transaction_id
+, <prefix>external_key
+, <prefix>state_name
+, <prefix>operation_name
+, <prefix>plugin_name
+, <prefix>created_by
+, <prefix>created_date
+, <prefix>updated_by
+, <prefix>updated_date
+
+
 DROP TABLE IF EXISTS payment_attempts;
 CREATE TABLE payment_attempts (
     record_id int(11) unsigned NOT NULL AUTO_INCREMENT,
     id char(36) NOT NULL,
-    payment_id char(36) NOT NULL,
-    payment_method_id char(36) NOT NULL,
-    gateway_error_code varchar(32),
-    gateway_error_msg varchar(256),
-    processing_status varchar(50),
-    requested_amount numeric(15,9),
-    requested_currency char(3),
+    direct_transaction_id char(36) NOT NULL,
+    external_key char(128) NULL,
+    state_name varchar(32),
+    operation_name varchar(32),
+    plugin_name varchar(50),
     created_by varchar(50) NOT NULL,
     created_date datetime NOT NULL,
     updated_by varchar(50) NOT NULL,
@@ -82,14 +92,11 @@ CREATE TABLE payment_attempt_history (
     record_id int(11) unsigned NOT NULL AUTO_INCREMENT,
     id char(36) NOT NULL,
     target_record_id int(11) unsigned NOT NULL,
-    payment_id char(36) NOT NULL,
-    payment_method_id char(36) NOT NULL,
-    gateway_error_code varchar(32),
-    gateway_error_msg varchar(256),
-    processing_status varchar(50),
-    requested_amount numeric(15,9),
-    requested_currency char(3),
-    change_type char(6) NOT NULL,
+    direct_transaction_id char(36) NOT NULL,
+    external_key char(128) NULL,
+    state_name varchar(32),
+    operation_name varchar(32),
+    plugin_name varchar(50),
     created_by varchar(50) NOT NULL,
     created_date datetime NOT NULL,
     updated_by varchar(50) NOT NULL,

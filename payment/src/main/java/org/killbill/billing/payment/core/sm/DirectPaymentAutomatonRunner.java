@@ -54,12 +54,12 @@ import com.google.common.base.Preconditions;
 
 public class DirectPaymentAutomatonRunner {
 
-    private final StateMachineConfig stateMachineConfig;
-    private final PaymentDao paymentDao;
-    private final GlobalLocker locker;
-    private final PluginDispatcher<OperationResult> paymentPluginDispatcher;
-    private final OSGIServiceRegistration<PaymentPluginApi> pluginRegistry;
-    private final Clock clock;
+    protected final StateMachineConfig stateMachineConfig;
+    protected final PaymentDao paymentDao;
+    protected final GlobalLocker locker;
+    protected final PluginDispatcher<OperationResult> paymentPluginDispatcher;
+    protected final OSGIServiceRegistration<PaymentPluginApi> pluginRegistry;
+    protected final Clock clock;
 
     public DirectPaymentAutomatonRunner(final StateMachineConfig stateMachineConfig,
                                         final PaymentDao paymentDao,
@@ -179,7 +179,7 @@ public class DirectPaymentAutomatonRunner {
     }
 
     // Hack for now
-    private String getStateMachineName(final String currentStateName) {
+    protected String getStateMachineName(final String currentStateName) {
         for (final StateMachine stateMachine : stateMachineConfig.getStateMachines()) {
             for (final State state : stateMachine.getStates()) {
                 if (state.getName().equals(currentStateName)) {
@@ -190,7 +190,7 @@ public class DirectPaymentAutomatonRunner {
         return null;
     }
 
-    private void runStateMachineOperation(final String initialStateMachineName, final String initialStateName,
+    protected void runStateMachineOperation(final String initialStateMachineName, final String initialStateName,
                                           final String operationStateMachineName, final String operationName,
                                           final LeavingStateCallback leavingStateCallback, final OperationCallback operationCallback, final EnteringStateCallback enteringStateCallback) throws PaymentApiException {
         try {

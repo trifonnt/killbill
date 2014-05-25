@@ -41,6 +41,21 @@ public class MockPaymentDao implements PaymentDao {
     private final Map<UUID, PaymentAttemptModelDao> attempts = new HashMap<UUID, PaymentAttemptModelDao>();
 
     @Override
+    public PaymentAttemptModelDao insertPaymentAttempt(final PaymentAttemptModelDao attempt, final InternalCallContext context) {
+        return null;
+    }
+
+    @Override
+    public void updatePaymentAttempt(final UUID paymentAttemptId, final String state, final InternalCallContext context) {
+
+    }
+
+    @Override
+    public PaymentAttemptModelDao getPaymentAttemptByExternalKey(final String externalKey, final InternalTenantContext context) {
+        return null;
+    }
+
+    @Override
     public Pagination<DirectPaymentModelDao> getDirectPayments(final String pluginName, final Long offset, final Long limit, final InternalTenantContext context) {
         return null;
     }
@@ -110,7 +125,7 @@ public class MockPaymentDao implements PaymentDao {
             }
             final PaymentAttemptModelDao tmp = attempts.remove(attemptId);
             if (tmp != null) {
-                attempts.put(attemptId, new PaymentAttemptModelDao(tmp, paymentStatus, gatewayErrorCode, gatewayErrorMsg));
+                attempts.put(attemptId, null /* TODO STEPH_RETRY new PaymentAttemptModelDao(tmp, paymentStatus, gatewayErrorCode, gatewayErrorMsg) */);
             }
         }
     }
@@ -161,9 +176,12 @@ public class MockPaymentDao implements PaymentDao {
         final List<PaymentAttemptModelDao> result = new ArrayList<PaymentAttemptModelDao>();
         synchronized (this) {
             for (final PaymentAttemptModelDao cur : attempts.values()) {
+                /*
+                TODO STEPH_RETRY
                 if (cur.getPaymentId().equals(paymentId)) {
                     result.add(cur);
                 }
+                */
             }
         }
         return result;

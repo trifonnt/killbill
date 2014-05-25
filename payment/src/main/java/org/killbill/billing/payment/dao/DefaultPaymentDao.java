@@ -74,6 +74,21 @@ public class DefaultPaymentDao implements PaymentDao {
     }
 
     @Override
+    public PaymentAttemptModelDao insertPaymentAttempt(final PaymentAttemptModelDao attempt, final InternalCallContext context) {
+        return null;
+    }
+
+    @Override
+    public void updatePaymentAttempt(final UUID paymentAttemptId, final String state, final InternalCallContext context) {
+
+    }
+
+    @Override
+    public PaymentAttemptModelDao getPaymentAttemptByExternalKey(final String externalKey, final InternalTenantContext context) {
+        return null;
+    }
+
+    @Override
     public Pagination<DirectPaymentModelDao> getDirectPayments(final String pluginName, final Long offset, final Long limit, final InternalTenantContext context) {
         return paginationHelper.getPagination(DirectPaymentSqlDao.class,
                                               new PaginationIteratorBuilder<DirectPaymentModelDao, DirectPayment, DirectPaymentSqlDao>() {
@@ -211,8 +226,8 @@ public class DefaultPaymentDao implements PaymentDao {
                 transactional.create(attempt, context);
                 final PaymentAttemptModelDao savedAttempt = transactional.getById(attempt.getId().toString(), context);
 
-                entitySqlDaoWrapperFactory.become(PaymentSqlDao.class).updatePaymentForNewAttempt(paymentId.toString(), attempt.getPaymentMethodId().toString(),
-                                                                                                  savedAttempt.getRequestedAmount(), attempt.getEffectiveDate().toDate(), context);
+                //entitySqlDaoWrapperFactory.become(PaymentSqlDao.class).updatePaymentForNewAttempt(paymentId.toString(), attempt.getPaymentMethodId().toString(),
+                 //                                                                                 savedAttempt.getRequestedAmount(), attempt.getEffectiveDate().toDate(), context);
 
                 return savedAttempt;
             }

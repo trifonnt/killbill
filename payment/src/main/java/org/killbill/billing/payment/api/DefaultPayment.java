@@ -163,44 +163,12 @@ public class DefaultPayment extends EntityBase implements Payment {
         }
 
         return new ArrayList<PaymentAttempt>(Collections2.transform(attempts, new Function<PaymentAttemptModelDao, PaymentAttempt>() {
+
+            @Nullable
             @Override
             public PaymentAttempt apply(final PaymentAttemptModelDao input) {
-                return new PaymentAttempt() {
-                    @Override
-                    public PaymentStatus getPaymentStatus() {
-                        return input.getProcessingStatus();
-                    }
-
-                    @Override
-                    public DateTime getEffectiveDate() {
-                        return input.getEffectiveDate();
-                    }
-
-                    @Override
-                    public UUID getId() {
-                        return input.getId();
-                    }
-
-                    @Override
-                    public DateTime getCreatedDate() {
-                        return input.getCreatedDate();
-                    }
-
-                    @Override
-                    public DateTime getUpdatedDate() {
-                        return input.getUpdatedDate();
-                    }
-
-                    @Override
-                    public String getGatewayErrorCode() {
-                        return input.getGatewayErrorCode();
-                    }
-
-                    @Override
-                    public String getGatewayErrorMsg() {
-                        return input.getGatewayErrorMsg();
-                    }
-                };
+                // TODO STEPH_RETRY
+                return null;
             }
         }));
     }

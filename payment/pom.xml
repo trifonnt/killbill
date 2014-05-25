@@ -96,12 +96,20 @@
             <artifactId>killbill-plugin-api-payment</artifactId>
         </dependency>
         <dependency>
+            <groupId>org.kill-bill.billing.plugin</groupId>
+            <artifactId>killbill-plugin-api-retry</artifactId>
+        </dependency>
+        <dependency>
             <groupId>org.kill-bill.commons</groupId>
             <artifactId>killbill-automaton</artifactId>
         </dependency>
         <dependency>
             <groupId>org.kill-bill.commons</groupId>
             <artifactId>killbill-clock</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.kill-bill.commons</groupId>
+            <artifactId>killbill-automaton</artifactId>
         </dependency>
         <dependency>
             <groupId>org.kill-bill.commons</groupId>
