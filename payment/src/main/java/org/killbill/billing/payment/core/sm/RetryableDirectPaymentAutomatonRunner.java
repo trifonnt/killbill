@@ -45,11 +45,9 @@ import org.killbill.billing.payment.api.PaymentApiException;
 import org.killbill.billing.payment.api.PluginProperty;
 import org.killbill.billing.payment.api.TransactionType;
 import org.killbill.billing.payment.core.DirectPaymentProcessor;
-import org.killbill.billing.payment.dao.PaymentAttemptModelDao;
 import org.killbill.billing.payment.dao.PaymentDao;
 import org.killbill.billing.payment.dispatcher.PluginDispatcher;
 import org.killbill.billing.payment.plugin.api.PaymentPluginApi;
-import org.killbill.billing.retry.plugin.api.RetryPluginApi;
 import org.killbill.billing.tag.TagInternalApi;
 import org.killbill.billing.util.callcontext.CallContext;
 import org.killbill.billing.util.tag.ControlTagType;
@@ -126,8 +124,8 @@ public class RetryableDirectPaymentAutomatonRunner extends DirectPaymentAutomato
                     throw new IllegalStateException("Unsupported transaction type " + transactionType);
             }
 
-            final LeavingStateCallback leavingStateCallback = new RetryLeavingStateCallback(directPaymentStateContext, initialState, transactionType);
-            final EnteringStateCallback enteringStateCallback = new RetryEnteringStateCallback(directPaymentStateContext);
+            final LeavingStateCallback leavingStateCallback = new RetryLeavingStateCallback(this, directPaymentStateContext, initialState, transactionType);
+            final EnteringStateCallback enteringStateCallback = new RetryEnteringStateCallback(this, directPaymentStateContext);
 
             initialState.runOperation(retryOperation, callback, enteringStateCallback, leavingStateCallback);
         } catch (MissingEntryException e) {
@@ -178,92 +176,4 @@ public class RetryableDirectPaymentAutomatonRunner extends DirectPaymentAutomato
         }));
     }
 
-    public class RetryLeavingStateCallback implements LeavingStateCallback {
-
-        private final DirectPaymentStateContext stateContext;
-        private final State initialState;
-        private final TransactionType transactionType;
-
-        public RetryLeavingStateCallback(final DirectPaymentStateContext stateContext, final State initialState, final TransactionType transactionType) {
-            this.initialState = initialState;
-            this.stateContext = stateContext;
-            this.transactionType = transactionType;
-        }
-
-        @Override
-        public void leavingState(final State state) {
-
-            final DateTime utcNow = clock.getUTCNow();
-
-            if (state.getName().equals(initialState.getName())) {
-                // STEPH_RETRY transactionId does not exist yet, and how do we get pluginName ?
-                paymentDao.insertPaymentAttempt(new PaymentAttemptModelDao(utcNow, utcNow, null, stateContext.directPaymentTransactionExternalKey, state.getName(), transactionType.name(), null), stateContext.internalCallContext);
-            }
-        }
-    }
-
-    public abstract class RetryOperationCallback implements OperationCallback {
-
-        protected final DirectPaymentProcessor directPaymentProcessor;
-
-        public RetryOperationCallback(final DirectPaymentProcessor directPaymentProcessor) {
-            this.directPaymentProcessor = directPaymentProcessor;
-        }
-    }
-
-    public class RetryAuthorizeOperationCallback extends RetryOperationCallback {
-
-        private final DirectPaymentStateContext stateContext;
-
-        public RetryAuthorizeOperationCallback(final DirectPaymentStateContext stateContext, final DirectPaymentProcessor directPaymentProcessor) {
-            super(directPaymentProcessor);
-            this.stateContext = stateContext;
-        }
-
-        @Override
-        public OperationResult doOperationCallback() throws OperationException {
-
-            // STEPH retrieve plugin ?
-            RetryPluginApi plugin = null;
-
-            InternalCallContext internalCallContext = null;
-
-            if (plugin.isRetryAborted(stateContext.getDirectPaymentTransactionExternalKey())) {
-                return OperationResult.EXCEPTION;
-            }
-
-            try {
-                directPaymentProcessor.createAuthorization(stateContext.account, stateContext.directPaymentId, stateContext.getAmount(), stateContext.getCurrency(), stateContext.directPaymentExternalKey, stateContext.getProperties(), stateContext.callContext, stateContext.internalCallContext);
-            } catch (PaymentApiException e) {
-
-                final DateTime nextRetryDate = plugin.getNextRetryDate(stateContext.getDirectPaymentTransactionExternalKey());
-                if (nextRetryDate == null) {
-                    // Very hacky, we are using EXCEPTION result to transition to final ABORTED state.
-                    throw new OperationException(e, OperationResult.EXCEPTION);
-                } else {
-
-                    throw new OperationException(e, OperationResult.FAILURE);
-                }
-            }
-            return OperationResult.SUCCESS;
-        }
-    }
-
-    public class RetryEnteringStateCallback implements EnteringStateCallback {
-
-        private final DirectPaymentStateContext directPaymentStateContext;
-
-        public RetryEnteringStateCallback(final DirectPaymentStateContext directPaymentStateContext) {
-            this.directPaymentStateContext = directPaymentStateContext;
-        }
-
-        @Override
-        public void enteringState(final State state, final OperationCallback operationCallback, final OperationResult operationResult, final LeavingStateCallback leavingStateCallback) {
-            // STEPH Can we do pass it through some state machine context.
-            final PaymentAttemptModelDao attempt = paymentDao.getPaymentAttemptByExternalKey(directPaymentStateContext.getDirectPaymentTransactionExternalKey(), directPaymentStateContext.internalCallContext);
-            paymentDao.updatePaymentAttempt(attempt.getId(), state.getName(), directPaymentStateContext.internalCallContext);
-
-            // If RETRIED state add notificationDate
-        }
-    }
 }
