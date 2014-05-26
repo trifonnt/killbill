@@ -239,6 +239,7 @@ DROP TABLE IF EXISTS direct_transactions;
 CREATE TABLE direct_transactions (
     record_id int(11) unsigned NOT NULL AUTO_INCREMENT,
     id char(36) NOT NULL,
+    external_key varchar(255),
     transaction_type varchar(32) NOT NULL,
     effective_date datetime NOT NULL,
     payment_status varchar(50),
@@ -263,6 +264,7 @@ DROP TABLE IF EXISTS direct_transaction_history;
 CREATE TABLE direct_transaction_history (
     record_id int(11) unsigned NOT NULL AUTO_INCREMENT,
     id char(36) NOT NULL,
+    external_key varchar(255),
     target_record_id int(11) unsigned NOT NULL,
     transaction_type varchar(32) NOT NULL,
     effective_date datetime NOT NULL,

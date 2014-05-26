@@ -26,7 +26,8 @@ import org.killbill.billing.payment.plugin.api.PaymentInfoPlugin;
 
 public class DefaultDirectPaymentTransaction extends EntityBase implements DirectPaymentTransaction {
 
-    private final UUID directTransactionId;
+    private final UUID directPaymentId;
+    private final String externalKey;
     private final TransactionType transactionType;
     private final DateTime effectiveDate;
     private final PaymentStatus status;
@@ -35,16 +36,15 @@ public class DefaultDirectPaymentTransaction extends EntityBase implements Direc
     private final String gatewayErrorCode;
     private final String gatewayErrorMsg;
     private final PaymentInfoPlugin infoPlugin;
-    private final Integer retryCount;
 
-    public DefaultDirectPaymentTransaction(final UUID id, final DateTime createdDate, final DateTime updatedDate, final UUID directTransactionId, final TransactionType transactionType,
-                                           final DateTime effectiveDate, final Integer retryCount, final PaymentStatus status, final BigDecimal amount, final Currency currency,
+    public DefaultDirectPaymentTransaction(final UUID id, final String externalKey, final DateTime createdDate, final DateTime updatedDate, final UUID directPaymentId, final TransactionType transactionType,
+                                           final DateTime effectiveDate, final PaymentStatus status, final BigDecimal amount, final Currency currency,
                                            final String gatewayErrorCode, final String gatewayErrorMsg, final PaymentInfoPlugin infoPlugin) {
         super(id, createdDate, updatedDate);
-        this.directTransactionId = directTransactionId;
+        this.externalKey = externalKey;
+        this.directPaymentId = directPaymentId;
         this.transactionType = transactionType;
         this.effectiveDate = effectiveDate;
-        this.retryCount = retryCount;
         this.status = status;
         this.amount = amount;
         this.currency = currency;
@@ -55,7 +55,12 @@ public class DefaultDirectPaymentTransaction extends EntityBase implements Direc
 
     @Override
     public UUID getDirectPaymentId() {
-        return directTransactionId;
+        return directPaymentId;
+    }
+
+    @Override
+    public String getExternalKey() {
+        return externalKey;
     }
 
     @Override
@@ -96,5 +101,86 @@ public class DefaultDirectPaymentTransaction extends EntityBase implements Direc
     @Override
     public PaymentInfoPlugin getPaymentInfoPlugin() {
         return infoPlugin;
+    }
+
+    @Override
+    public String toString() {
+        final StringBuilder sb = new StringBuilder("DefaultDirectPaymentTransaction{");
+        sb.append("directPaymentId=").append(directPaymentId);
+        sb.append(", externalKey='").append(externalKey).append('\'');
+        sb.append(", transactionType=").append(transactionType);
+        sb.append(", effectiveDate=").append(effectiveDate);
+        sb.append(", status=").append(status);
+        sb.append(", amount=").append(amount);
+        sb.append(", currency=").append(currency);
+        sb.append(", gatewayErrorCode='").append(gatewayErrorCode).append('\'');
+        sb.append(", gatewayErrorMsg='").append(gatewayErrorMsg).append('\'');
+        sb.append(", infoPlugin=").append(infoPlugin);
+        sb.append('}');
+        return sb.toString();
+    }
+
+    @Override
+    public boolean equals(final Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+        if (!super.equals(o)) {
+            return false;
+        }
+
+        final DefaultDirectPaymentTransaction that = (DefaultDirectPaymentTransaction) o;
+
+        if (amount != null ? amount.compareTo(that.amount) != 0 : that.amount != null) {
+            return false;
+        }
+        if (currency != that.currency) {
+            return false;
+        }
+        if (directPaymentId != null ? !directPaymentId.equals(that.directPaymentId) : that.directPaymentId != null) {
+            return false;
+        }
+        if (effectiveDate != null ? effectiveDate.compareTo(that.effectiveDate) != 0 : that.effectiveDate != null) {
+            return false;
+        }
+        if (externalKey != null ? !externalKey.equals(that.externalKey) : that.externalKey != null) {
+            return false;
+        }
+        if (gatewayErrorCode != null ? !gatewayErrorCode.equals(that.gatewayErrorCode) : that.gatewayErrorCode != null) {
+            return false;
+        }
+        if (gatewayErrorMsg != null ? !gatewayErrorMsg.equals(that.gatewayErrorMsg) : that.gatewayErrorMsg != null) {
+            return false;
+        }
+        if (infoPlugin != null ? !infoPlugin.equals(that.infoPlugin) : that.infoPlugin != null) {
+            return false;
+        }
+        if (status != that.status) {
+            return false;
+        }
+        if (transactionType != that.transactionType) {
+            return false;
+        }
+
+        return true;
+    }
+
+    @Override
+    public int hashCode() {
+        int result = super.hashCode();
+        result = 31 * result + (directPaymentId != null ? directPaymentId.hashCode() : 0);
+        result = 31 * result + (externalKey != null ? externalKey.hashCode() : 0);
+        result = 31 * result + (transactionType != null ? transactionType.hashCode() : 0);
+        result = 31 * result + (effectiveDate != null ? effectiveDate.hashCode() : 0);
+        result = 31 * result + (status != null ? status.hashCode() : 0);
+        result = 31 * result + (amount != null ? amount.hashCode() : 0);
+        result = 31 * result + (currency != null ? currency.hashCode() : 0);
+        result = 31 * result + (gatewayErrorCode != null ? gatewayErrorCode.hashCode() : 0);
+        result = 31 * result + (gatewayErrorMsg != null ? gatewayErrorMsg.hashCode() : 0);
+        result = 31 * result + (infoPlugin != null ? infoPlugin.hashCode() : 0);
+        return result;
     }
 }

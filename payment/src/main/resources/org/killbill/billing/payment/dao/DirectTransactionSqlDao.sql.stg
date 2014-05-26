@@ -9,7 +9,8 @@ order by <prefix>effective_date ASC, <recordIdField(prefix)> ASC
 >>
 
 tableFields(prefix) ::= <<
-  <prefix>transaction_type
+  <prefix>external_key
+, <prefix>transaction_type
 , <prefix>effective_date
 , <prefix>payment_status
 , <prefix>amount
@@ -24,7 +25,8 @@ tableFields(prefix) ::= <<
 >>
 
 tableValues() ::= <<
-  :transactionType
+  :externalKey
+, :transactionType
 , :effectiveDate
 , :paymentStatus
 , :amount

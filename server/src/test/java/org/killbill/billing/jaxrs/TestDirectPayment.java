@@ -31,6 +31,9 @@ import org.testng.annotations.Test;
 
 public class TestDirectPayment extends TestJaxrsBase {
 
+    private final String directPaymentExternalKey = UUID.randomUUID().toString();
+    private final String directTransactionExternalKey = UUID.randomUUID().toString();
+
     @Test(groups = "slow")
     public void testCreateRetrievePayment() throws Exception {
         final Account account = createAccountWithDefaultPaymentMethod();
@@ -39,7 +42,8 @@ public class TestDirectPayment extends TestJaxrsBase {
         final DirectTransaction authTransaction = new DirectTransaction();
         authTransaction.setAmount(BigDecimal.TEN);
         authTransaction.setCurrency(account.getCurrency());
-        authTransaction.setExternalKey("foo");
+        authTransaction.setDirectPaymentExternalKey(directPaymentExternalKey);
+        authTransaction.setDirectTransactionExternalKey(directTransactionExternalKey);
         authTransaction.setTransactionType("AUTHORIZE");
         final DirectPayment authDirectPayment = killBillClient.createDirectPayment(account.getAccountId(), authTransaction, createdBy, reason, comment);
         verifyDirectPayment(account, authDirectPayment, BigDecimal.TEN, BigDecimal.ZERO, BigDecimal.ZERO, 1);
@@ -49,6 +53,8 @@ public class TestDirectPayment extends TestJaxrsBase {
         captureTransaction.setDirectPaymentId(authDirectPayment.getDirectPaymentId());
         captureTransaction.setAmount(BigDecimal.ONE);
         captureTransaction.setCurrency(account.getCurrency());
+        captureTransaction.setDirectPaymentExternalKey(directPaymentExternalKey);
+        captureTransaction.setDirectTransactionExternalKey(directTransactionExternalKey);
         final DirectPayment capturedDirectPayment1 = killBillClient.captureAuthorization(captureTransaction, createdBy, reason, comment);
         verifyDirectPayment(account, capturedDirectPayment1, BigDecimal.TEN, BigDecimal.ONE, BigDecimal.ZERO, 2);
         verifyDirectPaymentTransaction(authDirectPayment.getDirectPaymentId(), capturedDirectPayment1.getTransactions().get(1),
@@ -65,13 +71,15 @@ public class TestDirectPayment extends TestJaxrsBase {
         creditTransaction.setDirectPaymentId(authDirectPayment.getDirectPaymentId());
         creditTransaction.setAmount(new BigDecimal("223.12"));
         creditTransaction.setCurrency(account.getCurrency());
+        creditTransaction.setDirectPaymentExternalKey(directPaymentExternalKey);
+        creditTransaction.setDirectTransactionExternalKey(directTransactionExternalKey);
         final DirectPayment creditDirectPayment = killBillClient.creditPayment(creditTransaction, createdBy, reason, comment);
         verifyDirectPayment(account, creditDirectPayment, BigDecimal.TEN, new BigDecimal("2"), new BigDecimal("223.12"), 4);
         verifyDirectPaymentTransaction(authDirectPayment.getDirectPaymentId(), creditDirectPayment.getTransactions().get(3),
                                        account, creditTransaction.getAmount(), "CREDIT");
 
         // Void
-        final DirectPayment voidDirectPayment = killBillClient.voidPayment(authDirectPayment.getDirectPaymentId(), createdBy, reason, comment);
+        final DirectPayment voidDirectPayment = killBillClient.voidPayment(authDirectPayment.getDirectPaymentId(), directTransactionExternalKey, createdBy, reason, comment);
         verifyDirectPayment(account, voidDirectPayment, BigDecimal.TEN, new BigDecimal("2"), new BigDecimal("223.12"), 5);
         verifyDirectPaymentTransaction(authDirectPayment.getDirectPaymentId(), voidDirectPayment.getTransactions().get(4),
                                        account, null, "VOID");
@@ -83,6 +91,7 @@ public class TestDirectPayment extends TestJaxrsBase {
         Assert.assertEquals(directPayment.getAccountId(), account.getAccountId());
         Assert.assertNotNull(directPayment.getDirectPaymentId());
         Assert.assertNotNull(directPayment.getPaymentNumber());
+        Assert.assertEquals(directPayment.getDirectPaymentExternalKey(), directPaymentExternalKey);
         Assert.assertEquals(directPayment.getAuthAmount().compareTo(authAmount), 0);
         Assert.assertEquals(directPayment.getCapturedAmount().compareTo(capturedAmount), 0);
         Assert.assertEquals(directPayment.getRefundedAmount().compareTo(refundedAmount), 0);
@@ -118,6 +127,7 @@ public class TestDirectPayment extends TestJaxrsBase {
             Assert.assertEquals(directTransaction.getAmount().compareTo(amount), 0);
             Assert.assertEquals(directTransaction.getCurrency(), account.getCurrency());
         }
-        Assert.assertEquals(directTransaction.getExternalKey(), "foo");
+        Assert.assertEquals(directTransaction.getDirectTransactionExternalKey(), directTransactionExternalKey);
+        Assert.assertEquals(directTransaction.getDirectPaymentExternalKey(), directPaymentExternalKey);
     }
 }

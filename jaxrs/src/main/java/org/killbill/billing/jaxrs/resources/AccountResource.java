@@ -654,10 +654,14 @@ public class AccountResource extends JaxRsResourceBase {
         final DirectPayment result;
         switch (transactionType) {
             case AUTHORIZE:
-                result = directPaymentApi.createAuthorization(account, directPaymentId, json.getAmount(), currency, json.getExternalKey(), pluginProperties, callContext);
+                result = directPaymentApi.createAuthorization(account, directPaymentId, json.getAmount(), currency,
+                                                              json.getDirectPaymentExternalKey(), json.getDirectTransactionExternalKey(),
+                                                              pluginProperties, callContext);
                 break;
             case PURCHASE:
-                result = directPaymentApi.createPurchase(account, directPaymentId, json.getAmount(), currency, json.getExternalKey(), pluginProperties, callContext);
+                result = directPaymentApi.createPurchase(account, directPaymentId, json.getAmount(), currency,
+                                                         json.getDirectPaymentExternalKey(), json.getDirectTransactionExternalKey(),
+                                                         pluginProperties, callContext);
                 break;
             default:
                 return Response.status(Status.PRECONDITION_FAILED).entity("TransactionType " + transactionType + " is not allowed for an account").build();

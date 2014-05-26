@@ -110,9 +110,9 @@ public class DirectPaymentAutomatonDAOHelper {
         final String gatewayErrorCode = null;
         final String gatewayErrorMsg = null;
 
-        // TODO pass directPaymentTransactionExternalKey
         return new DirectPaymentTransactionModelDao(createdDate,
                                                     updatedDate,
+                                                    directPaymentStateContext.getDirectPaymentTransactionExternalKey(),
                                                     directPaymentId,
                                                     directPaymentStateContext.getTransactionType(),
                                                     effectiveDate,

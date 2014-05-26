@@ -48,28 +48,28 @@ public class DefaultDirectPaymentApi implements DirectPaymentApi {
     }
 
     @Override
-    public DirectPayment createAuthorization(final Account account, final UUID directPaymentId, final BigDecimal amount, final Currency currency, final String externalKey, final Iterable<PluginProperty> properties, final CallContext callContext) throws PaymentApiException {
-        return directPaymentProcessor.createAuthorization(account, directPaymentId, amount, currency, externalKey, properties, callContext, internalCallContextFactory.createInternalCallContext(account.getId(), callContext));
+    public DirectPayment createAuthorization(final Account account, final UUID directPaymentId, final BigDecimal amount, final Currency currency, final String directPaymentExternalKey, final String directPaymentTransactionExternalKey, final Iterable<PluginProperty> properties, final CallContext callContext) throws PaymentApiException {
+        return directPaymentProcessor.createAuthorization(account, directPaymentId, amount, currency, directPaymentExternalKey, directPaymentTransactionExternalKey, properties, callContext, internalCallContextFactory.createInternalCallContext(account.getId(), callContext));
     }
 
     @Override
-    public DirectPayment createCapture(final Account account, final UUID directPaymentId, final BigDecimal amount, final Currency currency, final Iterable<PluginProperty> properties, final CallContext callContext) throws PaymentApiException {
-        return directPaymentProcessor.createCapture(account, directPaymentId, amount, currency, properties, callContext, internalCallContextFactory.createInternalCallContext(account.getId(), callContext));
+    public DirectPayment createCapture(final Account account, final UUID directPaymentId, final BigDecimal amount, final Currency currency, final String directPaymentTransactionExternalKey, final Iterable<PluginProperty> properties, final CallContext callContext) throws PaymentApiException {
+        return directPaymentProcessor.createCapture(account, directPaymentId, amount, currency, directPaymentTransactionExternalKey, properties, callContext, internalCallContextFactory.createInternalCallContext(account.getId(), callContext));
     }
 
     @Override
-    public DirectPayment createPurchase(final Account account, final UUID directPaymentId, final BigDecimal amount, final Currency currency, final String externalKey, final Iterable<PluginProperty> properties, final CallContext callContext) throws PaymentApiException {
-        return directPaymentProcessor.createPurchase(account, directPaymentId, amount, currency, externalKey, properties, callContext, internalCallContextFactory.createInternalCallContext(account.getId(), callContext));
+    public DirectPayment createPurchase(final Account account, final UUID directPaymentId, final BigDecimal amount, final Currency currency, final String directPaymentExternalKey, final String directPaymentTransactionExternalKey, final Iterable<PluginProperty> properties, final CallContext callContext) throws PaymentApiException {
+        return directPaymentProcessor.createPurchase(account, directPaymentId, amount, currency, directPaymentExternalKey, directPaymentTransactionExternalKey, properties, callContext, internalCallContextFactory.createInternalCallContext(account.getId(), callContext));
     }
 
     @Override
-    public DirectPayment createVoid(final Account account, final UUID directPaymentId, final Iterable<PluginProperty> properties, final CallContext callContext) throws PaymentApiException {
-        return directPaymentProcessor.createVoid(account, directPaymentId, properties, callContext, internalCallContextFactory.createInternalCallContext(account.getId(), callContext));
+    public DirectPayment createVoid(final Account account, final UUID directPaymentId, final String directPaymentTransactionExternalKey, final Iterable<PluginProperty> properties, final CallContext callContext) throws PaymentApiException {
+        return directPaymentProcessor.createVoid(account, directPaymentId, directPaymentTransactionExternalKey, properties, callContext, internalCallContextFactory.createInternalCallContext(account.getId(), callContext));
     }
 
     @Override
-    public DirectPayment createCredit(final Account account, final UUID directPaymentId, final BigDecimal amount, final Currency currency, final Iterable<PluginProperty> properties, final CallContext callContext) throws PaymentApiException {
-        return directPaymentProcessor.createCredit(account, directPaymentId, amount, currency, properties, callContext, internalCallContextFactory.createInternalCallContext(account.getId(), callContext));
+    public DirectPayment createCredit(final Account account, final UUID directPaymentId, final BigDecimal amount, final Currency currency, final String directPaymentTransactionExternalKey, final Iterable<PluginProperty> properties, final CallContext callContext) throws PaymentApiException {
+        return directPaymentProcessor.createCredit(account, directPaymentId, amount, currency, directPaymentTransactionExternalKey, properties, callContext, internalCallContextFactory.createInternalCallContext(account.getId(), callContext));
     }
 
     @Override
