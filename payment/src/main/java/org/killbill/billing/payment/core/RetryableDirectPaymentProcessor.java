@@ -101,23 +101,18 @@ public class RetryableDirectPaymentProcessor extends ProcessorBase {
         retryableDirectPaymentAutomatonRunner = new RetryableDirectPaymentAutomatonRunner(stateMachineConfig, paymentDao, locker, paymentPluginDispatcher, pluginRegistry, retryPluginRegistry, clock, this.tagApi, this.directPaymentProcessor);
     }
 
-    public DirectPayment createAuthorization(final Account account, @Nullable final UUID directPaymentId, final BigDecimal amount, final Currency currency, final String directPaymentExternalKey, final Iterable<PluginProperty> properties, final CallContext callContext, final InternalCallContext internalCallContext) throws PaymentApiException {
-        final String directPaymentTransactionExternalKey = directPaymentExternalKey; // TODO API change
-        final UUID paymentMethodId = account.getPaymentMethodId(); // TODO API change
-
+    public DirectPayment createAuthorization(final Account account, final UUID paymentMethodId, @Nullable final UUID directPaymentId, final BigDecimal amount, final Currency currency, final String paymentExternalKey, final String transactionExternalKey, final Iterable<PluginProperty> properties, final CallContext callContext, final InternalCallContext internalCallContext) throws PaymentApiException {
         final UUID nonNullDirectPaymentId = retryableDirectPaymentAutomatonRunner.run(TransactionType.AUTHORIZE,
                                                                                       account,
                                                                                       paymentMethodId,
                                                                                       directPaymentId,
-                                                                                      directPaymentExternalKey,
-                                                                                      directPaymentTransactionExternalKey,
+                                                                                      paymentExternalKey,
+                                                                                      transactionExternalKey,
                                                                                       amount,
                                                                                       currency,
                                                                                       properties,
                                                                                       callContext,
                                                                                       internalCallContext);
-
-        // TODO STEPH_RETRY extra get ?
         return directPaymentProcessor.getPayment(nonNullDirectPaymentId, true, properties, callContext, internalCallContext);
     }
 

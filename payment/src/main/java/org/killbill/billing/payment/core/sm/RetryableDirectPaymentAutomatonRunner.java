@@ -94,13 +94,7 @@ public class RetryableDirectPaymentAutomatonRunner extends DirectPaymentAutomato
             throw new PaymentApiException(ErrorCode.__UNKNOWN_ERROR_CODE);
         }
 
-        final DateTime utcNow = clock.getUTCNow();
-
         final DirectPaymentStateContext directPaymentStateContext = new DirectPaymentStateContext(directPaymentId, directPaymentExternalKey, directPaymentTransactionExternalKey, transactionType, account, paymentMethodId, amount, currency, properties, internalCallContext, callContext);
-
-        // TOTO should be passed at the API level.
-        final String transactionExternalKey = null;
-
         try {
 
             final OperationCallback callback;
@@ -181,5 +175,4 @@ public class RetryableDirectPaymentAutomatonRunner extends DirectPaymentAutomato
             }
         }));
     }
-
 }

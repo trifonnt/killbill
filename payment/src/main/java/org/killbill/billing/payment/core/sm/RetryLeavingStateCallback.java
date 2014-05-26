@@ -40,7 +40,6 @@ public class RetryLeavingStateCallback implements LeavingStateCallback {
     public void leavingState(final State state) {
 
         final DateTime utcNow = retryableDirectPaymentAutomatonRunner.clock.getUTCNow();
-
         if (state.getName().equals(initialState.getName())) {
             retryableDirectPaymentAutomatonRunner.paymentDao.insertPaymentAttempt(new PaymentAttemptModelDao(utcNow, utcNow, null, stateContext.directPaymentTransactionExternalKey, state.getName(), transactionType.name(), null), stateContext.internalCallContext);
         }
