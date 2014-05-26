@@ -26,6 +26,8 @@ import org.killbill.billing.payment.api.DirectPayment;
 import org.killbill.billing.util.dao.TableName;
 import org.killbill.billing.util.entity.dao.EntityModelDao;
 
+import com.google.common.base.Objects;
+
 public class DirectPaymentModelDao extends EntityBase implements EntityModelDao<DirectPayment> {
 
     public static final Integer INVALID_PAYMENT_NUMBER = new Integer(-17);
@@ -39,16 +41,16 @@ public class DirectPaymentModelDao extends EntityBase implements EntityModelDao<
     public DirectPaymentModelDao() { /* For the DAO mapper */ }
 
     public DirectPaymentModelDao(final UUID id, @Nullable final DateTime createdDate, @Nullable final DateTime updatedDate, final UUID accountId,
-                                 final UUID paymentMethodId, final Integer paymentNumber, final String externalKey) {
+                                 final UUID paymentMethodId, final Integer paymentNumber, @Nullable final String externalKey) {
         super(id, createdDate, updatedDate);
         this.accountId = accountId;
         this.paymentMethodId = paymentMethodId;
         this.paymentNumber = paymentNumber;
-        this.externalKey = externalKey;
+        this.externalKey = Objects.firstNonNull(externalKey, id.toString());
     }
 
     public DirectPaymentModelDao(@Nullable final DateTime createdDate, @Nullable final DateTime updatedDate, final UUID accountId,
-                                 final UUID paymentMethodId, final String externalKey) {
+                                 final UUID paymentMethodId, @Nullable final String externalKey) {
         this(UUID.randomUUID(), createdDate, updatedDate, accountId, paymentMethodId, INVALID_PAYMENT_NUMBER, externalKey);
     }
 

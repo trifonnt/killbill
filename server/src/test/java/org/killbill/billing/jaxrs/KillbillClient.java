@@ -29,7 +29,7 @@ import org.killbill.billing.client.KillBillHttpClient;
 import org.killbill.billing.client.model.Account;
 import org.killbill.billing.client.model.PaymentMethod;
 import org.killbill.billing.client.model.PaymentMethodPluginDetail;
-import org.killbill.billing.client.model.PaymentMethodProperties;
+import org.killbill.billing.client.model.PluginProperty;
 import org.killbill.billing.client.model.Subscription;
 
 import static org.testng.Assert.assertNotNull;
@@ -56,27 +56,27 @@ public abstract class KillbillClient extends GuicyKillbillTestSuiteWithEmbeddedD
     protected KillBillClient killBillClient;
     protected KillBillHttpClient killBillHttpClient;
 
-    protected List<PaymentMethodProperties> getPaymentMethodCCProperties() {
-        final List<PaymentMethodProperties> properties = new ArrayList<PaymentMethodProperties>();
-        properties.add(new PaymentMethodProperties("type", "CreditCard", false));
-        properties.add(new PaymentMethodProperties("cardType", "Visa", false));
-        properties.add(new PaymentMethodProperties("cardHolderName", "Mr Sniff", false));
-        properties.add(new PaymentMethodProperties("expirationDate", "2015-08", false));
-        properties.add(new PaymentMethodProperties("maskNumber", "3451", false));
-        properties.add(new PaymentMethodProperties("address1", "23, rue des cerisiers", false));
-        properties.add(new PaymentMethodProperties("address2", "", false));
-        properties.add(new PaymentMethodProperties("city", "Toulouse", false));
-        properties.add(new PaymentMethodProperties("country", "France", false));
-        properties.add(new PaymentMethodProperties("postalCode", "31320", false));
-        properties.add(new PaymentMethodProperties("state", "Midi-Pyrenees", false));
+    protected List<PluginProperty> getPaymentMethodCCProperties() {
+        final List<PluginProperty> properties = new ArrayList<PluginProperty>();
+        properties.add(new PluginProperty("type", "CreditCard", false));
+        properties.add(new PluginProperty("cardType", "Visa", false));
+        properties.add(new PluginProperty("cardHolderName", "Mr Sniff", false));
+        properties.add(new PluginProperty("expirationDate", "2015-08", false));
+        properties.add(new PluginProperty("maskNumber", "3451", false));
+        properties.add(new PluginProperty("address1", "23, rue des cerisiers", false));
+        properties.add(new PluginProperty("address2", "", false));
+        properties.add(new PluginProperty("city", "Toulouse", false));
+        properties.add(new PluginProperty("country", "France", false));
+        properties.add(new PluginProperty("postalCode", "31320", false));
+        properties.add(new PluginProperty("state", "Midi-Pyrenees", false));
         return properties;
     }
 
-    protected List<PaymentMethodProperties> getPaymentMethodPaypalProperties() {
-        final List<PaymentMethodProperties> properties = new ArrayList<PaymentMethodProperties>();
-        properties.add(new PaymentMethodProperties("type", "CreditCard", false));
-        properties.add(new PaymentMethodProperties("email", "zouzou@laposte.fr", false));
-        properties.add(new PaymentMethodProperties("baid", "23-8787d-R", false));
+    protected List<PluginProperty> getPaymentMethodPaypalProperties() {
+        final List<PluginProperty> properties = new ArrayList<PluginProperty>();
+        properties.add(new PluginProperty("type", "CreditCard", false));
+        properties.add(new PluginProperty("email", "zouzou@laposte.fr", false));
+        properties.add(new PluginProperty("baid", "23-8787d-R", false));
         return properties;
     }
 

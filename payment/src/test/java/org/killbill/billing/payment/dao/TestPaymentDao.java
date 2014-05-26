@@ -307,9 +307,9 @@ public class TestPaymentDao extends PaymentTestSuiteWithEmbeddedDB {
         final UUID accountId = UUID.randomUUID();
         final String externalName = "fo0";
 
-        DateTime utcNow = clock.getUTCNow();
+        final DateTime utcNow = clock.getUTCNow();
         final DirectPaymentModelDao dpmd = new DirectPaymentModelDao(utcNow, utcNow, accountId, paymentMethodId, externalName);
-        final DirectPaymentTransactionModelDao dptmd = new DirectPaymentTransactionModelDao(utcNow, utcNow, dpmd.getId(), TransactionType.AUTHORIZE,
+        final DirectPaymentTransactionModelDao dptmd = new DirectPaymentTransactionModelDao(utcNow, utcNow, UUID.randomUUID().toString(), dpmd.getId(), TransactionType.AUTHORIZE,
                                                                                             utcNow, PaymentStatus.UNKNOWN, BigDecimal.TEN, Currency.USD, null, null);
         DirectPaymentModelDao savedDirectPayment = paymentDao.insertDirectPaymentWithFirstTransaction(dpmd, dptmd, internalCallContext);
         assertNotNull(savedDirectPayment);

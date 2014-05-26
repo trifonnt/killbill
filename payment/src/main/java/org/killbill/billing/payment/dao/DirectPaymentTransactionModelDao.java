@@ -30,9 +30,12 @@ import org.killbill.billing.payment.api.TransactionType;
 import org.killbill.billing.util.dao.TableName;
 import org.killbill.billing.util.entity.dao.EntityModelDao;
 
+import com.google.common.base.Objects;
+
 public class DirectPaymentTransactionModelDao extends EntityBase implements EntityModelDao<DirectPaymentTransaction> {
 
     private UUID directPaymentId;
+    private String externalKey;
     private TransactionType transactionType;
     private DateTime effectiveDate;
     private PaymentStatus paymentStatus;
@@ -43,10 +46,11 @@ public class DirectPaymentTransactionModelDao extends EntityBase implements Enti
 
     public DirectPaymentTransactionModelDao() { /* For the DAO mapper */ }
 
-    public DirectPaymentTransactionModelDao(final UUID id, @Nullable final DateTime createdDate, @Nullable final DateTime updatedDate,
+    public DirectPaymentTransactionModelDao(final UUID id, @Nullable final String externalKey, @Nullable final DateTime createdDate, @Nullable final DateTime updatedDate,
                                             final UUID directPaymentId, final TransactionType transactionType, final DateTime effectiveDate,
                                             final PaymentStatus paymentStatus, final BigDecimal amount, final Currency currency, final String gatewayErrorCode, final String gatewayErrorMsg) {
         super(id, createdDate, updatedDate);
+        this.externalKey = Objects.firstNonNull(externalKey, id.toString());
         this.directPaymentId = directPaymentId;
         this.transactionType = transactionType;
         this.effectiveDate = effectiveDate;
@@ -58,13 +62,17 @@ public class DirectPaymentTransactionModelDao extends EntityBase implements Enti
     }
 
     public DirectPaymentTransactionModelDao(@Nullable final DateTime createdDate, @Nullable final DateTime updatedDate,
-                                            final UUID directPaymentId, final TransactionType transactionType, final DateTime effectiveDate,
+                                            @Nullable final String externalKey, final UUID directPaymentId, final TransactionType transactionType, final DateTime effectiveDate,
                                             final PaymentStatus paymentStatus, final BigDecimal amount, final Currency currency, final String gatewayErrorCode, final String gatewayErrorMsg) {
-        this(UUID.randomUUID(), createdDate, updatedDate, directPaymentId, transactionType, effectiveDate, paymentStatus, amount, currency, gatewayErrorCode, gatewayErrorMsg);
+        this(UUID.randomUUID(), externalKey, createdDate, updatedDate, directPaymentId, transactionType, effectiveDate, paymentStatus, amount, currency, gatewayErrorCode, gatewayErrorMsg);
     }
 
     public UUID getDirectPaymentId() {
         return directPaymentId;
+    }
+
+    public String getExternalKey() {
+        return externalKey;
     }
 
     public void setDirectPaymentId(final UUID directPaymentId) {
@@ -129,16 +137,18 @@ public class DirectPaymentTransactionModelDao extends EntityBase implements Enti
 
     @Override
     public String toString() {
-        return "DirectPaymentTransactionModelDao{" +
-               "directPaymentId=" + directPaymentId +
-               ", transactionType=" + transactionType +
-               ", effectiveDate=" + effectiveDate +
-               ", paymentStatus=" + paymentStatus +
-               ", amount=" + amount +
-               ", currency=" + currency +
-               ", gatewayErrorCode='" + gatewayErrorCode + '\'' +
-               ", gatewayErrorMsg='" + gatewayErrorMsg + '\'' +
-               '}';
+        final StringBuilder sb = new StringBuilder("DirectPaymentTransactionModelDao{");
+        sb.append("directPaymentId=").append(directPaymentId);
+        sb.append(", externalKey='").append(externalKey).append('\'');
+        sb.append(", transactionType=").append(transactionType);
+        sb.append(", effectiveDate=").append(effectiveDate);
+        sb.append(", paymentStatus=").append(paymentStatus);
+        sb.append(", amount=").append(amount);
+        sb.append(", currency=").append(currency);
+        sb.append(", gatewayErrorCode='").append(gatewayErrorCode).append('\'');
+        sb.append(", gatewayErrorMsg='").append(gatewayErrorMsg).append('\'');
+        sb.append('}');
+        return sb.toString();
     }
 
     @Override
@@ -146,7 +156,7 @@ public class DirectPaymentTransactionModelDao extends EntityBase implements Enti
         if (this == o) {
             return true;
         }
-        if (!(o instanceof DirectPaymentTransactionModelDao)) {
+        if (o == null || getClass() != o.getClass()) {
             return false;
         }
         if (!super.equals(o)) {
@@ -165,6 +175,9 @@ public class DirectPaymentTransactionModelDao extends EntityBase implements Enti
             return false;
         }
         if (effectiveDate != null ? effectiveDate.compareTo(that.effectiveDate) != 0 : that.effectiveDate != null) {
+            return false;
+        }
+        if (externalKey != null ? !externalKey.equals(that.externalKey) : that.externalKey != null) {
             return false;
         }
         if (gatewayErrorCode != null ? !gatewayErrorCode.equals(that.gatewayErrorCode) : that.gatewayErrorCode != null) {
@@ -187,6 +200,7 @@ public class DirectPaymentTransactionModelDao extends EntityBase implements Enti
     public int hashCode() {
         int result = super.hashCode();
         result = 31 * result + (directPaymentId != null ? directPaymentId.hashCode() : 0);
+        result = 31 * result + (externalKey != null ? externalKey.hashCode() : 0);
         result = 31 * result + (transactionType != null ? transactionType.hashCode() : 0);
         result = 31 * result + (effectiveDate != null ? effectiveDate.hashCode() : 0);
         result = 31 * result + (paymentStatus != null ? paymentStatus.hashCode() : 0);

@@ -637,6 +637,7 @@ public class AccountResource extends JaxRsResourceBase {
     @Produces(APPLICATION_JSON)
     public Response processDirectPayment(final DirectTransactionJson json,
                                          @PathParam("accountId") final String accountIdStr,
+                                         @QueryParam("paymentMethodId") final String paymentMethodIdStr,
                                          @QueryParam(QUERY_PLUGIN_PROPERTY) final List<String> pluginPropertiesString,
                                          @HeaderParam(HDR_CREATED_BY) final String createdBy,
                                          @HeaderParam(HDR_REASON) final String reason,
@@ -647,6 +648,7 @@ public class AccountResource extends JaxRsResourceBase {
         final CallContext callContext = context.createContext(createdBy, reason, comment, request);
         final UUID accountId = UUID.fromString(accountIdStr);
         final Account account = accountUserApi.getAccountById(accountId, callContext);
+        final UUID paymentMethodId = paymentMethodIdStr == null ? account.getPaymentMethodId() : UUID.fromString(paymentMethodIdStr);
         final Currency currency = json.getCurrency() == null ? account.getCurrency() : Currency.valueOf(json.getCurrency());
         final UUID directPaymentId = json.getDirectPaymentId() == null ? null : UUID.fromString(json.getDirectPaymentId());
 
@@ -654,10 +656,14 @@ public class AccountResource extends JaxRsResourceBase {
         final DirectPayment result;
         switch (transactionType) {
             case AUTHORIZE:
-                result = directPaymentApi.createAuthorization(account, directPaymentId, json.getAmount(), currency, json.getExternalKey(), pluginProperties, callContext);
+                result = directPaymentApi.createAuthorization(account, paymentMethodId, directPaymentId, json.getAmount(), currency,
+                                                              json.getDirectPaymentExternalKey(), json.getDirectTransactionExternalKey(),
+                                                              pluginProperties, callContext);
                 break;
             case PURCHASE:
-                result = directPaymentApi.createPurchase(account, directPaymentId, json.getAmount(), currency, json.getExternalKey(), pluginProperties, callContext);
+                result = directPaymentApi.createPurchase(account, paymentMethodId, directPaymentId, json.getAmount(), currency,
+                                                         json.getDirectPaymentExternalKey(), json.getDirectTransactionExternalKey(),
+                                                         pluginProperties, callContext);
                 break;
             default:
                 return Response.status(Status.PRECONDITION_FAILED).entity("TransactionType " + transactionType + " is not allowed for an account").build();
