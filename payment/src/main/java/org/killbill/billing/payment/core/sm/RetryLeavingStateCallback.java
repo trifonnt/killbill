@@ -42,7 +42,6 @@ public class RetryLeavingStateCallback implements LeavingStateCallback {
         final DateTime utcNow = retryableDirectPaymentAutomatonRunner.clock.getUTCNow();
 
         if (state.getName().equals(initialState.getName())) {
-            // STEPH_RETRY transactionId does not exist yet, and how do we get pluginName ?
             retryableDirectPaymentAutomatonRunner.paymentDao.insertPaymentAttempt(new PaymentAttemptModelDao(utcNow, utcNow, null, stateContext.directPaymentTransactionExternalKey, state.getName(), transactionType.name(), null), stateContext.internalCallContext);
         }
     }

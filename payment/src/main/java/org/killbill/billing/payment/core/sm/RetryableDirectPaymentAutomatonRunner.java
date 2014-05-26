@@ -48,6 +48,7 @@ import org.killbill.billing.payment.core.DirectPaymentProcessor;
 import org.killbill.billing.payment.dao.PaymentDao;
 import org.killbill.billing.payment.dispatcher.PluginDispatcher;
 import org.killbill.billing.payment.plugin.api.PaymentPluginApi;
+import org.killbill.billing.retry.plugin.api.RetryPluginApi;
 import org.killbill.billing.tag.TagInternalApi;
 import org.killbill.billing.util.callcontext.CallContext;
 import org.killbill.billing.util.tag.ControlTagType;
@@ -70,10 +71,13 @@ public class RetryableDirectPaymentAutomatonRunner extends DirectPaymentAutomato
     private final State initialState;
     private final Operation retryOperation;
 
-    public RetryableDirectPaymentAutomatonRunner(final StateMachineConfig stateMachineConfig, final PaymentDao paymentDao, final GlobalLocker locker, final PluginDispatcher<OperationResult> paymentPluginDispatcher, final OSGIServiceRegistration<PaymentPluginApi> pluginRegistry, final Clock clock, final TagInternalApi tagApi, final DirectPaymentProcessor directPaymentProcessor) {
+    private final OSGIServiceRegistration<RetryPluginApi> retryPluginRegistry;
+
+    public RetryableDirectPaymentAutomatonRunner(final StateMachineConfig stateMachineConfig, final PaymentDao paymentDao, final GlobalLocker locker, final PluginDispatcher<OperationResult> paymentPluginDispatcher, final OSGIServiceRegistration<PaymentPluginApi> pluginRegistry, final OSGIServiceRegistration<RetryPluginApi> retryPluginRegistry, final Clock clock, final TagInternalApi tagApi, final DirectPaymentProcessor directPaymentProcessor) {
         super(stateMachineConfig, paymentDao, locker, paymentPluginDispatcher, pluginRegistry, clock);
         this.tagApi = tagApi;
         this.directPaymentProcessor = directPaymentProcessor;
+        this.retryPluginRegistry = retryPluginRegistry;
         this.retryStateMachine = fetchRetryStateMachine();
         this.initialState = fetchInitialState();
         this.retryOperation = fetchRetryOperation();
@@ -85,12 +89,9 @@ public class RetryableDirectPaymentAutomatonRunner extends DirectPaymentAutomato
                     final Iterable<PluginProperty> properties,
                     final CallContext callContext, final InternalCallContext internalCallContext) throws PaymentApiException {
 
-        // STEPH Actually logic should be passed below the retryable layer as well...
-        // STEPH check AUTO_PAY_OFF prior to entering state machine
         if (isAccountAutoPayOff(account.getId(), internalCallContext)) {
-            // Very hacky, we are using FAILURE so that removing AUTO_PAY_OFF retries the attempt.
-            //return OperationResult.FAILURE;
-            return null;
+            // STEPH_RETRY fix error code
+            throw new PaymentApiException(ErrorCode.__UNKNOWN_ERROR_CODE);
         }
 
         final DateTime utcNow = clock.getUTCNow();
@@ -109,7 +110,7 @@ public class RetryableDirectPaymentAutomatonRunner extends DirectPaymentAutomato
                     callback = null;
                     break;
                 case AUTHORIZE:
-                    callback = new RetryAuthorizeOperationCallback(directPaymentStateContext, directPaymentProcessor);
+                    callback = new RetryAuthorizeOperationCallback(locker, paymentPluginDispatcher, directPaymentStateContext, directPaymentProcessor, retryPluginRegistry);
                     break;
                 case CAPTURE:
                     callback = null;
@@ -128,14 +129,19 @@ public class RetryableDirectPaymentAutomatonRunner extends DirectPaymentAutomato
             final EnteringStateCallback enteringStateCallback = new RetryEnteringStateCallback(this, directPaymentStateContext);
 
             initialState.runOperation(retryOperation, callback, enteringStateCallback, leavingStateCallback);
-        } catch (MissingEntryException e) {
-            // STEPH_RETRY
-            throw new PaymentApiException(e, ErrorCode.__UNKNOWN_ERROR_CODE);
-        } catch (OperationException e) {
-            // STEPH_RETRY
-            throw new PaymentApiException(e, ErrorCode.__UNKNOWN_ERROR_CODE);
-        }
 
+        // STEPH_RETRY exception handling *seems* similar to DirectPaymentAutomatonRunner, can we share?
+        } catch (MissingEntryException e) {
+            throw new PaymentApiException(e.getCause(), ErrorCode.PAYMENT_INTERNAL_ERROR, e.getMessage());
+        } catch (OperationException e) {
+            if (e.getCause() == null) {
+                throw new PaymentApiException(e, ErrorCode.PAYMENT_INTERNAL_ERROR, e.getMessage());
+            } else if (e.getCause() instanceof PaymentApiException) {
+                throw (PaymentApiException) e.getCause();
+            } else {
+                throw new PaymentApiException(e.getCause(), ErrorCode.PAYMENT_INTERNAL_ERROR, e.getMessage());
+            }
+        }
         return directPaymentStateContext.getDirectPaymentId();
     }
 

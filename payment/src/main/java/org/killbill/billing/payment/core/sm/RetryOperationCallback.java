@@ -16,14 +16,94 @@
 
 package org.killbill.billing.payment.core.sm;
 
-import org.killbill.automaton.Operation.OperationCallback;
-import org.killbill.billing.payment.core.DirectPaymentProcessor;
+import java.util.Set;
 
-public abstract class RetryOperationCallback implements OperationCallback {
+import org.joda.time.DateTime;
+import org.killbill.automaton.OperationException;
+import org.killbill.automaton.OperationResult;
+import org.killbill.billing.ErrorCode;
+import org.killbill.billing.osgi.api.OSGIServiceRegistration;
+import org.killbill.billing.payment.api.PaymentApiException;
+import org.killbill.billing.payment.core.DirectPaymentProcessor;
+import org.killbill.billing.payment.core.ProcessorBase.WithAccountLockCallback;
+import org.killbill.billing.payment.dispatcher.PluginDispatcher;
+import org.killbill.billing.retry.plugin.api.RetryPluginApi;
+import org.killbill.billing.retry.plugin.api.RetryPluginApiException;
+import org.killbill.commons.locker.GlobalLocker;
+
+public abstract class RetryOperationCallback extends PluginOperation {
 
     protected final DirectPaymentProcessor directPaymentProcessor;
+    private final OSGIServiceRegistration<RetryPluginApi> retryPluginRegistry;
 
-    public RetryOperationCallback(final DirectPaymentProcessor directPaymentProcessor) {
+    protected RetryOperationCallback(final GlobalLocker locker, final PluginDispatcher<OperationResult> paymentPluginDispatcher, final DirectPaymentStateContext directPaymentStateContext, final DirectPaymentProcessor directPaymentProcessor, final OSGIServiceRegistration<RetryPluginApi> retryPluginRegistry) {
+        super(locker, paymentPluginDispatcher, directPaymentStateContext);
         this.directPaymentProcessor = directPaymentProcessor;
+        this.retryPluginRegistry = retryPluginRegistry;
+    }
+
+    //
+    // STEPH issue because externalKey namespace across plugin is not unique
+    // If there is no plugin
+    //
+    private boolean isRetryAborted(final String externalKey) {
+        final Set<String> allServices = retryPluginRegistry.getAllServices();
+        for (String pluginName : allServices) {
+            final RetryPluginApi plugin = retryPluginRegistry.getServiceForName(pluginName);
+            try {
+                final boolean aborted = plugin.isRetryAborted(externalKey);
+                if (aborted) {
+                    return true;
+                }
+            } catch (RetryPluginApiException ignore) {
+            }
+        }
+        return true;
+    }
+
+    private DateTime getNextRetryDate(final String externalKey) {
+        final Set<String> allServices = retryPluginRegistry.getAllServices();
+        for (String pluginName : allServices) {
+            final RetryPluginApi plugin = retryPluginRegistry.getServiceForName(pluginName);
+            try {
+                final DateTime result = plugin.getNextRetryDate(externalKey);
+                if (result != null) {
+                    return result;
+                }
+            } catch (RetryPluginApiException ignore) {
+            }
+        }
+        return null;
+    }
+
+
+    @Override
+    public OperationResult doOperationCallback() throws OperationException {
+        return dispatchWithTimeout(new WithAccountLockCallback<OperationResult>() {
+            @Override
+            public OperationResult doOperation() throws PaymentApiException {
+                try {
+                    if (isRetryAborted(directPaymentStateContext.getDirectPaymentTransactionExternalKey())) {
+                        return OperationResult.EXCEPTION;
+                    }
+
+                    try {
+                        doPluginOperation();
+                    } catch (PaymentApiException e) {
+                        final DateTime nextRetryDate = getNextRetryDate(directPaymentStateContext.getDirectPaymentTransactionExternalKey());
+                        if (nextRetryDate == null) {
+                            // Very hacky, we are using EXCEPTION result to transition to final ABORTED state.
+                            throw new OperationException(e, OperationResult.EXCEPTION);
+                        } else {
+                            throw new OperationException(e, OperationResult.FAILURE);
+                        }
+                    }
+                    return OperationResult.SUCCESS;
+                } catch (final Exception e) {
+                    // We don't care about the ErrorCode since it will be unwrapped
+                    throw new PaymentApiException(e, ErrorCode.__UNKNOWN_ERROR_CODE);
+                }
+            }
+        });
     }
 }

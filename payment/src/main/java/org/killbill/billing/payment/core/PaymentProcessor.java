@@ -425,25 +425,30 @@ public class PaymentProcessor extends ProcessorBase {
     public void notifyPendingPaymentOfStateChanged(final Account account, final UUID paymentId, final boolean isSuccess, final InternalCallContext context)
             throws PaymentApiException {
 
-        new WithAccountLock<Void>().processAccountWithLock(locker, account.getExternalKey(), new WithAccountLockCallback<Void>() {
+        try {
+            new WithAccountLock<Void>().processAccountWithLock(locker, account.getExternalKey(), new WithAccountLockCallback<Void>() {
 
-            @Override
-            public Void doOperation() throws PaymentApiException {
-                final PaymentModelDao payment = paymentDao.getPayment(paymentId, context);
-                if (payment == null) {
-                    throw new PaymentApiException(ErrorCode.PAYMENT_NO_SUCH_PAYMENT, paymentId);
-                }
-                if (payment.getPaymentStatus() != PaymentStatus.PENDING) {
-                    throw new PaymentApiException(ErrorCode.PAYMENT_NOT_PENDING, paymentId);
-                }
+                @Override
+                public Void doOperation() throws PaymentApiException {
+                    final PaymentModelDao payment = paymentDao.getPayment(paymentId, context);
+                    if (payment == null) {
+                        throw new PaymentApiException(ErrorCode.PAYMENT_NO_SUCH_PAYMENT, paymentId);
+                    }
+                    if (payment.getPaymentStatus() != PaymentStatus.PENDING) {
+                        throw new PaymentApiException(ErrorCode.PAYMENT_NOT_PENDING, paymentId);
+                    }
 
-                final List<PaymentAttemptModelDao> attempts = paymentDao.getAttemptsForPayment(paymentId, context);
-                final PaymentAttemptModelDao lastAttempt = attempts.get(attempts.size() - 1);
-                final PaymentStatus newPaymentStatus = isSuccess ? PaymentStatus.SUCCESS : PaymentStatus.PAYMENT_FAILURE_ABORTED;
-                paymentDao.updatePaymentAndAttemptOnCompletion(paymentId, newPaymentStatus, payment.getProcessedAmount(), payment.getProcessedCurrency(), lastAttempt.getId(), null, null, context);
-                return null;
-            }
-        });
+                    final List<PaymentAttemptModelDao> attempts = paymentDao.getAttemptsForPayment(paymentId, context);
+                    final PaymentAttemptModelDao lastAttempt = attempts.get(attempts.size() - 1);
+                    final PaymentStatus newPaymentStatus = isSuccess ? PaymentStatus.SUCCESS : PaymentStatus.PAYMENT_FAILURE_ABORTED;
+                    paymentDao.updatePaymentAndAttemptOnCompletion(paymentId, newPaymentStatus, payment.getProcessedAmount(), payment.getProcessedCurrency(), lastAttempt.getId(), null, null, context);
+                    return null;
+                }
+            });
+        } catch (Exception e) {
+            // STEPH
+            throw new PaymentApiException(ErrorCode.__UNKNOWN_ERROR_CODE, "");
+        }
     }
 
     private void setUnsaneAccount_AUTO_PAY_OFFWithAccountLock(final UUID accountId, final UUID paymentMethodId, final boolean isAccountAutoPayOff,

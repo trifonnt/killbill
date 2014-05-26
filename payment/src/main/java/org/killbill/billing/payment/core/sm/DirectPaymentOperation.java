@@ -31,14 +31,12 @@ import org.killbill.commons.locker.GlobalLocker;
 // Encapsulates the payment specific logic
 public abstract class DirectPaymentOperation extends PluginOperation {
 
-    protected final DirectPaymentStateContext directPaymentStateContext;
     protected final PaymentPluginApi plugin;
 
     protected DirectPaymentOperation(final DirectPaymentAutomatonDAOHelper daoHelper, final GlobalLocker locker,
                                      final PluginDispatcher<OperationResult> paymentPluginDispatcher,
                                      final DirectPaymentStateContext directPaymentStateContext) throws PaymentApiException {
         super(locker, paymentPluginDispatcher, directPaymentStateContext);
-        this.directPaymentStateContext = directPaymentStateContext;
         this.plugin = daoHelper.getPaymentProviderPlugin(directPaymentStateContext.getInternalCallContext());
     }
 
@@ -53,7 +51,7 @@ public abstract class DirectPaymentOperation extends PluginOperation {
                     directPaymentStateContext.setPaymentInfoPlugin(paymentInfoPlugin);
 
                     return processPaymentInfoPlugin();
-                } catch (final PaymentPluginApiException e) {
+                } catch (final Exception e) {
                     // We don't care about the ErrorCode since it will be unwrapped
                     throw new PaymentApiException(e, ErrorCode.__UNKNOWN_ERROR_CODE);
                 }

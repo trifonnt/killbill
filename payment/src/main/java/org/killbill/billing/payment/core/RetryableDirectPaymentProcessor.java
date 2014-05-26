@@ -41,6 +41,7 @@ import org.killbill.billing.payment.core.sm.RetryableDirectPaymentAutomatonRunne
 import org.killbill.billing.payment.dao.PaymentDao;
 import org.killbill.billing.payment.dispatcher.PluginDispatcher;
 import org.killbill.billing.payment.plugin.api.PaymentPluginApi;
+import org.killbill.billing.retry.plugin.api.RetryPluginApi;
 import org.killbill.billing.tag.TagInternalApi;
 import org.killbill.billing.util.callcontext.CallContext;
 import org.killbill.billing.util.callcontext.InternalCallContextFactory;
@@ -69,6 +70,7 @@ public class RetryableDirectPaymentProcessor extends ProcessorBase {
 
     @Inject
     public RetryableDirectPaymentProcessor(final OSGIServiceRegistration<PaymentPluginApi> pluginRegistry,
+                                           final OSGIServiceRegistration<RetryPluginApi> retryPluginRegistry,
                                            final AccountInternalApi accountUserApi,
                                            final InvoiceInternalApi invoiceApi,
                                            final TagInternalApi tagUserApi,
@@ -96,7 +98,7 @@ public class RetryableDirectPaymentProcessor extends ProcessorBase {
 
         final long paymentPluginTimeoutSec = TimeUnit.SECONDS.convert(paymentConfig.getPaymentPluginTimeout().getPeriod(), paymentConfig.getPaymentPluginTimeout().getUnit());
         final PluginDispatcher<OperationResult> paymentPluginDispatcher = new PluginDispatcher<OperationResult>(paymentPluginTimeoutSec, executor);
-        retryableDirectPaymentAutomatonRunner = new RetryableDirectPaymentAutomatonRunner(stateMachineConfig, paymentDao, locker, paymentPluginDispatcher, pluginRegistry, clock, this.tagApi, this.directPaymentProcessor);
+        retryableDirectPaymentAutomatonRunner = new RetryableDirectPaymentAutomatonRunner(stateMachineConfig, paymentDao, locker, paymentPluginDispatcher, pluginRegistry, retryPluginRegistry, clock, this.tagApi, this.directPaymentProcessor);
     }
 
     public DirectPayment createAuthorization(final Account account, @Nullable final UUID directPaymentId, final BigDecimal amount, final Currency currency, final String directPaymentExternalKey, final Iterable<PluginProperty> properties, final CallContext callContext, final InternalCallContext internalCallContext) throws PaymentApiException {

@@ -16,48 +16,22 @@
 
 package org.killbill.billing.payment.core.sm;
 
-import org.joda.time.DateTime;
-import org.killbill.automaton.OperationException;
 import org.killbill.automaton.OperationResult;
-import org.killbill.billing.callcontext.InternalCallContext;
-import org.killbill.billing.payment.api.PaymentApiException;
+import org.killbill.billing.osgi.api.OSGIServiceRegistration;
 import org.killbill.billing.payment.core.DirectPaymentProcessor;
+import org.killbill.billing.payment.dispatcher.PluginDispatcher;
 import org.killbill.billing.retry.plugin.api.RetryPluginApi;
+import org.killbill.commons.locker.GlobalLocker;
 
 public class RetryAuthorizeOperationCallback extends RetryOperationCallback {
 
-    private final DirectPaymentStateContext stateContext;
-
-    public RetryAuthorizeOperationCallback(final DirectPaymentStateContext stateContext, final DirectPaymentProcessor directPaymentProcessor) {
-        super(directPaymentProcessor);
-        this.stateContext = stateContext;
+    public RetryAuthorizeOperationCallback(final GlobalLocker locker, final PluginDispatcher<OperationResult> paymentPluginDispatcher, final DirectPaymentStateContext directPaymentStateContext, final DirectPaymentProcessor directPaymentProcessor, final OSGIServiceRegistration<RetryPluginApi> retryPluginRegistry) {
+        super(locker, paymentPluginDispatcher, directPaymentStateContext, directPaymentProcessor, retryPluginRegistry);
     }
 
     @Override
-    public OperationResult doOperationCallback() throws OperationException {
-
-        // STEPH retrieve plugin ?
-        RetryPluginApi plugin = null;
-
-        InternalCallContext internalCallContext = null;
-
-        if (plugin.isRetryAborted(stateContext.getDirectPaymentTransactionExternalKey())) {
-            return OperationResult.EXCEPTION;
-        }
-
-        try {
-            directPaymentProcessor.createAuthorization(stateContext.account, stateContext.directPaymentId, stateContext.getAmount(), stateContext.getCurrency(), stateContext.directPaymentExternalKey, stateContext.getProperties(), stateContext.callContext, stateContext.internalCallContext);
-        } catch (PaymentApiException e) {
-
-            final DateTime nextRetryDate = plugin.getNextRetryDate(stateContext.getDirectPaymentTransactionExternalKey());
-            if (nextRetryDate == null) {
-                // Very hacky, we are using EXCEPTION result to transition to final ABORTED state.
-                throw new OperationException(e, OperationResult.EXCEPTION);
-            } else {
-
-                throw new OperationException(e, OperationResult.FAILURE);
-            }
-        }
+    protected OperationResult doPluginOperation() throws Exception {
+        directPaymentProcessor.createAuthorization(directPaymentStateContext.account, directPaymentStateContext.directPaymentId, directPaymentStateContext.getAmount(), directPaymentStateContext.getCurrency(), directPaymentStateContext.directPaymentExternalKey, directPaymentStateContext.getProperties(), directPaymentStateContext.callContext, directPaymentStateContext.internalCallContext);
         return OperationResult.SUCCESS;
     }
 }

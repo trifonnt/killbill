@@ -121,14 +121,14 @@ public class RefundProcessor extends ProcessorBase {
                                final boolean isAdjusted, final Map<UUID, BigDecimal> invoiceItemIdsWithAmounts,
                                final Iterable<PluginProperty> properties, final CallContext callContext, final InternalCallContext context)
             throws PaymentApiException {
-        return new WithAccountLock<Refund>().processAccountWithLock(locker, account.getExternalKey(), new WithAccountLockCallback<Refund>() {
+        try {
+            return new WithAccountLock<Refund>().processAccountWithLock(locker, account.getExternalKey(), new WithAccountLockCallback<Refund>() {
 
-            @Override
-            public Refund doOperation() throws PaymentApiException {
-                // First, compute the refund amount, if necessary
-                final BigDecimal refundAmount = computeRefundAmount(paymentId, specifiedRefundAmount, invoiceItemIdsWithAmounts, context);
+                @Override
+                public Refund doOperation() throws Exception {
+                    // First, compute the refund amount, if necessary
+                    final BigDecimal refundAmount = computeRefundAmount(paymentId, specifiedRefundAmount, invoiceItemIdsWithAmounts, context);
 
-                try {
                     final PaymentModelDao payment = paymentDao.getPayment(paymentId, context);
                     if (payment == null) {
                         throw new PaymentApiException(ErrorCode.PAYMENT_NO_SUCH_SUCCESS_PAYMENT, paymentId);
@@ -168,39 +168,41 @@ public class RefundProcessor extends ProcessorBase {
                                                                               refundInfoPlugin.getSecondRefundReferenceId())
                             );
                     }
-                } catch (final PaymentPluginApiException e) {
-                    throw new PaymentApiException(ErrorCode.PAYMENT_CREATE_REFUND, account.getId(), e.getErrorMessage());
-                } catch (final InvoiceApiException e) {
-                    throw new PaymentApiException(e);
                 }
-            }
-        });
+            });
+        } catch (Exception e) {
+            throw new PaymentApiException(ErrorCode.__UNKNOWN_ERROR_CODE, "");
+        }
     }
 
     public void notifyPendingRefundOfStateChanged(final Account account, final UUID refundId, final boolean isSuccess, final InternalCallContext context)
             throws PaymentApiException {
 
-        new WithAccountLock<Void>().processAccountWithLock(locker, account.getExternalKey(), new WithAccountLockCallback<Void>() {
+        try {
+            new WithAccountLock<Void>().processAccountWithLock(locker, account.getExternalKey(), new WithAccountLockCallback<Void>() {
 
-            @Override
-            public Void doOperation() throws PaymentApiException {
-                try {
-                    final RefundModelDao refund = paymentDao.getRefund(refundId, context);
-                    if (refund == null) {
-                        throw new PaymentApiException(ErrorCode.PAYMENT_NO_SUCH_REFUND, refundId);
-                    }
-                    if (refund.getRefundStatus() != RefundStatus.PENDING) {
-                        throw new PaymentApiException(ErrorCode.PAYMENT_NOT_PENDING, refundId);
-                    }
+                @Override
+                public Void doOperation() throws PaymentApiException {
+                    try {
+                        final RefundModelDao refund = paymentDao.getRefund(refundId, context);
+                        if (refund == null) {
+                            throw new PaymentApiException(ErrorCode.PAYMENT_NO_SUCH_REFUND, refundId);
+                        }
+                        if (refund.getRefundStatus() != RefundStatus.PENDING) {
+                            throw new PaymentApiException(ErrorCode.PAYMENT_NOT_PENDING, refundId);
+                        }
 
-                    // TODO STEPH : Model is broken if we had an invoice item adjustements as we lost track of them
-                    invoiceApi.createRefund(refund.getPaymentId(), refund.getAmount(), refund.isAdjusted(), Collections.<UUID, BigDecimal>emptyMap(), refund.getId(), context);
-                    paymentDao.updateRefundStatus(refund.getId(), RefundStatus.COMPLETED, refund.getAmount(), refund.getCurrency(), context);
-                } catch (final InvoiceApiException e) {
+                        // TODO STEPH : Model is broken if we had an invoice item adjustements as we lost track of them
+                        invoiceApi.createRefund(refund.getPaymentId(), refund.getAmount(), refund.isAdjusted(), Collections.<UUID, BigDecimal>emptyMap(), refund.getId(), context);
+                        paymentDao.updateRefundStatus(refund.getId(), RefundStatus.COMPLETED, refund.getAmount(), refund.getCurrency(), context);
+                    } catch (final InvoiceApiException e) {
+                    }
+                    return null;
                 }
-                return null;
-            }
-        });
+            });
+        } catch (Exception e) {
+            throw new PaymentApiException(ErrorCode.__UNKNOWN_ERROR_CODE, "");
+        }
 
     }
 
@@ -256,8 +258,12 @@ public class RefundProcessor extends ProcessorBase {
             throw new PaymentApiException(ErrorCode.PAYMENT_NO_SUCH_REFUND, refundId);
         }
 
-        if (completePluginCompletedRefund(filteredInput, context)) {
-            result = paymentDao.getRefund(refundId, context);
+        try {
+            if (completePluginCompletedRefund(filteredInput, context)) {
+                result = paymentDao.getRefund(refundId, context);
+            }
+        } catch (Exception e) {
+            // STEPH
         }
 
         final PaymentModelDao payment = paymentDao.getPayment(result.getPaymentId(), context);
@@ -507,8 +513,9 @@ public class RefundProcessor extends ProcessorBase {
                 }
             });
             return true;
-        } catch (final AccountApiException e) {
-            throw new PaymentApiException(e);
+        } catch (Exception e) {
+            // STEPH
+            throw new PaymentApiException(ErrorCode.__UNKNOWN_ERROR_CODE, "");
         }
     }
 }

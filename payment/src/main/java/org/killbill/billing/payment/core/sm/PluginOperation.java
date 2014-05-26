@@ -43,7 +43,8 @@ public abstract class PluginOperation implements OperationCallback {
 
     private final GlobalLocker locker;
     private final PluginDispatcher<OperationResult> paymentPluginDispatcher;
-    private final DirectPaymentStateContext directPaymentStateContext;
+
+    protected final DirectPaymentStateContext directPaymentStateContext;
 
     protected PluginOperation(final GlobalLocker locker,
                               final PluginDispatcher<OperationResult> paymentPluginDispatcher,
@@ -53,7 +54,7 @@ public abstract class PluginOperation implements OperationCallback {
         this.directPaymentStateContext = directPaymentStateContext;
     }
 
-    protected abstract PaymentInfoPlugin doPluginOperation() throws PaymentPluginApiException;
+    protected abstract <PluginResult> PluginResult  doPluginOperation() throws Exception;
 
     protected OperationResult dispatchWithTimeout(final WithAccountLockCallback<OperationResult> callback) throws OperationException {
         final Account account = directPaymentStateContext.getAccount();
