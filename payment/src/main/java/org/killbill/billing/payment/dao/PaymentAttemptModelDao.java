@@ -29,7 +29,7 @@ import org.killbill.billing.util.entity.dao.EntityModelDao;
 public class PaymentAttemptModelDao extends EntityBase implements EntityModelDao<PaymentAttempt> {
 
     private UUID directTransactionId;
-    private String externalKey;
+    private String transactionExternalKey;
     private String stateName;
     private String operationName;
     private String pluginName;
@@ -41,7 +41,7 @@ public class PaymentAttemptModelDao extends EntityBase implements EntityModelDao
                                   final String pluginName) {
         super(id, createdDate, updatedDate);
         this.directTransactionId = directTransactionId;
-        this.externalKey = externalKey;
+        this.transactionExternalKey = externalKey;
         this.stateName = stateName;
         this.operationName = operationName;
         this.pluginName = pluginName;
@@ -57,12 +57,12 @@ public class PaymentAttemptModelDao extends EntityBase implements EntityModelDao
         this.directTransactionId = directTransactionId;
     }
 
-    public String getExternalKey() {
-        return externalKey;
+    public String getTransactionExternalKey() {
+        return transactionExternalKey;
     }
 
-    public void setExternalKey(final String externalKey) {
-        this.externalKey = externalKey;
+    public void setTransactionExternalKey(final String transactionExternalKey) {
+        this.transactionExternalKey = transactionExternalKey;
     }
 
     public String getStateName() {
@@ -106,7 +106,7 @@ public class PaymentAttemptModelDao extends EntityBase implements EntityModelDao
         if (directTransactionId != null ? !directTransactionId.equals(that.directTransactionId) : that.directTransactionId != null) {
             return false;
         }
-        if (externalKey != null ? !externalKey.equals(that.externalKey) : that.externalKey != null) {
+        if (transactionExternalKey != null ? !transactionExternalKey.equals(that.transactionExternalKey) : that.transactionExternalKey != null) {
             return false;
         }
         if (operationName != null ? !operationName.equals(that.operationName) : that.operationName != null) {
@@ -125,7 +125,7 @@ public class PaymentAttemptModelDao extends EntityBase implements EntityModelDao
     public int hashCode() {
         int result = super.hashCode();
         result = 31 * result + (directTransactionId != null ? directTransactionId.hashCode() : 0);
-        result = 31 * result + (externalKey != null ? externalKey.hashCode() : 0);
+        result = 31 * result + (transactionExternalKey != null ? transactionExternalKey.hashCode() : 0);
         result = 31 * result + (stateName != null ? stateName.hashCode() : 0);
         result = 31 * result + (operationName != null ? operationName.hashCode() : 0);
         result = 31 * result + (pluginName != null ? pluginName.hashCode() : 0);

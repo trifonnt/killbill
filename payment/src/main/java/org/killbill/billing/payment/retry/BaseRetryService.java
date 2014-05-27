@@ -72,7 +72,7 @@ public abstract class BaseRetryService implements RetryService {
                                                                               }
                                                                               final PaymentRetryNotificationKey key = (PaymentRetryNotificationKey) notificationKey;
                                                                               final InternalCallContext callContext = internalCallContextFactory.createInternalCallContext(tenantRecordId, accountRecordId, PAYMENT_RETRY_SERVICE, CallOrigin.INTERNAL, UserType.SYSTEM, userToken);
-                                                                              retry(key.getUuidKey(), ImmutableList.<PluginProperty>of(), callContext);
+                                                                              retryPaymentTransaction(key.getTransactionExternalKey(), ImmutableList.<PluginProperty>of(), callContext);
                                                                           }
                                                                       }
                                                                      );
@@ -107,37 +107,22 @@ public abstract class BaseRetryService implements RetryService {
         }
 
         public boolean scheduleRetryFromTransaction(final UUID paymentId, final DateTime timeOfRetry, final EntitySqlDaoWrapperFactory<EntitySqlDao> entitySqlDaoWrapperFactory) {
-            return scheduleRetryInternal(paymentId, timeOfRetry, entitySqlDaoWrapperFactory);
+           // STEPH_RETRY
+           // return scheduleRetryInternal(paymentId, timeOfRetry, entitySqlDaoWrapperFactory);
+            return true;
         }
 
-        public boolean scheduleRetry(final UUID paymentId, final DateTime timeOfRetry) {
-            return scheduleRetryInternal(paymentId, timeOfRetry, null);
+        public boolean scheduleRetry(final UUID paymentId, final String transactionExternalKey, final DateTime timeOfRetry) {
+            return scheduleRetryInternal(paymentId, transactionExternalKey, timeOfRetry, null);
         }
 
-        // STEPH TimedoutPaymentRetryServiceScheduler
-        public void cancelAllScheduleRetryForKey(final UUID paymentId) {
-            /*
-            try {
-                NotificationQueue retryQueue = notificationQueueService.getNotificationQueue(DefaultPaymentService.SERVICE_NAME, getQueueName());
-                NotificationKey key = new NotificationKey() {
-                    @Override
-                    public String toString() {
-                        return paymentId.toString();
-                    }
-                };
-                retryQueue.removeNotificationsByKey(key);
-            } catch (NoSuchNotificationQueue e) {
-                log.error(String.format("Failed to retrieve notification queue %s:%s", DefaultPaymentService.SERVICE_NAME, getQueueName()));
-            }
-             */
-        }
 
-        private boolean scheduleRetryInternal(final UUID paymentId, final DateTime timeOfRetry, final EntitySqlDaoWrapperFactory<EntitySqlDao> transactionalDao) {
+        private boolean scheduleRetryInternal(final UUID paymentId, final String transactionExternalKey, final DateTime timeOfRetry, final EntitySqlDaoWrapperFactory<EntitySqlDao> transactionalDao) {
             final InternalCallContext context = createCallContextFromPaymentId(paymentId);
 
             try {
                 final NotificationQueue retryQueue = notificationQueueService.getNotificationQueue(DefaultPaymentService.SERVICE_NAME, getQueueName());
-                final NotificationEvent key = new PaymentRetryNotificationKey(paymentId);
+                final NotificationEvent key = new PaymentRetryNotificationKey(transactionExternalKey);
                 if (retryQueue != null) {
                     if (transactionalDao == null) {
                         retryQueue.recordFutureNotification(timeOfRetry, key, context.getUserToken(), context.getAccountRecordId(), context.getTenantRecordId());

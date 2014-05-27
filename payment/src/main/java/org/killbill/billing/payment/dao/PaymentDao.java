@@ -35,6 +35,7 @@ public interface PaymentDao {
 
     public PaymentAttemptModelDao getPaymentAttemptByExternalKey(String externalKey, InternalTenantContext context);
 
+    public DirectPaymentTransactionModelDao getDirectPaymentTransactionByExternalKey(String transactionExternalKey, InternalTenantContext context);
 
     /////
 

@@ -27,7 +27,9 @@ import javax.inject.Inject;
 import org.killbill.automaton.DefaultStateMachineConfig;
 import org.killbill.automaton.OperationResult;
 import org.killbill.automaton.StateMachineConfig;
+import org.killbill.billing.ObjectType;
 import org.killbill.billing.account.api.Account;
+import org.killbill.billing.account.api.AccountApiException;
 import org.killbill.billing.account.api.AccountInternalApi;
 import org.killbill.billing.callcontext.InternalCallContext;
 import org.killbill.billing.catalog.api.Currency;
@@ -38,9 +40,13 @@ import org.killbill.billing.payment.api.PaymentApiException;
 import org.killbill.billing.payment.api.PluginProperty;
 import org.killbill.billing.payment.api.TransactionType;
 import org.killbill.billing.payment.core.sm.RetryableDirectPaymentAutomatonRunner;
+import org.killbill.billing.payment.dao.DirectPaymentModelDao;
+import org.killbill.billing.payment.dao.DirectPaymentTransactionModelDao;
 import org.killbill.billing.payment.dao.PaymentDao;
 import org.killbill.billing.payment.dispatcher.PluginDispatcher;
 import org.killbill.billing.payment.plugin.api.PaymentPluginApi;
+import org.killbill.billing.payment.retry.BaseRetryService.RetryServiceScheduler;
+import org.killbill.billing.payment.retry.RetryService;
 import org.killbill.billing.retry.plugin.api.RetryPluginApi;
 import org.killbill.billing.tag.TagInternalApi;
 import org.killbill.billing.util.callcontext.CallContext;
@@ -63,7 +69,6 @@ public class RetryableDirectPaymentProcessor extends ProcessorBase {
 
     private final TagInternalApi tagApi;
     private final RetryableDirectPaymentAutomatonRunner retryableDirectPaymentAutomatonRunner;
-    private final InternalCallContextFactory internalCallContextFactory;
     private final DirectPaymentProcessor directPaymentProcessor;
 
     private static final Logger log = LoggerFactory.getLogger(RetryableDirectPaymentProcessor.class);
@@ -77,18 +82,18 @@ public class RetryableDirectPaymentProcessor extends ProcessorBase {
                                            final PaymentDao paymentDao,
                                            final NonEntityDao nonEntityDao,
                                            final PersistentBus eventBus,
-                                           final InternalCallContextFactory internalCallContextFactory,
                                            final Clock clock,
                                            final GlobalLocker locker,
                                            final PaymentConfig paymentConfig,
                                            @Named(PLUGIN_EXECUTOR_NAMED) final ExecutorService executor,
                                            final TagInternalApi tagApi,
-                                           final DirectPaymentProcessor directPaymentProcessor) {
+                                           final DirectPaymentProcessor directPaymentProcessor,
+                                           final RetryServiceScheduler retryServiceScheduler) {
         super(pluginRegistry, accountUserApi, eventBus, paymentDao, nonEntityDao, tagUserApi, locker, executor, invoiceApi);
 
-        this.internalCallContextFactory = internalCallContextFactory;
         this.tagApi = tagApi;
         this.directPaymentProcessor = directPaymentProcessor;
+
         final StateMachineConfig stateMachineConfig;
         try {
             stateMachineConfig = XMLLoader.getObjectFromString(Resources.getResource("RetryStates.xml").toExternalForm(), DefaultStateMachineConfig.class);
@@ -98,7 +103,7 @@ public class RetryableDirectPaymentProcessor extends ProcessorBase {
 
         final long paymentPluginTimeoutSec = TimeUnit.SECONDS.convert(paymentConfig.getPaymentPluginTimeout().getPeriod(), paymentConfig.getPaymentPluginTimeout().getUnit());
         final PluginDispatcher<OperationResult> paymentPluginDispatcher = new PluginDispatcher<OperationResult>(paymentPluginTimeoutSec, executor);
-        retryableDirectPaymentAutomatonRunner = new RetryableDirectPaymentAutomatonRunner(stateMachineConfig, paymentDao, locker, paymentPluginDispatcher, pluginRegistry, retryPluginRegistry, clock, this.tagApi, this.directPaymentProcessor);
+        retryableDirectPaymentAutomatonRunner = new RetryableDirectPaymentAutomatonRunner(stateMachineConfig, paymentDao, locker, paymentPluginDispatcher, pluginRegistry, retryPluginRegistry, clock, this.tagApi, this.directPaymentProcessor, retryServiceScheduler);
     }
 
     public DirectPayment createAuthorization(final Account account, final UUID paymentMethodId, @Nullable final UUID directPaymentId, final BigDecimal amount, final Currency currency, final String paymentExternalKey, final String transactionExternalKey, final Iterable<PluginProperty> properties, final CallContext callContext, final InternalCallContext internalCallContext) throws PaymentApiException {
@@ -116,4 +121,36 @@ public class RetryableDirectPaymentProcessor extends ProcessorBase {
         return directPaymentProcessor.getPayment(nonNullDirectPaymentId, true, properties, callContext, internalCallContext);
     }
 
+    public void retryPaymentTransaction(final String transactionExternalKey, final Iterable<PluginProperty> properties, final InternalCallContext internalCallContext) {
+        try {
+
+            final DirectPaymentTransactionModelDao transaction = paymentDao.getDirectPaymentTransactionByExternalKey(transactionExternalKey, internalCallContext);
+            final DirectPaymentModelDao payment = paymentDao.getDirectPayment(transaction.getDirectPaymentId(), internalCallContext);
+
+            final Account account = accountInternalApi.getAccountById(payment.getAccountId(), internalCallContext);
+            final UUID tenantId = nonEntityDao.retrieveIdFromObject(internalCallContext.getTenantRecordId(), ObjectType.TENANT);
+            switch (transaction.getTransactionType()) {
+                case AUTHORIZE:
+                    createAuthorization(account, payment.getPaymentMethodId(), payment.getId(), transaction.getAmount(), transaction.getCurrency(),
+                                        payment.getExternalKey(), transaction.getExternalKey(), properties, internalCallContext.toCallContext(tenantId), internalCallContext);
+                    break;
+                case CAPTURE:
+                    break;
+                case PURCHASE:
+                    break;
+                case CREDIT:
+                    break;
+                case VOID:
+                    break;
+                default:
+                    throw new IllegalStateException("Unexpected transactionType " + transaction.getTransactionType());
+            }
+
+        } catch (AccountApiException e) {
+            e.printStackTrace();
+        } catch (PaymentApiException e) {
+            e.printStackTrace();
+        }
+
+    }
 }

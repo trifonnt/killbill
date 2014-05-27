@@ -22,7 +22,6 @@ import java.util.UUID;
 
 import javax.annotation.Nullable;
 
-import org.joda.time.DateTime;
 import org.killbill.automaton.DefaultStateMachineConfig;
 import org.killbill.automaton.MissingEntryException;
 import org.killbill.automaton.Operation;
@@ -48,6 +47,7 @@ import org.killbill.billing.payment.core.DirectPaymentProcessor;
 import org.killbill.billing.payment.dao.PaymentDao;
 import org.killbill.billing.payment.dispatcher.PluginDispatcher;
 import org.killbill.billing.payment.plugin.api.PaymentPluginApi;
+import org.killbill.billing.payment.retry.BaseRetryService.RetryServiceScheduler;
 import org.killbill.billing.retry.plugin.api.RetryPluginApi;
 import org.killbill.billing.tag.TagInternalApi;
 import org.killbill.billing.util.callcontext.CallContext;
@@ -70,14 +70,16 @@ public class RetryableDirectPaymentAutomatonRunner extends DirectPaymentAutomato
     private final DirectPaymentProcessor directPaymentProcessor;
     private final State initialState;
     private final Operation retryOperation;
+    private final RetryServiceScheduler retryServiceScheduler;
 
     private final OSGIServiceRegistration<RetryPluginApi> retryPluginRegistry;
 
-    public RetryableDirectPaymentAutomatonRunner(final StateMachineConfig stateMachineConfig, final PaymentDao paymentDao, final GlobalLocker locker, final PluginDispatcher<OperationResult> paymentPluginDispatcher, final OSGIServiceRegistration<PaymentPluginApi> pluginRegistry, final OSGIServiceRegistration<RetryPluginApi> retryPluginRegistry, final Clock clock, final TagInternalApi tagApi, final DirectPaymentProcessor directPaymentProcessor) {
+    public RetryableDirectPaymentAutomatonRunner(final StateMachineConfig stateMachineConfig, final PaymentDao paymentDao, final GlobalLocker locker, final PluginDispatcher<OperationResult> paymentPluginDispatcher, final OSGIServiceRegistration<PaymentPluginApi> pluginRegistry, final OSGIServiceRegistration<RetryPluginApi> retryPluginRegistry, final Clock clock, final TagInternalApi tagApi, final DirectPaymentProcessor directPaymentProcessor, final RetryServiceScheduler retryServiceScheduler) {
         super(stateMachineConfig, paymentDao, locker, paymentPluginDispatcher, pluginRegistry, clock);
         this.tagApi = tagApi;
         this.directPaymentProcessor = directPaymentProcessor;
         this.retryPluginRegistry = retryPluginRegistry;
+        this.retryServiceScheduler = retryServiceScheduler;
         this.retryStateMachine = fetchRetryStateMachine();
         this.initialState = fetchInitialState();
         this.retryOperation = fetchRetryOperation();
@@ -94,19 +96,19 @@ public class RetryableDirectPaymentAutomatonRunner extends DirectPaymentAutomato
             throw new PaymentApiException(ErrorCode.__UNKNOWN_ERROR_CODE);
         }
 
-        final DirectPaymentStateContext directPaymentStateContext = new DirectPaymentStateContext(directPaymentId, directPaymentExternalKey, directPaymentTransactionExternalKey, transactionType, account, paymentMethodId, amount, currency, properties, internalCallContext, callContext);
+        final RetryableDirectPaymentStateContext directPaymentStateContext = new RetryableDirectPaymentStateContext(directPaymentId, directPaymentExternalKey, directPaymentTransactionExternalKey, transactionType, account, paymentMethodId, amount, currency, properties, internalCallContext, callContext);
         try {
 
             final OperationCallback callback;
 
             switch (transactionType) {
-                case PURCHASE:
-                    callback = null;
-                    break;
                 case AUTHORIZE:
                     callback = new RetryAuthorizeOperationCallback(locker, paymentPluginDispatcher, directPaymentStateContext, directPaymentProcessor, retryPluginRegistry);
                     break;
                 case CAPTURE:
+                    callback = null;
+                    break;
+                case PURCHASE:
                     callback = null;
                     break;
                 case VOID:
@@ -120,11 +122,11 @@ public class RetryableDirectPaymentAutomatonRunner extends DirectPaymentAutomato
             }
 
             final LeavingStateCallback leavingStateCallback = new RetryLeavingStateCallback(this, directPaymentStateContext, initialState, transactionType);
-            final EnteringStateCallback enteringStateCallback = new RetryEnteringStateCallback(this, directPaymentStateContext);
+            final EnteringStateCallback enteringStateCallback = new RetryEnteringStateCallback(this, directPaymentStateContext, retryServiceScheduler);
 
             initialState.runOperation(retryOperation, callback, enteringStateCallback, leavingStateCallback);
 
-        // STEPH_RETRY exception handling *seems* similar to DirectPaymentAutomatonRunner, can we share?
+            // STEPH_RETRY exception handling *seems* similar to DirectPaymentAutomatonRunner, can we share?
         } catch (MissingEntryException e) {
             throw new PaymentApiException(e.getCause(), ErrorCode.PAYMENT_INTERNAL_ERROR, e.getMessage());
         } catch (OperationException e) {

@@ -25,7 +25,7 @@ import org.killbill.commons.locker.GlobalLocker;
 
 public class RetryAuthorizeOperationCallback extends RetryOperationCallback {
 
-    public RetryAuthorizeOperationCallback(final GlobalLocker locker, final PluginDispatcher<OperationResult> paymentPluginDispatcher, final DirectPaymentStateContext directPaymentStateContext, final DirectPaymentProcessor directPaymentProcessor, final OSGIServiceRegistration<RetryPluginApi> retryPluginRegistry) {
+    public RetryAuthorizeOperationCallback(final GlobalLocker locker, final PluginDispatcher<OperationResult> paymentPluginDispatcher, final RetryableDirectPaymentStateContext directPaymentStateContext, final DirectPaymentProcessor directPaymentProcessor, final OSGIServiceRegistration<RetryPluginApi> retryPluginRegistry) {
         super(locker, paymentPluginDispatcher, directPaymentStateContext, directPaymentProcessor, retryPluginRegistry);
     }
 

@@ -54,6 +54,11 @@ public class PluginFailureRetryService extends BaseRetryService implements Retry
         paymentProcessor.retryPluginFailure(paymentId, properties, context);
     }
 
+    @Override
+    public void retryPaymentTransaction(final String externalKey, final Iterable<PluginProperty> properties, final InternalCallContext context) {
+
+    }
+
     public static class PluginFailureRetryServiceScheduler extends RetryServiceScheduler {
 
         private final Clock clock;
@@ -74,12 +79,12 @@ public class PluginFailureRetryService extends BaseRetryService implements Retry
             return QUEUE_NAME;
         }
 
-        public boolean scheduleRetry(final UUID paymentId, final int retryAttempt) {
+        public boolean scheduleRetry(final UUID paymentId, final String key, final int retryAttempt) {
             final DateTime nextRetryDate = getNextRetryDate(retryAttempt);
             if (nextRetryDate == null) {
                 return false;
             }
-            return super.scheduleRetry(paymentId, nextRetryDate);
+            return super.scheduleRetry(paymentId, key, nextRetryDate);
         }
 
         public boolean scheduleRetryFromTransaction(final UUID paymentId, final int retryAttempt, final EntitySqlDaoWrapperFactory<EntitySqlDao> transactionalDao) {

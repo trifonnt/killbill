@@ -56,6 +56,11 @@ public class MockPaymentDao implements PaymentDao {
     }
 
     @Override
+    public DirectPaymentTransactionModelDao getDirectPaymentTransactionByExternalKey(final String transactionExternalKey, final InternalTenantContext context) {
+        return null;
+    }
+
+    @Override
     public Pagination<DirectPaymentModelDao> getDirectPayments(final String pluginName, final Long offset, final Long limit, final InternalTenantContext context) {
         return null;
     }

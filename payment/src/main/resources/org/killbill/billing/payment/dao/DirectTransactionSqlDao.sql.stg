@@ -25,7 +25,7 @@ tableFields(prefix) ::= <<
 >>
 
 tableValues() ::= <<
-  :externalKey
+  :transactionExternalKey
 , :transactionType
 , :effectiveDate
 , :paymentStatus

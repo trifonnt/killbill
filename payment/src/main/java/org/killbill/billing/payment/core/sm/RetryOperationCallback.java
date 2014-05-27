@@ -27,6 +27,8 @@ import org.killbill.billing.payment.api.PaymentApiException;
 import org.killbill.billing.payment.core.DirectPaymentProcessor;
 import org.killbill.billing.payment.core.ProcessorBase.WithAccountLockCallback;
 import org.killbill.billing.payment.dispatcher.PluginDispatcher;
+import org.killbill.billing.payment.retry.BaseRetryService.RetryServiceScheduler;
+import org.killbill.billing.payment.retry.RetryService;
 import org.killbill.billing.retry.plugin.api.RetryPluginApi;
 import org.killbill.billing.retry.plugin.api.RetryPluginApiException;
 import org.killbill.commons.locker.GlobalLocker;
@@ -36,7 +38,7 @@ public abstract class RetryOperationCallback extends PluginOperation {
     protected final DirectPaymentProcessor directPaymentProcessor;
     private final OSGIServiceRegistration<RetryPluginApi> retryPluginRegistry;
 
-    protected RetryOperationCallback(final GlobalLocker locker, final PluginDispatcher<OperationResult> paymentPluginDispatcher, final DirectPaymentStateContext directPaymentStateContext, final DirectPaymentProcessor directPaymentProcessor, final OSGIServiceRegistration<RetryPluginApi> retryPluginRegistry) {
+    protected RetryOperationCallback(final GlobalLocker locker, final PluginDispatcher<OperationResult> paymentPluginDispatcher, final RetryableDirectPaymentStateContext directPaymentStateContext, final DirectPaymentProcessor directPaymentProcessor, final OSGIServiceRegistration<RetryPluginApi> retryPluginRegistry) {
         super(locker, paymentPluginDispatcher, directPaymentStateContext);
         this.directPaymentProcessor = directPaymentProcessor;
         this.retryPluginRegistry = retryPluginRegistry;
@@ -76,7 +78,6 @@ public abstract class RetryOperationCallback extends PluginOperation {
         return null;
     }
 
-
     @Override
     public OperationResult doOperationCallback() throws OperationException {
         return dispatchWithTimeout(new WithAccountLockCallback<OperationResult>() {
@@ -95,6 +96,7 @@ public abstract class RetryOperationCallback extends PluginOperation {
                             // Very hacky, we are using EXCEPTION result to transition to final ABORTED state.
                             throw new OperationException(e, OperationResult.EXCEPTION);
                         } else {
+                            ((RetryableDirectPaymentStateContext) directPaymentStateContext).setRetryDate(nextRetryDate);
                             throw new OperationException(e, OperationResult.FAILURE);
                         }
                     }

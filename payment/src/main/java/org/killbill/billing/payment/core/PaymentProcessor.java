@@ -295,7 +295,7 @@ public class PaymentProcessor extends ProcessorBase {
                                                                                                for (final PaymentModelDao cur : paymentsToBeCompleted) {
                                                                                                    switch (cur.getPaymentStatus()) {
                                                                                                        case AUTO_PAY_OFF:
-                                                                                                           autoPayoffRetryService.scheduleRetry(cur.getId(), clock.getUTCNow());
+                                                                                                           autoPayoffRetryService.scheduleRetry(cur.getId(), "STEPH_RETRY", clock.getUTCNow());
                                                                                                            break;
                                                                                                        case PAYMENT_FAILURE:
                                                                                                            scheduleRetryOnPaymentFailure(cur.getId(), context);
@@ -766,7 +766,7 @@ public class PaymentProcessor extends ProcessorBase {
     private PaymentStatus scheduleRetryOnPluginFailure(final UUID paymentId, final InternalTenantContext context) {
         final List<PaymentAttemptModelDao> allAttempts = paymentDao.getAttemptsForPayment(paymentId, context);
         final int retryAttempt = getNumberAttemptsInState(allAttempts, PaymentStatus.UNKNOWN, PaymentStatus.PLUGIN_FAILURE);
-        final boolean isScheduledForRetry = pluginFailureRetryService.scheduleRetry(paymentId, retryAttempt);
+        final boolean isScheduledForRetry = pluginFailureRetryService.scheduleRetry(paymentId, "STEPH_RETRY", retryAttempt);
         return isScheduledForRetry ? PaymentStatus.PLUGIN_FAILURE : PaymentStatus.PLUGIN_FAILURE_ABORTED;
     }
 
@@ -775,7 +775,7 @@ public class PaymentProcessor extends ProcessorBase {
         final int retryAttempt = getNumberAttemptsInState(allAttempts,
                                                           PaymentStatus.UNKNOWN, PaymentStatus.PAYMENT_FAILURE);
 
-        final boolean isScheduledForRetry = failedPaymentRetryService.scheduleRetry(paymentId, retryAttempt);
+        final boolean isScheduledForRetry = failedPaymentRetryService.scheduleRetry(paymentId, "STEPH_RETRY", retryAttempt);
 
         log.debug("scheduleRetryOnPaymentFailure id = " + paymentId + ", retryAttempt = " + retryAttempt + ", retry :" + isScheduledForRetry);
 

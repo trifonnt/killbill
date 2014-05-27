@@ -56,6 +56,11 @@ public class FailedPaymentRetryService extends BaseRetryService implements Retry
         paymentProcessor.retryFailedPayment(paymentId, properties, context);
     }
 
+    @Override
+    public void retryPaymentTransaction(final String externalKey, final Iterable<PluginProperty> properties, final InternalCallContext context) {
+
+    }
+
     public static class FailedPaymentRetryServiceScheduler extends RetryServiceScheduler {
 
         private final PaymentConfig config;
@@ -71,12 +76,12 @@ public class FailedPaymentRetryService extends BaseRetryService implements Retry
             this.clock = clock;
         }
 
-        public boolean scheduleRetry(final UUID paymentId, final int retryAttempt) {
+        public boolean scheduleRetry(final UUID paymentId, final String key, final int retryAttempt) {
             final DateTime timeOfRetry = getNextRetryDate(retryAttempt);
             if (timeOfRetry == null) {
                 return false;
             }
-            return super.scheduleRetry(paymentId, timeOfRetry);
+            return super.scheduleRetry(paymentId, key, timeOfRetry);
         }
 
         private DateTime getNextRetryDate(final int retryAttempt) {

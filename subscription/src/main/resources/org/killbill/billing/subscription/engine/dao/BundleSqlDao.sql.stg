@@ -15,7 +15,7 @@ tableFields(prefix) ::= <<
 >>
 
 tableValues() ::= <<
-  :externalKey
+  :transactionExternalKey
 , :accountId
 , :lastSysUpdateDate
 , :originalCreatedDate
@@ -39,7 +39,7 @@ where id = :id
 updateBundleExternalKey()  ::= <<
 update <tableName()>
 set
-external_key = :externalKey
+external_key = :transactionExternalKey
 , updated_by = :createdBy
 , updated_date = :createdDate
 where id = :id
@@ -51,7 +51,7 @@ getBundlesForKey() ::= <<
 select <allTableFields()>
 from bundles
 where
-external_key = :externalKey
+external_key = :transactionExternalKey
 <AND_CHECK_TENANT()>
 <defaultOrderBy()>
 ;
@@ -61,7 +61,7 @@ getBundlesFromAccountAndKey() ::= <<
 select <allTableFields()>
 from bundles
 where
-external_key = :externalKey
+external_key = :transactionExternalKey
 and account_id = :accountId
 <AND_CHECK_TENANT()>
 <defaultOrderBy()>

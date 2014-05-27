@@ -1,9 +1,7 @@
 /*
- * Copyright 2010-2013 Ning, Inc.
  * Copyright 2014 Groupon, Inc
- * Copyright 2014 The Billing Project, LLC
  *
- * The Billing Project licenses this file to you under the Apache License, version 2.0
+ * Groupon licenses this file to you under the Apache License, version 2.0
  * (the "License"); you may not use this file except in compliance with the
  * License.  You may obtain a copy of the License at:
  *
@@ -20,29 +18,24 @@ package org.killbill.billing.payment.retry;
 
 import java.util.UUID;
 
-import org.joda.time.DateTime;
 import org.killbill.billing.callcontext.InternalCallContext;
 import org.killbill.billing.payment.api.PluginProperty;
-import org.killbill.billing.payment.core.PaymentProcessor;
+import org.killbill.billing.payment.core.RetryableDirectPaymentProcessor;
 import org.killbill.billing.util.callcontext.InternalCallContextFactory;
-import org.killbill.billing.util.config.PaymentConfig;
 import org.killbill.notificationq.api.NotificationQueueService;
 
 import com.google.inject.Inject;
 
-public class AutoPayRetryService extends BaseRetryService implements RetryService {
+public class DefaultRetryService extends BaseRetryService implements RetryService {
 
-    public static final String QUEUE_NAME = "autopayoff";
+    public static final String QUEUE_NAME = "retry";
 
-    private final PaymentProcessor paymentProcessor;
+    private final RetryableDirectPaymentProcessor processor;
 
     @Inject
-    public AutoPayRetryService(final NotificationQueueService notificationQueueService,
-                               final PaymentConfig config,
-                               final PaymentProcessor paymentProcessor,
-                               final InternalCallContextFactory internalCallContextFactory) {
+    public DefaultRetryService(final NotificationQueueService notificationQueueService, final InternalCallContextFactory internalCallContextFactory, final RetryableDirectPaymentProcessor processor) {
         super(notificationQueueService, internalCallContextFactory);
-        this.paymentProcessor = paymentProcessor;
+        this.processor = processor;
     }
 
     @Override
@@ -52,25 +45,18 @@ public class AutoPayRetryService extends BaseRetryService implements RetryServic
 
     @Override
     public void retry(final UUID paymentId, final Iterable<PluginProperty> properties, final InternalCallContext context) {
-        paymentProcessor.retryAutoPayOff(paymentId, properties, context);
+
     }
 
     @Override
     public void retryPaymentTransaction(final String externalKey, final Iterable<PluginProperty> properties, final InternalCallContext context) {
-
+        processor.retryPaymentTransaction(externalKey, properties, context);
     }
 
-    public static class AutoPayRetryServiceScheduler extends RetryServiceScheduler {
+    public static class DefaultRetryServiceScheduler extends RetryServiceScheduler {
 
-        @Inject
-        public AutoPayRetryServiceScheduler(final NotificationQueueService notificationQueueService,
-                                            final InternalCallContextFactory internalCallContextFactory) {
+        public DefaultRetryServiceScheduler(final NotificationQueueService notificationQueueService, final InternalCallContextFactory internalCallContextFactory) {
             super(notificationQueueService, internalCallContextFactory);
-        }
-
-        @Override
-        public boolean scheduleRetry(final UUID paymentId, final String key, final DateTime timeOfRetry) {
-            return super.scheduleRetry(paymentId, key, timeOfRetry);
         }
 
         @Override
