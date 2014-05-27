@@ -26,6 +26,7 @@ import javax.inject.Inject;
 
 import org.killbill.automaton.DefaultStateMachineConfig;
 import org.killbill.automaton.OperationResult;
+import org.killbill.automaton.State;
 import org.killbill.automaton.StateMachineConfig;
 import org.killbill.billing.ObjectType;
 import org.killbill.billing.account.api.Account;
@@ -42,6 +43,7 @@ import org.killbill.billing.payment.api.TransactionType;
 import org.killbill.billing.payment.core.sm.RetryableDirectPaymentAutomatonRunner;
 import org.killbill.billing.payment.dao.DirectPaymentModelDao;
 import org.killbill.billing.payment.dao.DirectPaymentTransactionModelDao;
+import org.killbill.billing.payment.dao.PaymentAttemptModelDao;
 import org.killbill.billing.payment.dao.PaymentDao;
 import org.killbill.billing.payment.dispatcher.PluginDispatcher;
 import org.killbill.billing.payment.plugin.api.PaymentPluginApi;
@@ -124,15 +126,30 @@ public class RetryableDirectPaymentProcessor extends ProcessorBase {
     public void retryPaymentTransaction(final String transactionExternalKey, final Iterable<PluginProperty> properties, final InternalCallContext internalCallContext) {
         try {
 
+            final PaymentAttemptModelDao attempt = paymentDao.getPaymentAttemptByExternalKey(transactionExternalKey, internalCallContext);
             final DirectPaymentTransactionModelDao transaction = paymentDao.getDirectPaymentTransactionByExternalKey(transactionExternalKey, internalCallContext);
             final DirectPaymentModelDao payment = paymentDao.getDirectPayment(transaction.getDirectPaymentId(), internalCallContext);
 
             final Account account = accountInternalApi.getAccountById(payment.getAccountId(), internalCallContext);
             final UUID tenantId = nonEntityDao.retrieveIdFromObject(internalCallContext.getTenantRecordId(), ObjectType.TENANT);
+            final CallContext callContext = internalCallContext.toCallContext(tenantId);
+
+            final State state = retryableDirectPaymentAutomatonRunner.fetchState(attempt.getStateName());
             switch (transaction.getTransactionType()) {
                 case AUTHORIZE:
-                    createAuthorization(account, payment.getPaymentMethodId(), payment.getId(), transaction.getAmount(), transaction.getCurrency(),
-                                        payment.getExternalKey(), transaction.getExternalKey(), properties, internalCallContext.toCallContext(tenantId), internalCallContext);
+                    final UUID nonNullDirectPaymentId = retryableDirectPaymentAutomatonRunner.run(state,
+                                                                                                  TransactionType.AUTHORIZE,
+                                                                                                  account,
+                                                                                                  payment.getPaymentMethodId(),
+                                                                                                  payment.getId(),
+                                                                                                  payment.getExternalKey(),
+                                                                                                  transactionExternalKey,
+                                                                                                  transaction.getAmount(),
+                                                                                                  transaction.getCurrency(),
+                                                                                                  properties,
+                                                                                                  callContext,
+                                                                                                  internalCallContext);
+                    directPaymentProcessor.getPayment(nonNullDirectPaymentId, true, properties, callContext, internalCallContext);
                     break;
                 case CAPTURE:
                     break;

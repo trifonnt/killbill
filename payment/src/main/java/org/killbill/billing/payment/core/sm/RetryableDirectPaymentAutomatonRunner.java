@@ -84,8 +84,16 @@ public class RetryableDirectPaymentAutomatonRunner extends DirectPaymentAutomato
         this.initialState = fetchInitialState();
         this.retryOperation = fetchRetryOperation();
     }
-
     public UUID run(final TransactionType transactionType, final Account account, @Nullable final UUID paymentMethodId,
+                    @Nullable final UUID directPaymentId, @Nullable final String directPaymentExternalKey, final String directPaymentTransactionExternalKey,
+                    @Nullable final BigDecimal amount, @Nullable final Currency currency,
+                    final Iterable<PluginProperty> properties,
+                    final CallContext callContext, final InternalCallContext internalCallContext) throws PaymentApiException {
+        return run(initialState, transactionType, account, paymentMethodId, directPaymentId, directPaymentExternalKey, directPaymentTransactionExternalKey,
+            amount, currency, properties, callContext, internalCallContext);
+    }
+
+    public UUID run(final State state, final TransactionType transactionType, final Account account, @Nullable final UUID paymentMethodId,
                     @Nullable final UUID directPaymentId, @Nullable final String directPaymentExternalKey, final String directPaymentTransactionExternalKey,
                     @Nullable final BigDecimal amount, @Nullable final Currency currency,
                     final Iterable<PluginProperty> properties,
@@ -150,12 +158,16 @@ public class RetryableDirectPaymentAutomatonRunner extends DirectPaymentAutomato
         }
     }
 
-    private final State fetchInitialState() {
+    public final State fetchState(final String stateName) {
         try {
-            return retryStateMachine.getState("INIT");
+            return retryStateMachine.getState(stateName);
         } catch (MissingEntryException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    private final State fetchInitialState() {
+        return fetchState("INIT");
     }
 
     private final Operation fetchRetryOperation() {
