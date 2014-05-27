@@ -175,6 +175,7 @@ public abstract class ProcessorBase {
         return context.toCallContext(nonEntityDao.retrieveIdFromObject(context.getTenantRecordId(), ObjectType.TENANT));
     }
 
+    // TODO Rename - there is no lock!
     public interface WithAccountLockCallback<T> {
 
         public T doOperation() throws PaymentApiException;
@@ -200,6 +201,20 @@ public abstract class ProcessorBase {
         }
     }
 
+    public static class CallableWithoutAccountLock<T> implements Callable<T> {
+
+        private final WithAccountLockCallback<T> callback;
+
+        public CallableWithoutAccountLock(final WithAccountLockCallback<T> callback) {
+            this.callback = callback;
+        }
+
+        @Override
+        public T call() throws Exception {
+            return callback.doOperation();
+        }
+    }
+
     public static class WithAccountLock<T> {
 
         public T processAccountWithLock(final GlobalLocker locker, final String accountExternalKey, final WithAccountLockCallback<T> callback)
@@ -208,7 +223,7 @@ public abstract class ProcessorBase {
             try {
                 lock = locker.lockWithNumberOfTries(LockerType.ACCOUNT_FOR_INVOICE_PAYMENTS.toString(), accountExternalKey, NB_LOCK_TRY);
                 return callback.doOperation();
-            } catch (LockFailedException e) {
+            } catch (final LockFailedException e) {
                 final String format = String.format("Failed to lock account %s", accountExternalKey);
                 log.error(String.format(format), e);
                 throw new PaymentApiException(ErrorCode.PAYMENT_INTERNAL_ERROR, format);
