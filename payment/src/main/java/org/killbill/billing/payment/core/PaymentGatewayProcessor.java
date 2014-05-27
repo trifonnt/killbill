@@ -98,7 +98,7 @@ public class PaymentGatewayProcessor extends ProcessorBase {
         } catch (final TimeoutException e) {
             throw new PaymentApiException(ErrorCode.PAYMENT_PLUGIN_TIMEOUT, account.getId(), null);
         } catch (final RuntimeException e) {
-            throw new PaymentApiException(ErrorCode.PAYMENT_INTERNAL_ERROR, null);
+            throw new PaymentApiException(e, ErrorCode.PAYMENT_INTERNAL_ERROR, e.getMessage());
         }
     }
 
@@ -115,7 +115,7 @@ public class PaymentGatewayProcessor extends ProcessorBase {
         } catch (final TimeoutException e) {
             throw new PaymentApiException(ErrorCode.PAYMENT_PLUGIN_TIMEOUT, null, null);
         } catch (final RuntimeException e) {
-            throw new PaymentApiException(ErrorCode.PAYMENT_INTERNAL_ERROR, null);
+            throw new PaymentApiException(e, ErrorCode.PAYMENT_INTERNAL_ERROR, e.getMessage());
         }
     }
 }
