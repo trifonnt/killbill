@@ -80,6 +80,11 @@ public class MockPaymentDao implements PaymentDao {
     }
 
     @Override
+    public List<DirectPaymentTransactionModelDao> getDirectTransactionsForDirectPayment(final UUID directPaymentId, final InternalTenantContext context) {
+        return null;
+    }
+
+    @Override
     public PaymentModelDao insertPaymentWithFirstAttempt(final PaymentModelDao paymentInfo, final PaymentAttemptModelDao attempt,
                                                          final InternalCallContext context) {
         synchronized (this) {

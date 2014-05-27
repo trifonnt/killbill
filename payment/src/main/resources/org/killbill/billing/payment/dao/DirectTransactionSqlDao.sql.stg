@@ -51,3 +51,12 @@ where id = :id
 <AND_CHECK_TENANT()>
 ;
 >>
+
+getByDirectPaymentId() ::= <<
+select <allTableFields()>
+from <tableName()>
+where direct_payment_id = :directPaymentId
+<AND_CHECK_TENANT()>
+<defaultOrderBy()>
+;
+>>

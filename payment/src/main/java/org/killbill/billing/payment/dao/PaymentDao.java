@@ -48,6 +48,8 @@ public interface PaymentDao {
 
     public List<DirectPaymentTransactionModelDao> getDirectTransactionsForAccount(final UUID accountId, final InternalTenantContext context);
 
+    public List<DirectPaymentTransactionModelDao> getDirectTransactionsForDirectPayment(final UUID directPaymentId, final InternalTenantContext context);
+
     public PaymentModelDao insertPaymentWithFirstAttempt(PaymentModelDao paymentInfo, PaymentAttemptModelDao attempt, InternalCallContext context);
 
     public PaymentAttemptModelDao updatePaymentWithNewAttempt(UUID paymentId, PaymentAttemptModelDao attempt, InternalCallContext context);

@@ -168,8 +168,7 @@ public class DefaultPaymentDao implements PaymentDao {
         return transactionalSqlDao.execute(new EntitySqlDaoTransactionWrapper<List<DirectPaymentModelDao>>() {
             @Override
             public List<DirectPaymentModelDao> inTransaction(final EntitySqlDaoWrapperFactory<EntitySqlDao> entitySqlDaoWrapperFactory) throws Exception {
-                List<DirectPaymentModelDao> payments = entitySqlDaoWrapperFactory.become(DirectPaymentSqlDao.class).getByAccountRecordId(context);
-                return payments;
+                return entitySqlDaoWrapperFactory.become(DirectPaymentSqlDao.class).getByAccountRecordId(context);
             }
         });
     }
@@ -180,8 +179,18 @@ public class DefaultPaymentDao implements PaymentDao {
         return transactionalSqlDao.execute(new EntitySqlDaoTransactionWrapper<List<DirectPaymentTransactionModelDao>>() {
             @Override
             public List<DirectPaymentTransactionModelDao> inTransaction(final EntitySqlDaoWrapperFactory<EntitySqlDao> entitySqlDaoWrapperFactory) throws Exception {
-                List<DirectPaymentTransactionModelDao> transactions = entitySqlDaoWrapperFactory.become(DirectTransactionSqlDao.class).getByAccountRecordId(context);
-                return transactions;
+                return entitySqlDaoWrapperFactory.become(DirectTransactionSqlDao.class).getByAccountRecordId(context);
+            }
+        });
+    }
+
+    @Override
+    public List<DirectPaymentTransactionModelDao> getDirectTransactionsForDirectPayment(final UUID directPaymentId, final InternalTenantContext context) {
+        Preconditions.checkArgument(context.getAccountRecordId() != null);
+        return transactionalSqlDao.execute(new EntitySqlDaoTransactionWrapper<List<DirectPaymentTransactionModelDao>>() {
+            @Override
+            public List<DirectPaymentTransactionModelDao> inTransaction(final EntitySqlDaoWrapperFactory<EntitySqlDao> entitySqlDaoWrapperFactory) throws Exception {
+                return entitySqlDaoWrapperFactory.become(DirectTransactionSqlDao.class).getByDirectPaymentId(directPaymentId, context);
             }
         });
     }

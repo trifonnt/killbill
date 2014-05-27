@@ -75,19 +75,19 @@ public class DirectPaymentAutomatonRunner {
         this.clock = clock;
     }
 
-    public UUID run(final TransactionType transactionType, final Account account, @Nullable final UUID paymentMethodId,
+    public UUID run(final TransactionType transactionType, final Account account,
                     @Nullable final UUID directPaymentId, final String directPaymentTransactionExternalKey,
                     final Iterable<PluginProperty> properties,
                     final CallContext callContext, final InternalCallContext internalCallContext) throws PaymentApiException {
-        return run(transactionType, account, paymentMethodId, directPaymentId, null, directPaymentTransactionExternalKey, null, null, properties, callContext, internalCallContext);
+        return run(transactionType, account, null, directPaymentId, null, directPaymentTransactionExternalKey, null, null, properties, callContext, internalCallContext);
     }
 
-    public UUID run(final TransactionType transactionType, final Account account, @Nullable final UUID paymentMethodId,
+    public UUID run(final TransactionType transactionType, final Account account,
                     @Nullable final UUID directPaymentId, final String directPaymentTransactionExternalKey,
                     final BigDecimal amount, final Currency currency,
                     final Iterable<PluginProperty> properties,
                     final CallContext callContext, final InternalCallContext internalCallContext) throws PaymentApiException {
-        return run(transactionType, account, paymentMethodId, directPaymentId, null, directPaymentTransactionExternalKey, amount, currency, properties, callContext, internalCallContext);
+        return run(transactionType, account, null, directPaymentId, null, directPaymentTransactionExternalKey, amount, currency, properties, callContext, internalCallContext);
     }
 
     public UUID run(final TransactionType transactionType, final Account account, @Nullable final UUID paymentMethodId,
@@ -100,20 +100,23 @@ public class DirectPaymentAutomatonRunner {
         final DirectPaymentStateContext directPaymentStateContext = new DirectPaymentStateContext(directPaymentId, directPaymentExternalKey, directPaymentTransactionExternalKey, transactionType, account, paymentMethodId, amount, currency, properties, internalCallContext, callContext);
         final DirectPaymentAutomatonDAOHelper daoHelper = new DirectPaymentAutomatonDAOHelper(directPaymentStateContext, utcNow, paymentDao, pluginRegistry, internalCallContext);
 
-        // If the payment method is not specified, retrieve the default one on the account
-        directPaymentStateContext.setPaymentMethodId(Objects.firstNonNull(paymentMethodId, daoHelper.getDefaultPaymentMethodId(account)));
-
-        String currentStateMachineName;
+        final UUID nonNullPaymentMethodId;
+        final String currentStateMachineName;
         final String currentStateName;
         if (directPaymentId != null) {
             final DirectPaymentModelDao directPaymentModelDao = daoHelper.getDirectPayment();
+            nonNullPaymentMethodId = directPaymentModelDao.getPaymentMethodId();
             currentStateName = directPaymentModelDao.getCurrentStateName();
             currentStateMachineName = getStateMachineName(currentStateName);
 
             // Check for illegal states (should never happen)
             Preconditions.checkState(currentStateMachineName != null, "State machine name cannot be null for direct payment " + directPaymentId);
             Preconditions.checkState(currentStateName != null, "State name cannot be null for direct payment " + directPaymentId);
+            Preconditions.checkState(paymentMethodId == null || nonNullPaymentMethodId.equals(paymentMethodId), "Specified payment method id " + paymentMethodId + " doesn't match the one on the payment " + nonNullPaymentMethodId);
         } else {
+            // If the payment method is not specified, retrieve the default one on the account
+            nonNullPaymentMethodId = Objects.firstNonNull(paymentMethodId, daoHelper.getDefaultPaymentMethodId(account));
+
             switch (transactionType) {
                 case AUTHORIZE:
                     currentStateMachineName = "AUTHORIZE";
@@ -127,6 +130,8 @@ public class DirectPaymentAutomatonRunner {
                     throw new IllegalStateException("Unsupported transaction type " + transactionType + " for null direct payment id");
             }
         }
+
+        directPaymentStateContext.setPaymentMethodId(nonNullPaymentMethodId);
 
         final String operationStateMachineName;
         final String operationName;

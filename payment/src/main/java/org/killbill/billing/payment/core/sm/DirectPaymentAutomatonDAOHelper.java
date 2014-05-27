@@ -65,7 +65,7 @@ public class DirectPaymentAutomatonDAOHelper {
             final DirectPaymentTransactionModelDao newPaymentTransactionModelDao = buildNewDirectPaymentTransactionModelDao(newPaymentModelDao.getId());
 
             final DirectPaymentModelDao paymentModelDao = paymentDao.insertDirectPaymentWithFirstTransaction(newPaymentModelDao, newPaymentTransactionModelDao, internalCallContext);
-            paymentTransactionModelDao = paymentDao.getDirectTransactionsForAccount(directPaymentStateContext.getAccount().getId(), internalCallContext).get(0);
+            paymentTransactionModelDao = paymentDao.getDirectTransactionsForDirectPayment(paymentModelDao.getId(), internalCallContext).get(0);
         } else {
             final DirectPaymentTransactionModelDao newPaymentTransactionModelDao = buildNewDirectPaymentTransactionModelDao();
             paymentTransactionModelDao = paymentDao.updateDirectPaymentWithNewTransaction(directPaymentStateContext.getDirectPaymentId(), newPaymentTransactionModelDao, internalCallContext);
