@@ -88,7 +88,7 @@ public class DirectPaymentResource extends JaxRsResourceBase {
     @Path("/{directPaymentId:" + UUID_PATTERN + "}/")
     @Produces(APPLICATION_JSON)
     public Response getDirectPayment(@PathParam("directPaymentId") final String directPaymentIdStr,
-                                     @QueryParam(QUERY_PAYMENT_METHOD_PLUGIN_INFO) @DefaultValue("false") final Boolean withPluginInfo,
+                                     @QueryParam(QUERY_WITH_PLUGIN_INFO) @DefaultValue("false") final Boolean withPluginInfo,
                                      @QueryParam(QUERY_PLUGIN_PROPERTY) final List<String> pluginPropertiesString,
                                      @QueryParam(QUERY_AUDIT) @DefaultValue("NONE") final AuditMode auditMode,
                                      @javax.ws.rs.core.Context final HttpServletRequest request) throws PaymentApiException {
