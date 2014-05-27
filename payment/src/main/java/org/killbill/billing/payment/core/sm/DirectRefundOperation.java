@@ -23,20 +23,20 @@ import org.killbill.billing.ErrorCode;
 import org.killbill.billing.payment.api.PaymentApiException;
 import org.killbill.billing.payment.core.ProcessorBase.WithAccountLockCallback;
 import org.killbill.billing.payment.dispatcher.PluginDispatcher;
-import org.killbill.billing.payment.plugin.api.PaymentInfoPlugin;
 import org.killbill.billing.payment.plugin.api.PaymentPluginApi;
 import org.killbill.billing.payment.plugin.api.PaymentPluginApiException;
+import org.killbill.billing.payment.plugin.api.RefundInfoPlugin;
 import org.killbill.commons.locker.GlobalLocker;
 
 // Encapsulates the payment specific logic
-public abstract class DirectPaymentOperation extends PluginOperation<PaymentInfoPlugin, PaymentPluginApiException> {
+public abstract class DirectRefundOperation extends PluginOperation<RefundInfoPlugin, PaymentPluginApiException> {
 
     protected final DirectPaymentStateContext directPaymentStateContext;
     protected final PaymentPluginApi plugin;
 
-    protected DirectPaymentOperation(final DirectPaymentAutomatonDAOHelper daoHelper, final GlobalLocker locker,
-                                     final PluginDispatcher<OperationResult> paymentPluginDispatcher,
-                                     final DirectPaymentStateContext directPaymentStateContext) throws PaymentApiException {
+    protected DirectRefundOperation(final DirectPaymentAutomatonDAOHelper daoHelper, final GlobalLocker locker,
+                                    final PluginDispatcher<OperationResult> paymentPluginDispatcher,
+                                    final DirectPaymentStateContext directPaymentStateContext) throws PaymentApiException {
         super(locker, paymentPluginDispatcher, directPaymentStateContext);
         this.directPaymentStateContext = directPaymentStateContext;
         this.plugin = daoHelper.getPaymentProviderPlugin(directPaymentStateContext.getInternalCallContext());
@@ -48,9 +48,9 @@ public abstract class DirectPaymentOperation extends PluginOperation<PaymentInfo
             @Override
             public OperationResult doOperation() throws PaymentApiException {
                 try {
-                    final PaymentInfoPlugin paymentInfoPlugin = doPluginOperation();
+                    final RefundInfoPlugin refundInfoPlugin = doPluginOperation();
 
-                    directPaymentStateContext.setPaymentInfoPlugin(paymentInfoPlugin);
+                    directPaymentStateContext.setRefundInfoPlugin(refundInfoPlugin);
 
                     return processPaymentInfoPlugin();
                 } catch (final PaymentPluginApiException e) {
@@ -62,11 +62,11 @@ public abstract class DirectPaymentOperation extends PluginOperation<PaymentInfo
     }
 
     private OperationResult processPaymentInfoPlugin() {
-        if (directPaymentStateContext.getPaymentInfoPlugin() == null) {
+        if (directPaymentStateContext.getRefundInfoPlugin() == null) {
             return OperationResult.FAILURE;
         }
 
-        switch (directPaymentStateContext.getPaymentInfoPlugin().getStatus()) {
+        switch (directPaymentStateContext.getRefundInfoPlugin().getStatus()) {
             case PROCESSED:
                 return OperationResult.SUCCESS;
             case PENDING:

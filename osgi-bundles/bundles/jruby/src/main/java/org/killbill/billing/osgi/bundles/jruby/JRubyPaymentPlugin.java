@@ -111,6 +111,16 @@ public class JRubyPaymentPlugin extends JRubyPlugin implements PaymentPluginApi 
     }
 
     @Override
+    public PaymentInfoPlugin creditPayment(final UUID kbAccountId, final UUID kbPaymentId, final UUID kbPaymentMethodId, final BigDecimal amount, final Currency currency, final Iterable<PluginProperty> properties, final CallContext context) throws PaymentPluginApiException {
+        return callWithRuntimeAndChecking(new PluginCallback<PaymentInfoPlugin>(VALIDATION_PLUGIN_TYPE.PAYMENT) {
+            @Override
+            public PaymentInfoPlugin doCall(final Ruby runtime) throws PaymentPluginApiException {
+                return ((PaymentPluginApi) pluginInstance).creditPayment(kbAccountId, kbPaymentId, kbPaymentMethodId, amount, currency, properties, context);
+            }
+        });
+    }
+
+    @Override
     public PaymentInfoPlugin getPaymentInfo(final UUID kbAccountId, final UUID kbPaymentId, final Iterable<PluginProperty> properties, final TenantContext context) throws PaymentPluginApiException {
         return callWithRuntimeAndChecking(new PluginCallback<PaymentInfoPlugin>(VALIDATION_PLUGIN_TYPE.PAYMENT) {
             @Override

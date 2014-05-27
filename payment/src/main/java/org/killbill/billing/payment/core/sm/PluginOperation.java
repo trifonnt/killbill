@@ -29,8 +29,6 @@ import org.killbill.billing.payment.core.ProcessorBase.CallableWithAccountLock;
 import org.killbill.billing.payment.core.ProcessorBase.CallableWithoutAccountLock;
 import org.killbill.billing.payment.core.ProcessorBase.WithAccountLockCallback;
 import org.killbill.billing.payment.dispatcher.PluginDispatcher;
-import org.killbill.billing.payment.plugin.api.PaymentInfoPlugin;
-import org.killbill.billing.payment.plugin.api.PaymentPluginApiException;
 import org.killbill.commons.locker.GlobalLocker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,7 +36,7 @@ import org.slf4j.LoggerFactory;
 import com.google.common.base.Objects;
 
 // Encapsulates the plugin delegation logic
-public abstract class PluginOperation implements OperationCallback {
+public abstract class PluginOperation<T, E extends Exception> implements OperationCallback {
 
     private final Logger logger = LoggerFactory.getLogger(PluginOperation.class);
 
@@ -54,7 +52,7 @@ public abstract class PluginOperation implements OperationCallback {
         this.directPaymentStateContext = directPaymentStateContext;
     }
 
-    protected abstract PaymentInfoPlugin doPluginOperation() throws PaymentPluginApiException;
+    protected abstract T doPluginOperation() throws E;
 
     protected OperationResult dispatchWithTimeout(final WithAccountLockCallback<OperationResult> callback) throws OperationException {
         final Account account = directPaymentStateContext.getAccount();

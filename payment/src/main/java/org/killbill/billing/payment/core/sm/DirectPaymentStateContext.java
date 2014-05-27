@@ -30,6 +30,7 @@ import org.killbill.billing.payment.api.PluginProperty;
 import org.killbill.billing.payment.api.TransactionType;
 import org.killbill.billing.payment.dao.DirectPaymentTransactionModelDao;
 import org.killbill.billing.payment.plugin.api.PaymentInfoPlugin;
+import org.killbill.billing.payment.plugin.api.RefundInfoPlugin;
 import org.killbill.billing.util.callcontext.CallContext;
 
 public class DirectPaymentStateContext {
@@ -42,6 +43,7 @@ public class DirectPaymentStateContext {
     // Stateful objects created by the callbacks and passed to the other following callbacks in the automaton
     protected DirectPaymentTransactionModelDao directPaymentTransactionModelDao;
     protected PaymentInfoPlugin paymentInfoPlugin;
+    protected RefundInfoPlugin refundInfoPlugin;
 
     protected final String directPaymentExternalKey;
     protected final String directPaymentTransactionExternalKey;
@@ -101,6 +103,14 @@ public class DirectPaymentStateContext {
 
     public void setPaymentInfoPlugin(final PaymentInfoPlugin paymentInfoPlugin) {
         this.paymentInfoPlugin = paymentInfoPlugin;
+    }
+
+    public RefundInfoPlugin getRefundInfoPlugin() {
+        return refundInfoPlugin;
+    }
+
+    public void setRefundInfoPlugin(final RefundInfoPlugin refundInfoPlugin) {
+        this.refundInfoPlugin = refundInfoPlugin;
     }
 
     public UUID getDirectPaymentId() {

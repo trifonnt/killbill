@@ -20,28 +20,27 @@ package org.killbill.billing.payment.core.sm;
 import org.killbill.automaton.OperationResult;
 import org.killbill.billing.payment.api.PaymentApiException;
 import org.killbill.billing.payment.dispatcher.PluginDispatcher;
-import org.killbill.billing.payment.plugin.api.PaymentInfoPlugin;
 import org.killbill.billing.payment.plugin.api.PaymentPluginApiException;
+import org.killbill.billing.payment.plugin.api.RefundInfoPlugin;
 import org.killbill.commons.locker.GlobalLocker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class CreditOperation extends DirectPaymentOperation {
+public class RefundOperation extends DirectRefundOperation {
 
-    private final Logger logger = LoggerFactory.getLogger(CreditOperation.class);
+    private final Logger logger = LoggerFactory.getLogger(RefundOperation.class);
 
-    public CreditOperation(final DirectPaymentAutomatonDAOHelper daoHelper,
+    public RefundOperation(final DirectPaymentAutomatonDAOHelper daoHelper,
                            final GlobalLocker locker, final PluginDispatcher<OperationResult> paymentPluginDispatcher,
                            final DirectPaymentStateContext directPaymentStateContext) throws PaymentApiException {
         super(daoHelper, locker, paymentPluginDispatcher, directPaymentStateContext);
     }
 
     @Override
-    protected PaymentInfoPlugin doPluginOperation() throws PaymentPluginApiException {
-        logger.debug("Starting CREDIT for payment {} ({} {})", directPaymentStateContext.getDirectPaymentId(), directPaymentStateContext.getAmount(), directPaymentStateContext.getCurrency());
-        return plugin.creditPayment(directPaymentStateContext.getAccount().getId(),
+    protected RefundInfoPlugin doPluginOperation() throws PaymentPluginApiException {
+        logger.debug("Starting REFUND for payment {} ({} {})", directPaymentStateContext.getDirectPaymentId(), directPaymentStateContext.getAmount(), directPaymentStateContext.getCurrency());
+        return plugin.processRefund(directPaymentStateContext.getAccount().getId(),
                                     directPaymentStateContext.getDirectPaymentId(),
-                                    directPaymentStateContext.getPaymentMethodId(),
                                     directPaymentStateContext.getAmount(),
                                     directPaymentStateContext.getCurrency(),
                                     directPaymentStateContext.getProperties(),

@@ -186,12 +186,31 @@ public class DirectPaymentProcessor extends ProcessorBase {
         return getPayment(nonNullDirectPaymentId, true, properties, callContext, internalCallContext);
     }
 
-    public DirectPayment createCredit(final Account account, final UUID directPaymentId, final BigDecimal amount, final Currency currency,
+    public DirectPayment createRefund(final Account account, final UUID directPaymentId, final BigDecimal amount, final Currency currency,
                                       final String directPaymentTransactionExternalKey, final boolean shouldLockAccount,
+                                      final Iterable<PluginProperty> properties, final CallContext callContext, final InternalCallContext internalCallContext) throws PaymentApiException {
+        final UUID nonNullDirectPaymentId = directPaymentAutomatonRunner.run(TransactionType.REFUND,
+                                                                             account,
+                                                                             directPaymentId,
+                                                                             directPaymentTransactionExternalKey,
+                                                                             amount,
+                                                                             currency,
+                                                                             shouldLockAccount,
+                                                                             properties,
+                                                                             callContext,
+                                                                             internalCallContext);
+
+        return getPayment(nonNullDirectPaymentId, true, properties, callContext, internalCallContext);
+    }
+
+    public DirectPayment createCredit(final Account account, final UUID paymentMethodId, @Nullable final UUID directPaymentId, final BigDecimal amount, final Currency currency,
+                                      final String directPaymentExternalKey, final String directPaymentTransactionExternalKey, final boolean shouldLockAccount,
                                       final Iterable<PluginProperty> properties, final CallContext callContext, final InternalCallContext internalCallContext) throws PaymentApiException {
         final UUID nonNullDirectPaymentId = directPaymentAutomatonRunner.run(TransactionType.CREDIT,
                                                                              account,
+                                                                             paymentMethodId,
                                                                              directPaymentId,
+                                                                             directPaymentExternalKey,
                                                                              directPaymentTransactionExternalKey,
                                                                              amount,
                                                                              currency,

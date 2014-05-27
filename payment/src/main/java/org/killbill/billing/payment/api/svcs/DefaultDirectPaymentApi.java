@@ -70,8 +70,13 @@ public class DefaultDirectPaymentApi implements DirectPaymentApi {
     }
 
     @Override
-    public DirectPayment createCredit(final Account account, final UUID directPaymentId, final BigDecimal amount, final Currency currency, final String directPaymentTransactionExternalKey, final Iterable<PluginProperty> properties, final CallContext callContext) throws PaymentApiException {
-        return directPaymentProcessor.createCredit(account, directPaymentId, amount, currency, directPaymentTransactionExternalKey, SHOULD_LOCK_ACCOUNT, properties, callContext, internalCallContextFactory.createInternalCallContext(account.getId(), callContext));
+    public DirectPayment createRefund(final Account account, final UUID directPaymentId, final BigDecimal amount, final Currency currency, final String directPaymentTransactionExternalKey, final Iterable<PluginProperty> properties, final CallContext callContext) throws PaymentApiException {
+        return directPaymentProcessor.createRefund(account, directPaymentId, amount, currency, directPaymentTransactionExternalKey, SHOULD_LOCK_ACCOUNT, properties, callContext, internalCallContextFactory.createInternalCallContext(account.getId(), callContext));
+    }
+
+    @Override
+    public DirectPayment createCredit(final Account account, final UUID paymentMethodId, final UUID directPaymentId, final BigDecimal amount, final Currency currency, final String directPaymentExternalKey, final String directPaymentTransactionExternalKey, final Iterable<PluginProperty> properties, final CallContext callContext) throws PaymentApiException {
+        return directPaymentProcessor.createCredit(account, paymentMethodId, directPaymentId, amount, currency, directPaymentExternalKey, directPaymentTransactionExternalKey, SHOULD_LOCK_ACCOUNT, properties, callContext, internalCallContextFactory.createInternalCallContext(account.getId(), callContext));
     }
 
     @Override

@@ -123,6 +123,10 @@ public class DirectPaymentAutomatonRunner {
                     currentStateMachineName = "AUTHORIZE";
                     currentStateName = "AUTH_INIT";
                     break;
+                case CREDIT:
+                    currentStateMachineName = "CREDIT";
+                    currentStateName = "CREDIT_INIT";
+                    break;
                 case PURCHASE:
                     currentStateMachineName = "PURCHASE";
                     currentStateName = "PURCHASE_INIT";
@@ -167,6 +171,13 @@ public class DirectPaymentAutomatonRunner {
                 operationCallback = new VoidOperation(daoHelper, locker, paymentPluginDispatcher, directPaymentStateContext);
                 leavingStateCallback = new VoidInitiated(daoHelper, directPaymentStateContext);
                 enteringStateCallback = new VoidCompleted(daoHelper, directPaymentStateContext);
+                break;
+            case REFUND:
+                operationStateMachineName = "REFUND";
+                operationName = "OP_REFUND";
+                operationCallback = new RefundOperation(daoHelper, locker, paymentPluginDispatcher, directPaymentStateContext);
+                leavingStateCallback = new RefundInitiated(daoHelper, directPaymentStateContext);
+                enteringStateCallback = new RefundCompleted(daoHelper, directPaymentStateContext);
                 break;
             case CREDIT:
                 operationStateMachineName = "CREDIT";
