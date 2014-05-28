@@ -1,9 +1,13 @@
 group PaymentAttemptSqlDao: EntitySqlDao;
 
+tableName() ::= "payment_attempts"
+
+historyTableName() ::= "payment_attempt_history"
+
 
 tableFields(prefix) ::= <<
   <prefix>direct_transaction_id
-, <prefix>external_key
+, <prefix>transaction_external_key
 , <prefix>state_name
 , <prefix>operation_name
 , <prefix>plugin_name
@@ -25,8 +29,27 @@ tableValues() ::= <<
 , :updatedDate
 >>
 
-tableName() ::= "payment_attempts"
+getByTransactionExternalKey() ::= <<
+select
+<allTableFields("")>
+from <tableName()>
+where transaction_external_key = :transactionExternalKey
+<andCheckSoftDeletionWithComma("")>
+<AND_CHECK_TENANT("")>
+;
+>>
 
-historyTableName() ::= "payment_attempt_history"
+
+updateStateName() ::= <<
+update <tableName()>
+set state_name = :stateName
+, updated_by = :updatedBy
+, updated_date = :createdDate
+where id = :id
+<AND_CHECK_TENANT()>
+;
+>>
+
+
 
 

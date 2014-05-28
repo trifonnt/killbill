@@ -53,6 +53,10 @@ public class PaymentAttemptModelDao extends EntityBase implements EntityModelDao
         this(UUID.randomUUID(), createdDate, updatedDate, directTransactionId, externalKey, stateName, operationName, pluginName);
     }
 
+    public UUID getDirectTransactionId() {
+        return directTransactionId;
+    }
+
     public void setDirectTransactionId(final UUID directTransactionId) {
         this.directTransactionId = directTransactionId;
     }

@@ -17,6 +17,7 @@
 package org.killbill.billing.payment.dao;
 
 import org.killbill.billing.callcontext.InternalCallContext;
+import org.killbill.billing.callcontext.InternalTenantContext;
 import org.killbill.billing.payment.api.DirectPaymentTransaction;
 import org.killbill.billing.util.audit.ChangeType;
 import org.killbill.billing.util.entity.dao.Audited;
@@ -24,6 +25,7 @@ import org.killbill.billing.util.entity.dao.EntitySqlDao;
 import org.killbill.billing.util.entity.dao.EntitySqlDaoStringTemplate;
 import org.skife.jdbi.v2.sqlobject.Bind;
 import org.skife.jdbi.v2.sqlobject.BindBean;
+import org.skife.jdbi.v2.sqlobject.SqlQuery;
 import org.skife.jdbi.v2.sqlobject.SqlUpdate;
 
 @EntitySqlDaoStringTemplate
@@ -36,4 +38,11 @@ public interface DirectTransactionSqlDao extends EntitySqlDao<DirectPaymentTrans
                                  @Bind("gatewayErrorCode") final String gatewayErrorCode,
                                  @Bind("gatewayErrorMsg") final String gatewayErrorMsg,
                                  @BindBean final InternalCallContext context);
+
+    @SqlQuery
+    DirectPaymentTransactionModelDao getDirectPaymentTransactionByExternalKey(@Bind("transactionExternalKey") final String transactionExternalKey,
+                                                                              @BindBean final InternalTenantContext context);
+
 }
+
+

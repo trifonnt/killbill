@@ -86,6 +86,37 @@ public class TestPaymentDao extends PaymentTestSuiteWithEmbeddedDB {
     }
 
     @Test(groups = "slow")
+    public void testPaymentAttempt() {
+        final UUID directTransactionId = UUID.randomUUID();
+        final String externalKey = "tduteuqweq";
+        final String stateName = "INIT";
+        final String operationName = "AUTHORIZE";
+        final String pluginName = "superPlugin";
+
+        final PaymentAttemptModelDao attempt = new PaymentAttemptModelDao(clock.getUTCNow(), clock.getUTCNow(), directTransactionId, externalKey, stateName, operationName, pluginName);
+        PaymentAttemptModelDao savedAttempt = paymentDao.insertPaymentAttempt(attempt, internalCallContext);
+        assertEquals(savedAttempt.getTransactionExternalKey(), externalKey);
+        assertEquals(savedAttempt.getOperationName(), operationName);
+        assertEquals(savedAttempt.getStateName(), stateName);
+        assertEquals(savedAttempt.getPluginName(), pluginName);
+
+        final PaymentAttemptModelDao retrievedAttempt1 = paymentDao.getPaymentAttempt(attempt.getId(), internalCallContext);
+        assertEquals(retrievedAttempt1.getTransactionExternalKey(), externalKey);
+        assertEquals(retrievedAttempt1.getOperationName(), operationName);
+        assertEquals(retrievedAttempt1.getStateName(), stateName);
+        assertEquals(retrievedAttempt1.getPluginName(), pluginName);
+
+
+        final PaymentAttemptModelDao retrievedAttempt2 = paymentDao.getPaymentAttemptByExternalKey(externalKey, internalCallContext);
+        assertEquals(retrievedAttempt2.getTransactionExternalKey(), externalKey);
+        assertEquals(retrievedAttempt2.getOperationName(), operationName);
+        assertEquals(retrievedAttempt2.getStateName(), stateName);
+        assertEquals(retrievedAttempt2.getPluginName(), pluginName);
+    }
+
+
+
+    @Test(groups = "slow")
     public void testUpdateStatus() {
         final UUID accountId = UUID.randomUUID();
         final UUID invoiceId = UUID.randomUUID();

@@ -40,6 +40,15 @@ tableValues() ::= <<
 , :updatedDate
 >>
 
+getDirectPaymentTransactionByExternalKey() ::= <<
+select
+<allTableFields("")>
+from <tableName()>
+where external_key = :transactionExternalKey
+;
+>>
+
+
 updateTransactionStatus() ::= <<
 update <tableName()>
 set payment_status = :paymentStatus
