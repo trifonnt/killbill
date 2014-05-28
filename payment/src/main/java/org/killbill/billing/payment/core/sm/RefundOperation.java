@@ -20,13 +20,13 @@ package org.killbill.billing.payment.core.sm;
 import org.killbill.automaton.OperationResult;
 import org.killbill.billing.payment.api.PaymentApiException;
 import org.killbill.billing.payment.dispatcher.PluginDispatcher;
+import org.killbill.billing.payment.plugin.api.PaymentInfoPlugin;
 import org.killbill.billing.payment.plugin.api.PaymentPluginApiException;
-import org.killbill.billing.payment.plugin.api.RefundInfoPlugin;
 import org.killbill.commons.locker.GlobalLocker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class RefundOperation extends DirectRefundOperation {
+public class RefundOperation extends DirectPaymentOperation {
 
     private final Logger logger = LoggerFactory.getLogger(RefundOperation.class);
 
@@ -37,7 +37,7 @@ public class RefundOperation extends DirectRefundOperation {
     }
 
     @Override
-    protected RefundInfoPlugin doPluginOperation() throws PaymentPluginApiException {
+    protected PaymentInfoPlugin doPluginOperation() throws PaymentPluginApiException {
         logger.debug("Starting REFUND for payment {} ({} {})", directPaymentStateContext.getDirectPaymentId(), directPaymentStateContext.getAmount(), directPaymentStateContext.getCurrency());
         return plugin.processRefund(directPaymentStateContext.getAccount().getId(),
                                     directPaymentStateContext.getDirectPaymentId(),

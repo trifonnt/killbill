@@ -48,18 +48,20 @@ public abstract class DirectPaymentEnteringStateCallback implements EnteringStat
     public void enteringState(final State newState, final Operation.OperationCallback operationCallback, final OperationResult operationResult, final LeavingStateCallback leavingStateCallback) {
         logger.debug("Entering state {} with result {}", newState.getName(), operationResult);
 
-        final PaymentInfoPlugin paymentInfoPlugin = directPaymentStateContext.getPaymentInfoPlugin();
         final UUID directPaymentTransactionId = directPaymentStateContext.getDirectPaymentTransactionModelDao().getId();
+        final PaymentInfoPlugin paymentInfoPlugin = directPaymentStateContext.getPaymentInfoPlugin();
 
         // Check for illegal states (should never happen)
-        Preconditions.checkState(OperationResult.EXCEPTION.equals(operationResult) || paymentInfoPlugin != null);
         Preconditions.checkState(directPaymentTransactionId != null);
+        Preconditions.checkState(OperationResult.EXCEPTION.equals(operationResult) || paymentInfoPlugin != null);
 
-        final PaymentStatus paymentStatus = processOperationResult(operationResult);
-        daoHelper.processPaymentInfoPlugin(paymentStatus, paymentInfoPlugin, directPaymentTransactionId, newState.getName());
+        if (paymentInfoPlugin != null) {
+            final PaymentStatus paymentStatus = processOperationResultForPayment(operationResult);
+            daoHelper.processPaymentInfoPlugin(paymentStatus, paymentInfoPlugin, directPaymentTransactionId, newState.getName());
+        }
     }
 
-    protected PaymentStatus processOperationResult(final OperationResult operationResult) {
+    protected PaymentStatus processOperationResultForPayment(final OperationResult operationResult) {
         switch (operationResult) {
             case PENDING:
                 return PaymentStatus.PENDING;

@@ -39,7 +39,6 @@ public class DefaultDirectPayment extends EntityBase implements DirectPayment {
     private final BigDecimal captureAmount;
     private final BigDecimal refundAmount;
     private final Currency currency;
-    private final PaymentStatus paymentStatus;
     private final List<DirectPaymentTransaction> transactions;
 
     public DefaultDirectPayment(final UUID id, @Nullable final DateTime createdDate, @Nullable final DateTime updatedDate, final UUID accountId,
@@ -55,9 +54,8 @@ public class DefaultDirectPayment extends EntityBase implements DirectPayment {
         this.transactions = transactions;
         this.authAmount = getAmountForType(transactions, TransactionType.AUTHORIZE);
         this.captureAmount = getAmountForType(transactions, TransactionType.CAPTURE);
-        this.refundAmount = getAmountForType(transactions, TransactionType.CREDIT);
+        this.refundAmount = getAmountForType(transactions, TransactionType.REFUND);
         this.currency = (transactions != null && !transactions.isEmpty()) ? transactions.get(0).getCurrency() : null;
-        this.paymentStatus = (transactions != null && !transactions.isEmpty()) ? transactions.get(transactions.size() - 1).getPaymentStatus() : null;
     }
 
     private static BigDecimal getAmountForType(final Iterable<DirectPaymentTransaction> transactions, final TransactionType transactiontype) {
@@ -115,11 +113,6 @@ public class DefaultDirectPayment extends EntityBase implements DirectPayment {
     }
 
     @Override
-    public PaymentStatus getPaymentStatus() {
-        return paymentStatus;
-    }
-
-    @Override
     public List<DirectPaymentTransaction> getTransactions() {
         return transactions;
     }
@@ -135,7 +128,6 @@ public class DefaultDirectPayment extends EntityBase implements DirectPayment {
         sb.append(", captureAmount=").append(captureAmount);
         sb.append(", refundAmount=").append(refundAmount);
         sb.append(", currency=").append(currency);
-        sb.append(", paymentStatus=").append(paymentStatus);
         sb.append(", transactions=").append(transactions);
         sb.append('}');
         return sb.toString();
@@ -176,9 +168,6 @@ public class DefaultDirectPayment extends EntityBase implements DirectPayment {
         if (paymentNumber != null ? !paymentNumber.equals(that.paymentNumber) : that.paymentNumber != null) {
             return false;
         }
-        if (paymentStatus != that.paymentStatus) {
-            return false;
-        }
         if (refundAmount != null ? refundAmount.compareTo(that.refundAmount) != 0 : that.refundAmount != null) {
             return false;
         }
@@ -200,7 +189,6 @@ public class DefaultDirectPayment extends EntityBase implements DirectPayment {
         result = 31 * result + (captureAmount != null ? captureAmount.hashCode() : 0);
         result = 31 * result + (refundAmount != null ? refundAmount.hashCode() : 0);
         result = 31 * result + (currency != null ? currency.hashCode() : 0);
-        result = 31 * result + (paymentStatus != null ? paymentStatus.hashCode() : 0);
         result = 31 * result + (transactions != null ? transactions.hashCode() : 0);
         return result;
     }

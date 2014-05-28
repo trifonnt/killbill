@@ -88,25 +88,16 @@ public class TestDirectPayment extends TestJaxrsBase {
         final String refundDirectTransactionExternalKey = UUID.randomUUID().toString();
         final DirectTransaction refundTransaction = new DirectTransaction();
         refundTransaction.setDirectPaymentId(authDirectPayment.getDirectPaymentId());
-        refundTransaction.setAmount(new BigDecimal("223.12"));
+        refundTransaction.setAmount(new BigDecimal("2"));
         refundTransaction.setCurrency(account.getCurrency());
         refundTransaction.setDirectPaymentExternalKey(directPaymentExternalKey);
         refundTransaction.setDirectTransactionExternalKey(refundDirectTransactionExternalKey);
         final DirectPayment refundDirectPayment = killBillClient.refundPayment(refundTransaction, createdBy, reason, comment);
         verifyDirectPayment(account, paymentMethodId, refundDirectPayment, directPaymentExternalKey, authDirectTransactionExternalKey,
-                            BigDecimal.TEN, new BigDecimal("2"), new BigDecimal("223.12"), 4, directPaymentNb);
+                            BigDecimal.TEN, new BigDecimal("2"), new BigDecimal("2"), 4, directPaymentNb);
         verifyDirectPaymentTransaction(authDirectPayment.getDirectPaymentId(), refundDirectPayment.getTransactions().get(3),
                                        directPaymentExternalKey, refundDirectTransactionExternalKey,
                                        account, refundTransaction.getAmount(), "REFUND");
-
-        // Void
-        final String voidDirectTransactionExternalKey = UUID.randomUUID().toString();
-        final DirectPayment voidDirectPayment = killBillClient.voidPayment(authDirectPayment.getDirectPaymentId(), voidDirectTransactionExternalKey, createdBy, reason, comment);
-        verifyDirectPayment(account, paymentMethodId, voidDirectPayment, directPaymentExternalKey, authDirectTransactionExternalKey,
-                            BigDecimal.TEN, new BigDecimal("2"), new BigDecimal("223.12"), 5, directPaymentNb);
-        verifyDirectPaymentTransaction(authDirectPayment.getDirectPaymentId(), voidDirectPayment.getTransactions().get(4),
-                                       directPaymentExternalKey, voidDirectTransactionExternalKey,
-                                       account, null, "VOID");
     }
 
     private void verifyDirectPayment(final Account account, @Nullable final UUID paymentMethodId, final DirectPayment directPayment,
