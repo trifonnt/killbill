@@ -41,6 +41,8 @@ public class DirectPaymentTransactionModelDao extends EntityBase implements Enti
     private PaymentStatus paymentStatus;
     private BigDecimal amount;
     private Currency currency;
+    private BigDecimal processedAmount;
+    private Currency processedCurrency;
     private String gatewayErrorCode;
     private String gatewayErrorMsg;
 
@@ -57,6 +59,8 @@ public class DirectPaymentTransactionModelDao extends EntityBase implements Enti
         this.paymentStatus = paymentStatus;
         this.amount = amount;
         this.currency = currency;
+        this.processedAmount = null;
+        this.processedCurrency = null;
         this.gatewayErrorCode = gatewayErrorCode;
         this.gatewayErrorMsg = gatewayErrorMsg;
     }
@@ -75,64 +79,40 @@ public class DirectPaymentTransactionModelDao extends EntityBase implements Enti
         return externalKey;
     }
 
-    public void setDirectPaymentId(final UUID directPaymentId) {
-        this.directPaymentId = directPaymentId;
-    }
-
     public TransactionType getTransactionType() {
         return transactionType;
-    }
-
-    public void setTransactionType(final TransactionType transactionType) {
-        this.transactionType = transactionType;
     }
 
     public DateTime getEffectiveDate() {
         return effectiveDate;
     }
 
-    public void setEffectiveDate(final DateTime effectiveDate) {
-        this.effectiveDate = effectiveDate;
-    }
-
     public PaymentStatus getPaymentStatus() {
         return paymentStatus;
-    }
-
-    public void setPaymentStatus(final PaymentStatus paymentStatus) {
-        this.paymentStatus = paymentStatus;
     }
 
     public BigDecimal getAmount() {
         return amount;
     }
 
-    public void setAmount(final BigDecimal amount) {
-        this.amount = amount;
-    }
-
     public Currency getCurrency() {
         return currency;
     }
 
-    public void setCurrency(final Currency currency) {
-        this.currency = currency;
+    public BigDecimal getProcessedAmount() {
+        return processedAmount;
+    }
+
+    public Currency getProcessedCurrency() {
+        return processedCurrency;
     }
 
     public String getGatewayErrorCode() {
         return gatewayErrorCode;
     }
 
-    public void setGatewayErrorCode(final String gatewayErrorCode) {
-        this.gatewayErrorCode = gatewayErrorCode;
-    }
-
     public String getGatewayErrorMsg() {
         return gatewayErrorMsg;
-    }
-
-    public void setGatewayErrorMsg(final String gatewayErrorMsg) {
-        this.gatewayErrorMsg = gatewayErrorMsg;
     }
 
     @Override
@@ -145,6 +125,8 @@ public class DirectPaymentTransactionModelDao extends EntityBase implements Enti
         sb.append(", paymentStatus=").append(paymentStatus);
         sb.append(", amount=").append(amount);
         sb.append(", currency=").append(currency);
+        sb.append(", processedAmount=").append(processedAmount);
+        sb.append(", processedCurrency=").append(processedCurrency);
         sb.append(", gatewayErrorCode='").append(gatewayErrorCode).append('\'');
         sb.append(", gatewayErrorMsg='").append(gatewayErrorMsg).append('\'');
         sb.append('}');
@@ -189,6 +171,12 @@ public class DirectPaymentTransactionModelDao extends EntityBase implements Enti
         if (paymentStatus != that.paymentStatus) {
             return false;
         }
+        if (processedAmount != null ? processedAmount.compareTo(that.processedAmount) != 0 : that.processedAmount != null) {
+            return false;
+        }
+        if (processedCurrency != that.processedCurrency) {
+            return false;
+        }
         if (transactionType != that.transactionType) {
             return false;
         }
@@ -206,6 +194,8 @@ public class DirectPaymentTransactionModelDao extends EntityBase implements Enti
         result = 31 * result + (paymentStatus != null ? paymentStatus.hashCode() : 0);
         result = 31 * result + (amount != null ? amount.hashCode() : 0);
         result = 31 * result + (currency != null ? currency.hashCode() : 0);
+        result = 31 * result + (processedAmount != null ? processedAmount.hashCode() : 0);
+        result = 31 * result + (processedCurrency != null ? processedCurrency.hashCode() : 0);
         result = 31 * result + (gatewayErrorCode != null ? gatewayErrorCode.hashCode() : 0);
         result = 31 * result + (gatewayErrorMsg != null ? gatewayErrorMsg.hashCode() : 0);
         return result;

@@ -125,15 +125,19 @@ public class DefaultPaymentDao implements PaymentDao {
     }
 
     @Override
-    public void updateDirectPaymentAndTransactionOnCompletion(final UUID directPaymentId, final PaymentStatus paymentStatus,
+    public void updateDirectPaymentAndTransactionOnCompletion(final UUID directPaymentId, final String currentPaymentStateName,
+                                                              final UUID directTransactionId, final PaymentStatus paymentStatus,
                                                               final BigDecimal processedAmount, final Currency processedCurrency,
-                                                              final UUID directTransactionId, final String gatewayErrorCode, final String gatewayErrorMsg,
-                                                              final String currentPaymentStateName, final InternalCallContext context) {
+                                                              final String gatewayErrorCode, final String gatewayErrorMsg,
+                                                              final InternalCallContext context) {
         transactionalSqlDao.execute(new EntitySqlDaoTransactionWrapper<Void>() {
 
             @Override
             public Void inTransaction(final EntitySqlDaoWrapperFactory<EntitySqlDao> entitySqlDaoWrapperFactory) throws Exception {
-                entitySqlDaoWrapperFactory.become(DirectTransactionSqlDao.class).updateTransactionStatus(directTransactionId.toString(), paymentStatus.toString(), gatewayErrorCode, gatewayErrorMsg, context);
+                entitySqlDaoWrapperFactory.become(DirectTransactionSqlDao.class).updateTransactionStatus(directTransactionId.toString(),
+                                                                                                         processedAmount, processedCurrency.toString(),
+                                                                                                         paymentStatus.toString(),
+                                                                                                         gatewayErrorCode, gatewayErrorMsg, context);
                 entitySqlDaoWrapperFactory.become(DirectPaymentSqlDao.class).updateCurrentPaymentStateName(directPaymentId.toString(), currentPaymentStateName, context);
                 return null;
             }

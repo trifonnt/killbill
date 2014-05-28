@@ -80,13 +80,13 @@ public class DirectPaymentAutomatonDAOHelper {
         final String gatewayErrorMsg = paymentInfoPlugin == null ? null : paymentInfoPlugin.getGatewayError();
 
         paymentDao.updateDirectPaymentAndTransactionOnCompletion(directPaymentStateContext.getDirectPaymentId(),
+                                                                 currentPaymentStateName,
+                                                                 directPaymentTransactionId,
                                                                  paymentStatus,
                                                                  directPaymentStateContext.getAmount(),
                                                                  directPaymentStateContext.getCurrency(),
-                                                                 directPaymentTransactionId,
                                                                  gatewayErrorCode,
                                                                  gatewayErrorMsg,
-                                                                 currentPaymentStateName,
                                                                  internalCallContext);
     }
 

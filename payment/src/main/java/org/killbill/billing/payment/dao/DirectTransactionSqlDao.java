@@ -16,6 +16,7 @@
 
 package org.killbill.billing.payment.dao;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
 
@@ -37,6 +38,8 @@ public interface DirectTransactionSqlDao extends EntitySqlDao<DirectPaymentTrans
     @SqlUpdate
     @Audited(ChangeType.UPDATE)
     void updateTransactionStatus(@Bind("id") final String transactionId,
+                                 @Bind("processedAmount") final BigDecimal processedAmount,
+                                 @Bind("processedCurrency") final String processedCurrency,
                                  @Bind("paymentStatus") final String paymentStatus,
                                  @Bind("gatewayErrorCode") final String gatewayErrorCode,
                                  @Bind("gatewayErrorMsg") final String gatewayErrorMsg,

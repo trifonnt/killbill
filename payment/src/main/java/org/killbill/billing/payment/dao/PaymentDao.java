@@ -35,10 +35,11 @@ public interface PaymentDao {
 
     public DirectPaymentTransactionModelDao updateDirectPaymentWithNewTransaction(UUID dirctPaymentId, DirectPaymentTransactionModelDao directPaymentTransaction, InternalCallContext context);
 
-    public void updateDirectPaymentAndTransactionOnCompletion(final UUID directPaymentId, final PaymentStatus paymentStatus,
+    public void updateDirectPaymentAndTransactionOnCompletion(final UUID directPaymentId, final String currentPaymentStateName,
+                                                              final UUID directTransactionId, final PaymentStatus paymentStatus,
                                                               final BigDecimal processedAmount, final Currency processedCurrency,
-                                                              final UUID directTransactionId, final String gatewayErrorCode, final String gatewayErrorMsg,
-                                                              final String currentPaymentStateName, final InternalCallContext context);
+                                                              final String gatewayErrorCode, final String gatewayErrorMsg,
+                                                              final InternalCallContext context);
 
     public DirectPaymentModelDao getDirectPayment(UUID directPaymentId, InternalTenantContext context);
 
