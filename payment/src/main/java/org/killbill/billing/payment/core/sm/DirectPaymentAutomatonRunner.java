@@ -19,6 +19,8 @@ package org.killbill.billing.payment.core.sm;
 
 import java.math.BigDecimal;
 import java.util.UUID;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.TimeUnit;
 
 import javax.annotation.Nullable;
 
@@ -46,11 +48,15 @@ import org.killbill.billing.payment.dao.PaymentDao;
 import org.killbill.billing.payment.dispatcher.PluginDispatcher;
 import org.killbill.billing.payment.plugin.api.PaymentPluginApi;
 import org.killbill.billing.util.callcontext.CallContext;
+import org.killbill.billing.util.config.PaymentConfig;
 import org.killbill.clock.Clock;
 import org.killbill.commons.locker.GlobalLocker;
 
 import com.google.common.base.Objects;
 import com.google.common.base.Preconditions;
+import com.google.inject.name.Named;
+
+import static org.killbill.billing.payment.glue.PaymentModule.PLUGIN_EXECUTOR_NAMED;
 
 public class DirectPaymentAutomatonRunner {
 
@@ -62,17 +68,21 @@ public class DirectPaymentAutomatonRunner {
     protected final Clock clock;
 
     public DirectPaymentAutomatonRunner(final StateMachineConfig stateMachineConfig,
+                                        final PaymentConfig paymentConfig,
                                         final PaymentDao paymentDao,
                                         final GlobalLocker locker,
-                                        final PluginDispatcher<OperationResult> paymentPluginDispatcher,
                                         final OSGIServiceRegistration<PaymentPluginApi> pluginRegistry,
-                                        final Clock clock) {
+                                        final Clock clock,
+                                        @Named(PLUGIN_EXECUTOR_NAMED) final ExecutorService executor) {
         this.stateMachineConfig = stateMachineConfig;
         this.paymentDao = paymentDao;
         this.locker = locker;
-        this.paymentPluginDispatcher = paymentPluginDispatcher;
         this.pluginRegistry = pluginRegistry;
         this.clock = clock;
+
+        final long paymentPluginTimeoutSec = TimeUnit.SECONDS.convert(paymentConfig.getPaymentPluginTimeout().getPeriod(), paymentConfig.getPaymentPluginTimeout().getUnit());
+        this.paymentPluginDispatcher = new PluginDispatcher<OperationResult>(paymentPluginTimeoutSec, executor);
+
     }
 
     public UUID run(final TransactionType transactionType, final Account account, @Nullable final UUID paymentMethodId,

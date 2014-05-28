@@ -24,10 +24,8 @@ import java.util.concurrent.TimeUnit;
 import javax.annotation.Nullable;
 import javax.inject.Inject;
 
-import org.killbill.automaton.DefaultStateMachineConfig;
 import org.killbill.automaton.OperationResult;
 import org.killbill.automaton.State;
-import org.killbill.automaton.StateMachineConfig;
 import org.killbill.billing.ObjectType;
 import org.killbill.billing.account.api.Account;
 import org.killbill.billing.account.api.AccountApiException;
@@ -48,21 +46,15 @@ import org.killbill.billing.payment.dao.PaymentDao;
 import org.killbill.billing.payment.dispatcher.PluginDispatcher;
 import org.killbill.billing.payment.plugin.api.PaymentPluginApi;
 import org.killbill.billing.payment.retry.BaseRetryService.RetryServiceScheduler;
-import org.killbill.billing.payment.retry.RetryService;
-import org.killbill.billing.retry.plugin.api.RetryPluginApi;
 import org.killbill.billing.tag.TagInternalApi;
 import org.killbill.billing.util.callcontext.CallContext;
-import org.killbill.billing.util.callcontext.InternalCallContextFactory;
 import org.killbill.billing.util.config.PaymentConfig;
 import org.killbill.billing.util.dao.NonEntityDao;
 import org.killbill.bus.api.PersistentBus;
-import org.killbill.clock.Clock;
 import org.killbill.commons.locker.GlobalLocker;
-import org.killbill.xmlloader.XMLLoader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.io.Resources;
 import com.google.inject.name.Named;
 
 import static org.killbill.billing.payment.glue.PaymentModule.PLUGIN_EXECUTOR_NAMED;
@@ -77,35 +69,22 @@ public class RetryableDirectPaymentProcessor extends ProcessorBase {
 
     @Inject
     public RetryableDirectPaymentProcessor(final OSGIServiceRegistration<PaymentPluginApi> pluginRegistry,
-                                           final OSGIServiceRegistration<RetryPluginApi> retryPluginRegistry,
                                            final AccountInternalApi accountUserApi,
                                            final InvoiceInternalApi invoiceApi,
                                            final TagInternalApi tagUserApi,
                                            final PaymentDao paymentDao,
                                            final NonEntityDao nonEntityDao,
                                            final PersistentBus eventBus,
-                                           final Clock clock,
                                            final GlobalLocker locker,
-                                           final PaymentConfig paymentConfig,
                                            @Named(PLUGIN_EXECUTOR_NAMED) final ExecutorService executor,
                                            final TagInternalApi tagApi,
                                            final DirectPaymentProcessor directPaymentProcessor,
-                                           final RetryServiceScheduler retryServiceScheduler) {
+                                           final RetryableDirectPaymentAutomatonRunner retryableDirectPaymentAutomatonRunner) {
         super(pluginRegistry, accountUserApi, eventBus, paymentDao, nonEntityDao, tagUserApi, locker, executor, invoiceApi);
 
         this.tagApi = tagApi;
         this.directPaymentProcessor = directPaymentProcessor;
-
-        final StateMachineConfig stateMachineConfig;
-        try {
-            stateMachineConfig = XMLLoader.getObjectFromString(Resources.getResource("RetryStates.xml").toExternalForm(), DefaultStateMachineConfig.class);
-        } catch (final Exception e) {
-            throw new IllegalStateException(e);
-        }
-
-        final long paymentPluginTimeoutSec = TimeUnit.SECONDS.convert(paymentConfig.getPaymentPluginTimeout().getPeriod(), paymentConfig.getPaymentPluginTimeout().getUnit());
-        final PluginDispatcher<OperationResult> paymentPluginDispatcher = new PluginDispatcher<OperationResult>(paymentPluginTimeoutSec, executor);
-        retryableDirectPaymentAutomatonRunner = new RetryableDirectPaymentAutomatonRunner(stateMachineConfig, paymentDao, locker, paymentPluginDispatcher, pluginRegistry, retryPluginRegistry, clock, this.tagApi, this.directPaymentProcessor, retryServiceScheduler);
+        this.retryableDirectPaymentAutomatonRunner = retryableDirectPaymentAutomatonRunner;
     }
 
     public DirectPayment createAuthorization(final Account account, final UUID paymentMethodId, @Nullable final UUID directPaymentId, final BigDecimal amount, final Currency currency, final String paymentExternalKey, final String transactionExternalKey, final Iterable<PluginProperty> properties, final CallContext callContext, final InternalCallContext internalCallContext) throws PaymentApiException {

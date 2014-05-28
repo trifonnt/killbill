@@ -25,8 +25,11 @@ import org.killbill.billing.account.api.AccountInternalApi;
 import org.killbill.billing.invoice.api.InvoiceInternalApi;
 import org.killbill.billing.osgi.api.OSGIServiceRegistration;
 import org.killbill.billing.payment.api.PaymentApi;
+import org.killbill.billing.payment.api.svcs.RetryableDirectPaymentApi;
 import org.killbill.billing.payment.core.PaymentMethodProcessor;
 import org.killbill.billing.payment.core.PaymentProcessor;
+import org.killbill.billing.payment.core.sm.RetryableDirectPaymentAutomatonRunner;
+import org.killbill.billing.payment.dao.PaymentDao;
 import org.killbill.billing.payment.glue.TestPaymentModuleNoDB;
 import org.killbill.billing.payment.plugin.api.PaymentPluginApi;
 import org.killbill.billing.payment.provider.MockPaymentProviderPlugin;
@@ -65,15 +68,22 @@ public abstract class PaymentTestSuiteNoDB extends GuicyKillbillTestSuiteNoDB {
     @Inject
     protected PaymentApi paymentApi;
     @Inject
+    protected RetryableDirectPaymentApi retryablePaymentApi;
+    @Inject
     protected AccountInternalApi accountApi;
     @Inject
     protected TestPaymentHelper testHelper;
+    @Inject
+    protected PaymentDao paymentDao;
+    @Inject
+    protected RetryableDirectPaymentAutomatonRunner retryableDirectPaymentAutomatonRunner;
 
     @Override
     protected KillbillConfigSource getConfigSource() throws IOException, URISyntaxException {
         return new TestKillbillConfigSource("/payment.properties",
                                             ImmutableMap.<String, String>of("org.killbill.payment.provider.default", MockPaymentProviderPlugin.PLUGIN_NAME,
-                                                                            "killbill.payment.engine.events.off", "false"));
+                                                                            "killbill.payment.engine.events.off", "false")
+        );
     }
 
     @BeforeClass(groups = "fast")

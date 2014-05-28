@@ -51,6 +51,7 @@ import org.killbill.billing.payment.dao.DirectPaymentModelDao;
 import org.killbill.billing.payment.dao.DirectPaymentTransactionModelDao;
 import org.killbill.billing.payment.dao.PaymentDao;
 import org.killbill.billing.payment.dispatcher.PluginDispatcher;
+import org.killbill.billing.payment.glue.PaymentModule;
 import org.killbill.billing.payment.plugin.api.PaymentInfoPlugin;
 import org.killbill.billing.payment.plugin.api.PaymentPluginApi;
 import org.killbill.billing.payment.plugin.api.PaymentPluginApiException;
@@ -90,7 +91,8 @@ public class DirectPaymentProcessor extends ProcessorBase {
     private static final Logger log = LoggerFactory.getLogger(DirectPaymentProcessor.class);
 
     @Inject
-    public DirectPaymentProcessor(final OSGIServiceRegistration<PaymentPluginApi> pluginRegistry,
+    public DirectPaymentProcessor(@javax.inject.Named(PaymentModule.STATE_MACHINE_PAYMENT) final StateMachineConfig stateMachineConfig,
+                                  final OSGIServiceRegistration<PaymentPluginApi> pluginRegistry,
                                   final AccountInternalApi accountUserApi,
                                   final InvoiceInternalApi invoiceApi,
                                   final TagInternalApi tagUserApi,
@@ -105,16 +107,7 @@ public class DirectPaymentProcessor extends ProcessorBase {
         super(pluginRegistry, accountUserApi, eventBus, paymentDao, nonEntityDao, tagUserApi, locker, executor, invoiceApi);
         this.internalCallContextFactory = internalCallContextFactory;
 
-        final StateMachineConfig stateMachineConfig;
-        try {
-            stateMachineConfig = XMLLoader.getObjectFromString(Resources.getResource("PaymentStates.xml").toExternalForm(), DefaultStateMachineConfig.class);
-        } catch (final Exception e) {
-            throw new IllegalStateException(e);
-        }
-
-        final long paymentPluginTimeoutSec = TimeUnit.SECONDS.convert(paymentConfig.getPaymentPluginTimeout().getPeriod(), paymentConfig.getPaymentPluginTimeout().getUnit());
-        final PluginDispatcher<OperationResult> paymentPluginDispatcher = new PluginDispatcher<OperationResult>(paymentPluginTimeoutSec, executor);
-        directPaymentAutomatonRunner = new DirectPaymentAutomatonRunner(stateMachineConfig, paymentDao, locker, paymentPluginDispatcher, pluginRegistry, clock);
+        directPaymentAutomatonRunner = new DirectPaymentAutomatonRunner(stateMachineConfig, paymentConfig, paymentDao, locker, pluginRegistry, clock, executor);
     }
 
     public DirectPayment createAuthorization(final Account account, final UUID paymentMethodId, @Nullable final UUID directPaymentId, final BigDecimal amount, final Currency currency,

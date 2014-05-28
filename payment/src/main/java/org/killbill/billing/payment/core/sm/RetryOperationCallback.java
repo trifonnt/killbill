@@ -54,8 +54,8 @@ public abstract class RetryOperationCallback extends PluginOperation {
             final RetryPluginApi plugin = retryPluginRegistry.getServiceForName(pluginName);
             try {
                 final boolean aborted = plugin.isRetryAborted(externalKey);
-                if (aborted) {
-                    return true;
+                if (!aborted) {
+                    return false;
                 }
             } catch (RetryPluginApiException ignore) {
             }
