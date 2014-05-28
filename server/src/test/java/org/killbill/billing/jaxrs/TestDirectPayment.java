@@ -84,20 +84,20 @@ public class TestDirectPayment extends TestJaxrsBase {
                                        directPaymentExternalKey, capture2DirectTransactionExternalKey,
                                        account, captureTransaction.getAmount(), "CAPTURE");
 
-        // Credit
-        final String creditDirectTransactionExternalKey = UUID.randomUUID().toString();
-        final DirectTransaction creditTransaction = new DirectTransaction();
-        creditTransaction.setDirectPaymentId(authDirectPayment.getDirectPaymentId());
-        creditTransaction.setAmount(new BigDecimal("223.12"));
-        creditTransaction.setCurrency(account.getCurrency());
-        creditTransaction.setDirectPaymentExternalKey(directPaymentExternalKey);
-        creditTransaction.setDirectTransactionExternalKey(creditDirectTransactionExternalKey);
-        final DirectPayment creditDirectPayment = killBillClient.creditPayment(creditTransaction, createdBy, reason, comment);
-        verifyDirectPayment(account, paymentMethodId, creditDirectPayment, directPaymentExternalKey, authDirectTransactionExternalKey,
+        // Refund
+        final String refundDirectTransactionExternalKey = UUID.randomUUID().toString();
+        final DirectTransaction refundTransaction = new DirectTransaction();
+        refundTransaction.setDirectPaymentId(authDirectPayment.getDirectPaymentId());
+        refundTransaction.setAmount(new BigDecimal("223.12"));
+        refundTransaction.setCurrency(account.getCurrency());
+        refundTransaction.setDirectPaymentExternalKey(directPaymentExternalKey);
+        refundTransaction.setDirectTransactionExternalKey(refundDirectTransactionExternalKey);
+        final DirectPayment refundDirectPayment = killBillClient.refundPayment(refundTransaction, createdBy, reason, comment);
+        verifyDirectPayment(account, paymentMethodId, refundDirectPayment, directPaymentExternalKey, authDirectTransactionExternalKey,
                             BigDecimal.TEN, new BigDecimal("2"), new BigDecimal("223.12"), 4, directPaymentNb);
-        verifyDirectPaymentTransaction(authDirectPayment.getDirectPaymentId(), creditDirectPayment.getTransactions().get(3),
-                                       directPaymentExternalKey, creditDirectTransactionExternalKey,
-                                       account, creditTransaction.getAmount(), "CREDIT");
+        verifyDirectPaymentTransaction(authDirectPayment.getDirectPaymentId(), refundDirectPayment.getTransactions().get(3),
+                                       directPaymentExternalKey, refundDirectTransactionExternalKey,
+                                       account, refundTransaction.getAmount(), "REFUND");
 
         // Void
         final String voidDirectTransactionExternalKey = UUID.randomUUID().toString();
