@@ -107,7 +107,7 @@ public class DirectPaymentProcessor extends ProcessorBase {
 
         final StateMachineConfig stateMachineConfig;
         try {
-            stateMachineConfig = XMLLoader.getObjectFromString(Resources.getResource("PaymentStates.xml").toExternalForm(), DefaultStateMachineConfig.class);
+            stateMachineConfig = XMLLoader.getObjectFromString(Resources.getResource("org/killbill/billing/payment/PaymentStates.xml").toExternalForm(), DefaultStateMachineConfig.class);
         } catch (final Exception e) {
             throw new IllegalStateException(e);
         }
