@@ -36,7 +36,6 @@ import org.killbill.billing.payment.plugin.api.PaymentInfoPlugin;
 import org.killbill.billing.payment.plugin.api.PaymentMethodInfoPlugin;
 import org.killbill.billing.payment.plugin.api.PaymentPluginApi;
 import org.killbill.billing.payment.plugin.api.PaymentPluginStatus;
-import org.killbill.billing.payment.plugin.api.RefundPluginStatus;
 import org.testng.Assert;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
@@ -134,7 +133,7 @@ public class TestJrubyPaymentPlugin extends TestOSGIBase {
         assertEquals(res.getGatewayError(), "gateway_error");
         assertEquals(res.getGatewayErrorCode(), "gateway_error_code");
 
-        assertEquals(res.getStatus(), RefundPluginStatus.PROCESSED);
+        assertEquals(res.getStatus(), PaymentPluginStatus.PROCESSED);
     }
 
     @Test(groups = "slow")

@@ -54,7 +54,7 @@ import org.killbill.billing.payment.dao.RefundModelDao;
 import org.killbill.billing.payment.plugin.api.PaymentInfoPlugin;
 import org.killbill.billing.payment.plugin.api.PaymentPluginApi;
 import org.killbill.billing.payment.plugin.api.PaymentPluginApiException;
-import org.killbill.billing.payment.plugin.api.RefundPluginStatus;
+import org.killbill.billing.payment.plugin.api.PaymentPluginStatus;
 import org.killbill.billing.tag.TagInternalApi;
 import org.killbill.billing.util.callcontext.CallContext;
 import org.killbill.billing.util.callcontext.CallOrigin;
@@ -298,8 +298,8 @@ public class RefundProcessor extends ProcessorBase {
                (refundInfoPlugin.getAmount() != null && refundModelDao.getProcessedAmount() != null && refundInfoPlugin.getAmount().compareTo(refundModelDao.getProcessedAmount()) == 0) &&
                (refundInfoPlugin.getCurrency() != null && refundModelDao.getProcessedCurrency() != null && refundInfoPlugin.getCurrency().equals(refundModelDao.getProcessedCurrency())) &&
                (
-                       (refundInfoPlugin.getStatus().equals(RefundPluginStatus.PROCESSED) && refundModelDao.getRefundStatus().equals(RefundStatus.COMPLETED)) ||
-                       (refundInfoPlugin.getStatus().equals(RefundPluginStatus.PENDING) && refundModelDao.getRefundStatus().equals(RefundStatus.PENDING))
+                       (refundInfoPlugin.getStatus().equals(PaymentPluginStatus.PROCESSED) && refundModelDao.getRefundStatus().equals(RefundStatus.COMPLETED)) ||
+                       (refundInfoPlugin.getStatus().equals(PaymentPluginStatus.PENDING) && refundModelDao.getRefundStatus().equals(RefundStatus.PENDING))
                );
     }
 
