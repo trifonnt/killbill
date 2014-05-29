@@ -41,6 +41,11 @@ public class MockPaymentDao implements PaymentDao {
     private final Map<UUID, DirectPaymentTransactionModelDao> transactions = new HashMap<UUID, DirectPaymentTransactionModelDao>();
     private final Map<String, PaymentAttemptModelDao> attempts = new HashMap<String, PaymentAttemptModelDao>();
 
+    public void reset() {
+        payments.clear();
+        transactions.clear();
+        attempts.clear();
+    }
     @Override
     public PaymentAttemptModelDao insertPaymentAttempt(final PaymentAttemptModelDao attempt, final InternalCallContext context) {
         synchronized (this) {

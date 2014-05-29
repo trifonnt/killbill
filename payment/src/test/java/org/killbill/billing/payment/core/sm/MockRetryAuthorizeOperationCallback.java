@@ -48,12 +48,10 @@ public class MockRetryAuthorizeOperationCallback extends RetryAuthorizeOperation
             throw exception;
         }
         if (result == OperationResult.SUCCESS) {
-            final DirectPaymentModelDao payment = new DirectPaymentModelDao(directPaymentStateContext.directPaymentId,
-                                                                            clock.getUTCNow(),
+            final DirectPaymentModelDao payment = new DirectPaymentModelDao(clock.getUTCNow(),
                                                                             clock.getUTCNow(),
                                                                             directPaymentStateContext.account.getId(),
                                                                             directPaymentStateContext.paymentMethodId,
-                                                                            -1,
                                                                             directPaymentStateContext.directPaymentExternalKey);
 
             final DirectPaymentTransactionModelDao transaction = new DirectPaymentTransactionModelDao(clock.getUTCNow(),
@@ -72,12 +70,12 @@ public class MockRetryAuthorizeOperationCallback extends RetryAuthorizeOperation
         return result;
     }
 
-    public RetryAuthorizeOperationCallback setException(final Exception exception) {
+    public MockRetryAuthorizeOperationCallback setException(final Exception exception) {
         this.exception = exception;
         return this;
     }
 
-    public RetryAuthorizeOperationCallback setResult(final OperationResult result) {
+    public MockRetryAuthorizeOperationCallback setResult(final OperationResult result) {
         this.result = result;
         return this;
     }

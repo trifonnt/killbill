@@ -34,6 +34,7 @@ import org.killbill.billing.payment.api.PluginProperty;
 import org.killbill.billing.payment.api.TransactionType;
 import org.killbill.billing.payment.core.DirectPaymentProcessor;
 import org.killbill.billing.payment.dao.MockPaymentDao;
+import org.killbill.billing.payment.dao.PaymentAttemptModelDao;
 import org.killbill.billing.payment.dao.PaymentDao;
 import org.killbill.billing.payment.dispatcher.PluginDispatcher;
 import org.killbill.billing.payment.glue.PaymentModule;
@@ -45,6 +46,7 @@ import org.killbill.bus.api.PersistentBus.EventBusException;
 import org.killbill.commons.locker.GlobalLocker;
 import org.killbill.commons.locker.memory.MemoryGlobalLocker;
 import org.testng.annotations.BeforeClass;
+import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import com.google.common.collect.ImmutableList;
@@ -52,6 +54,7 @@ import com.google.inject.Inject;
 
 import static org.killbill.billing.payment.glue.PaymentModule.PLUGIN_EXECUTOR_NAMED;
 import static org.killbill.billing.payment.glue.PaymentModule.RETRYABLE_NAMED;
+import static org.testng.Assert.assertEquals;
 
 public class TestRetryableDirectPaymentAutomatonRunner extends PaymentTestSuiteNoDB {
 
@@ -81,9 +84,6 @@ public class TestRetryableDirectPaymentAutomatonRunner extends PaymentTestSuiteN
     private ExecutorService executor;
 
     private Account account;
-    private MockPaymentDao mockPaymentDao;
-    private MockRetryableDirectPaymentAutomatonRunner mockRetryableDirectPaymentAutomatonRunner;
-    private PluginDispatcher<OperationResult> paymentPluginDispatcher;
 
     private final UUID paymentMethodId = UUID.randomUUID();
     private final String directPaymentExternalKey = "foo";
@@ -95,12 +95,17 @@ public class TestRetryableDirectPaymentAutomatonRunner extends PaymentTestSuiteN
     @BeforeClass(groups = "slow")
     public void beforeClass() throws Exception {
         super.beforeClass();
-        this.mockPaymentDao = (MockPaymentDao) paymentDao;
-        this.mockRetryableDirectPaymentAutomatonRunner = (MockRetryableDirectPaymentAutomatonRunner) retryableDirectPaymentAutomatonRunner;
         account = testHelper.createTestAccount("lolo@gmail.com", false);
     }
 
-    @Test(groups = "slow")
+    @BeforeMethod(groups = "fast")
+    public void beforeMethod() throws Exception {
+        super.beforeMethod();
+        ((MockPaymentDao) paymentDao).reset();
+    }
+
+
+    @Test(groups = "fast")
     public void testCreatePaymentWithNoDefaultPaymentMethod() throws InvoiceApiException, EventBusException, PaymentApiException {
 
         MockRetryableDirectPaymentAutomatonRunner runner = new MockRetryableDirectPaymentAutomatonRunner(
@@ -132,12 +137,16 @@ public class TestRetryableDirectPaymentAutomatonRunner extends PaymentTestSuiteN
 
         MockRetryAuthorizeOperationCallback mockRetryAuthorizeOperationCallback =
                 new MockRetryAuthorizeOperationCallback(new MemoryGlobalLocker(),
-                                                        mockRetryableDirectPaymentAutomatonRunner.getPaymentPluginDispatcher(),
+                                                        runner.getPaymentPluginDispatcher(),
                                                         directPaymentStateContext,
                                                         null,
-                                                        mockRetryableDirectPaymentAutomatonRunner.getRetryPluginRegistry(),
+                                                        runner.getRetryPluginRegistry(),
                                                         paymentDao,
                                                         clock);
+
+        mockRetryAuthorizeOperationCallback
+                .setResult(OperationResult.SUCCESS)
+                .setException(null);
 
         runner.setOperationCallback(mockRetryAuthorizeOperationCallback)
               .setContext(directPaymentStateContext);
@@ -153,5 +162,10 @@ public class TestRetryableDirectPaymentAutomatonRunner extends PaymentTestSuiteN
                    emptyProperties,
                    callContext,
                    internalCallContext);
+
+        final PaymentAttemptModelDao pa = ((MockPaymentDao) paymentDao).getPaymentAttemptByExternalKey(directPaymentTransactionExternalKey, internalCallContext);
+        assertEquals(pa.getTransactionExternalKey(), directPaymentTransactionExternalKey);
+        assertEquals(pa.getStateName(), "SUCCESS");
+        assertEquals(pa.getOperationName(), "AUTHORIZE");
     }
 }
