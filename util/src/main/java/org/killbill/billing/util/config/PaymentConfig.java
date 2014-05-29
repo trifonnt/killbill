@@ -33,7 +33,7 @@ public interface PaymentConfig extends KillbillConfig {
 
     // STEPH_RETRY unique property (does not match payment one)
     @Config("org.killbill.payment.retry.provider.default")
-    @Default("__external_payment__")
+    @Default("__external_retry__")
     @Description("Default retry provider to use")
     public String getDefaultRetryProvider();
 

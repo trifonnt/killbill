@@ -53,7 +53,7 @@ public class DefaultRetryProviderPluginRegistryProvider implements Provider<OSGI
             }
             @Override
             public String getRegistrationName() {
-                return ExternalPaymentProviderPlugin.PLUGIN_NAME;
+                return DefaultRetryProviderPlugin.PLUGIN_NAME;
             }
         };
         pluginRegistry.registerService(desc, externalRetryProviderPlugin);

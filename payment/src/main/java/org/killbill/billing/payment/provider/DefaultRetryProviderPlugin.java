@@ -22,6 +22,8 @@ import org.killbill.billing.retry.plugin.api.RetryPluginApiException;
 
 public class DefaultRetryProviderPlugin implements RetryPluginApi {
 
+    public static final String PLUGIN_NAME = "__DEFAULT_RETRY__";
+
     @Override
     public boolean isRetryAborted(final String s) throws RetryPluginApiException {
         return false;

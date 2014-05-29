@@ -62,9 +62,13 @@ public class MockRetryableDirectPaymentAutomatonRunner extends RetryableDirectPa
 
     @Override
     OperationCallback createOperationCallback(final TransactionType transactionType, final RetryableDirectPaymentStateContext directPaymentStateContext) {
-        return operationCallback;
-
+        if (operationCallback == null) {
+        return super.createOperationCallback(transactionType, directPaymentStateContext);
+        } else {
+            return operationCallback;
+        }
     }
+
 
     @Override
     RetryableDirectPaymentStateContext createContext(final TransactionType transactionType, final Account account, @Nullable final UUID paymentMethodId,
@@ -72,7 +76,12 @@ public class MockRetryableDirectPaymentAutomatonRunner extends RetryableDirectPa
                                                      @Nullable final BigDecimal amount, @Nullable final Currency currency,
                                                      final Iterable<PluginProperty> properties,
                                                      final CallContext callContext, final InternalCallContext internalCallContext) throws PaymentApiException {
-        return context;
+        if (context == null) {
+            return super.createContext(transactionType, account, paymentMethodId, directPaymentId, directPaymentExternalKey, directPaymentTransactionExternalKey,
+                               amount, currency, properties, callContext, internalCallContext);
+        } else {
+            return context;
+        }
     }
 
     public MockRetryableDirectPaymentAutomatonRunner setOperationCallback(final OperationCallback operationCallback) {
