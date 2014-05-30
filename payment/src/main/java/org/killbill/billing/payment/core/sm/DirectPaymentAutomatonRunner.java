@@ -42,6 +42,7 @@ import org.killbill.billing.payment.api.PaymentApiException;
 import org.killbill.billing.payment.api.PluginProperty;
 import org.killbill.billing.payment.api.TransactionType;
 import org.killbill.billing.payment.dao.DirectPaymentModelDao;
+import org.killbill.billing.payment.dao.DirectPaymentTransactionModelDao;
 import org.killbill.billing.payment.dao.PaymentDao;
 import org.killbill.billing.payment.dispatcher.PluginDispatcher;
 import org.killbill.billing.payment.plugin.api.PaymentPluginApi;
@@ -75,26 +76,26 @@ public class DirectPaymentAutomatonRunner {
         this.clock = clock;
     }
 
-    public UUID run(final TransactionType transactionType, final Account account,
-                    @Nullable final UUID directPaymentId, final String directPaymentTransactionExternalKey,
-                    final boolean shouldLockAccount, final Iterable<PluginProperty> properties,
-                    final CallContext callContext, final InternalCallContext internalCallContext) throws PaymentApiException {
+    public DirectPaymentTransactionModelDao run(final TransactionType transactionType, final Account account,
+                                                @Nullable final UUID directPaymentId, final String directPaymentTransactionExternalKey,
+                                                final boolean shouldLockAccount, final Iterable<PluginProperty> properties,
+                                                final CallContext callContext, final InternalCallContext internalCallContext) throws PaymentApiException {
         return run(transactionType, account, null, directPaymentId, null, directPaymentTransactionExternalKey, null, null, shouldLockAccount, properties, callContext, internalCallContext);
     }
 
-    public UUID run(final TransactionType transactionType, final Account account,
-                    @Nullable final UUID directPaymentId, final String directPaymentTransactionExternalKey,
-                    final BigDecimal amount, final Currency currency,
-                    final boolean shouldLockAccount, final Iterable<PluginProperty> properties,
-                    final CallContext callContext, final InternalCallContext internalCallContext) throws PaymentApiException {
+    public DirectPaymentTransactionModelDao run(final TransactionType transactionType, final Account account,
+                                                @Nullable final UUID directPaymentId, final String directPaymentTransactionExternalKey,
+                                                final BigDecimal amount, final Currency currency,
+                                                final boolean shouldLockAccount, final Iterable<PluginProperty> properties,
+                                                final CallContext callContext, final InternalCallContext internalCallContext) throws PaymentApiException {
         return run(transactionType, account, null, directPaymentId, null, directPaymentTransactionExternalKey, amount, currency, shouldLockAccount, properties, callContext, internalCallContext);
     }
 
-    public UUID run(final TransactionType transactionType, final Account account, @Nullable final UUID paymentMethodId,
-                    @Nullable final UUID directPaymentId, @Nullable final String directPaymentExternalKey, final String directPaymentTransactionExternalKey,
-                    @Nullable final BigDecimal amount, @Nullable final Currency currency,
-                    final boolean shouldLockAccount, final Iterable<PluginProperty> properties,
-                    final CallContext callContext, final InternalCallContext internalCallContext) throws PaymentApiException {
+    public DirectPaymentTransactionModelDao run(final TransactionType transactionType, final Account account, @Nullable final UUID paymentMethodId,
+                                                @Nullable final UUID directPaymentId, @Nullable final String directPaymentExternalKey, final String directPaymentTransactionExternalKey,
+                                                @Nullable final BigDecimal amount, @Nullable final Currency currency,
+                                                final boolean shouldLockAccount, final Iterable<PluginProperty> properties,
+                                                final CallContext callContext, final InternalCallContext internalCallContext) throws PaymentApiException {
         final DateTime utcNow = clock.getUTCNow();
 
         final DirectPaymentStateContext directPaymentStateContext = new DirectPaymentStateContext(directPaymentId, directPaymentExternalKey, directPaymentTransactionExternalKey, transactionType,
@@ -192,7 +193,7 @@ public class DirectPaymentAutomatonRunner {
 
         runStateMachineOperation(currentStateMachineName, currentStateName, operationStateMachineName, operationName, leavingStateCallback, operationCallback, enteringStateCallback);
 
-        return directPaymentStateContext.getDirectPaymentId();
+        return directPaymentStateContext.getDirectPaymentTransactionModelDao();
     }
 
     // Hack for now
