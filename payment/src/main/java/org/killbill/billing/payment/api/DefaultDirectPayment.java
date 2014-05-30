@@ -63,11 +63,16 @@ public class DefaultDirectPayment extends EntityBase implements DirectPayment {
         final Iterable<DirectPaymentTransaction> filtered = Iterables.filter(transactions, new Predicate<DirectPaymentTransaction>() {
             @Override
             public boolean apply(final DirectPaymentTransaction input) {
-                return input.getTransactionType() == transactiontype;
+                return input.getTransactionType() == transactiontype && PaymentStatus.SUCCESS.equals(input.getPaymentStatus());
             }
         });
-        for (final DirectPaymentTransaction dpt : filtered) {
-            result = result.add(dpt.getAmount());
+        if (TransactionType.AUTHORIZE.equals(transactiontype) && filtered.iterator().hasNext()) {
+            // HACK - For multi-step AUTH, don't sum the individual transactions
+            result = filtered.iterator().next().getAmount();
+        } else {
+            for (final DirectPaymentTransaction dpt : filtered) {
+                result = result.add(dpt.getAmount());
+            }
         }
         return result;
     }

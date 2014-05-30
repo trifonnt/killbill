@@ -37,6 +37,7 @@ import org.killbill.billing.payment.dispatcher.PluginDispatcher;
 import org.killbill.billing.payment.plugin.api.PaymentInfoPlugin;
 import org.killbill.billing.payment.plugin.api.PaymentPluginApiException;
 import org.killbill.billing.payment.plugin.api.PaymentPluginStatus;
+import org.killbill.billing.payment.provider.MockPaymentProviderPlugin;
 import org.killbill.commons.locker.GlobalLocker;
 import org.killbill.commons.locker.memory.MemoryGlobalLocker;
 import org.mockito.Mockito;
@@ -116,7 +117,7 @@ public class TestDirectPaymentOperation extends PaymentTestSuiteNoDB {
                                                                   callContext);
 
         final PaymentMethodModelDao paymentMethodModelDao = new PaymentMethodModelDao(directPaymentStateContext.getPaymentMethodId(), clock.getUTCNow(), clock.getUTCNow(),
-                                                                                      directPaymentStateContext.getAccount().getId(), "__NO_OP__", true);
+                                                                                      directPaymentStateContext.getAccount().getId(), MockPaymentProviderPlugin.PLUGIN_NAME, true);
         final PaymentDao paymentDao = Mockito.mock(PaymentDao.class);
         Mockito.when(paymentDao.getPaymentMethodIncludedDeleted(directPaymentStateContext.getPaymentMethodId(), internalCallContext)).thenReturn(paymentMethodModelDao);
 
