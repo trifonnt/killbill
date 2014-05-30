@@ -18,6 +18,7 @@ package org.killbill.billing.payment.core.sm;
 
 import org.killbill.automaton.OperationResult;
 import org.killbill.billing.osgi.api.OSGIServiceRegistration;
+import org.killbill.billing.payment.api.PaymentApiException;
 import org.killbill.billing.payment.api.PaymentStatus;
 import org.killbill.billing.payment.core.DirectPaymentProcessor;
 import org.killbill.billing.payment.dao.DirectPaymentModelDao;
@@ -43,9 +44,13 @@ public class MockRetryAuthorizeOperationCallback extends RetryAuthorizeOperation
     }
 
     @Override
-    protected OperationResult doPluginOperation() throws Exception {
+    protected OperationResult doPluginOperation() throws PaymentApiException {
         if (exception != null) {
-            throw exception;
+            if (exception instanceof PaymentApiException) {
+                throw (PaymentApiException) exception;
+            } else {
+                throw new RuntimeException(exception);
+            }
         }
         if (result == OperationResult.SUCCESS) {
             final DirectPaymentModelDao payment = new DirectPaymentModelDao(clock.getUTCNow(),

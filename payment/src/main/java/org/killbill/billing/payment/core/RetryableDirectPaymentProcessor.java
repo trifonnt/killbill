@@ -19,12 +19,10 @@ package org.killbill.billing.payment.core;
 import java.math.BigDecimal;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.TimeUnit;
 
 import javax.annotation.Nullable;
 import javax.inject.Inject;
 
-import org.killbill.automaton.OperationResult;
 import org.killbill.automaton.State;
 import org.killbill.billing.ObjectType;
 import org.killbill.billing.account.api.Account;
@@ -43,12 +41,9 @@ import org.killbill.billing.payment.dao.DirectPaymentModelDao;
 import org.killbill.billing.payment.dao.DirectPaymentTransactionModelDao;
 import org.killbill.billing.payment.dao.PaymentAttemptModelDao;
 import org.killbill.billing.payment.dao.PaymentDao;
-import org.killbill.billing.payment.dispatcher.PluginDispatcher;
 import org.killbill.billing.payment.plugin.api.PaymentPluginApi;
-import org.killbill.billing.payment.retry.BaseRetryService.RetryServiceScheduler;
 import org.killbill.billing.tag.TagInternalApi;
 import org.killbill.billing.util.callcontext.CallContext;
-import org.killbill.billing.util.config.PaymentConfig;
 import org.killbill.billing.util.dao.NonEntityDao;
 import org.killbill.bus.api.PersistentBus;
 import org.killbill.commons.locker.GlobalLocker;
@@ -69,7 +64,7 @@ public class RetryableDirectPaymentProcessor extends ProcessorBase {
 
     @Inject
     public RetryableDirectPaymentProcessor(final OSGIServiceRegistration<PaymentPluginApi> pluginRegistry,
-                                           final AccountInternalApi accountUserApi,
+                                           final AccountInternalApi accountInternalApi,
                                            final InvoiceInternalApi invoiceApi,
                                            final TagInternalApi tagUserApi,
                                            final PaymentDao paymentDao,
@@ -80,7 +75,7 @@ public class RetryableDirectPaymentProcessor extends ProcessorBase {
                                            final TagInternalApi tagApi,
                                            final DirectPaymentProcessor directPaymentProcessor,
                                            final RetryableDirectPaymentAutomatonRunner retryableDirectPaymentAutomatonRunner) {
-        super(pluginRegistry, accountUserApi, eventBus, paymentDao, nonEntityDao, tagUserApi, locker, executor, invoiceApi);
+        super(pluginRegistry, accountInternalApi, eventBus, paymentDao, nonEntityDao, tagUserApi, locker, executor, invoiceApi);
 
         this.tagApi = tagApi;
         this.directPaymentProcessor = directPaymentProcessor;

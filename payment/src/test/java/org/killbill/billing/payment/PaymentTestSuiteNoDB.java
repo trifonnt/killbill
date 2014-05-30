@@ -70,7 +70,7 @@ public abstract class PaymentTestSuiteNoDB extends GuicyKillbillTestSuiteNoDB {
     @Inject
     protected RetryableDirectPaymentApi retryablePaymentApi;
     @Inject
-    protected AccountInternalApi accountApi;
+    protected AccountInternalApi accountInternalApi;
     @Inject
     protected TestPaymentHelper testHelper;
     @Inject

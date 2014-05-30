@@ -40,6 +40,13 @@
                     <finalState>RETRIED</finalState>
                 </transition>
                 <transition>
+                    <initialState>INIT</initialState>
+                    <operation>OP_RETRY</operation>
+                    <!-- We are using EXCEPTION operation result to get out of the RETRIED state and transition to  ABORTED -->
+                    <operationResult>EXCEPTION</operationResult>
+                    <finalState>ABORTED</finalState>
+                </transition>
+                <transition>
                     <initialState>RETRIED</initialState>
                     <operation>OP_RETRY</operation>
                     <operationResult>SUCCESS</operationResult>

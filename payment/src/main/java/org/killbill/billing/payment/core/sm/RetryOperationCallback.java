@@ -23,14 +23,11 @@ import javax.annotation.Nullable;
 import org.joda.time.DateTime;
 import org.killbill.automaton.OperationException;
 import org.killbill.automaton.OperationResult;
-import org.killbill.billing.ErrorCode;
 import org.killbill.billing.osgi.api.OSGIServiceRegistration;
 import org.killbill.billing.payment.api.PaymentApiException;
 import org.killbill.billing.payment.core.DirectPaymentProcessor;
 import org.killbill.billing.payment.core.ProcessorBase.WithAccountLockCallback;
 import org.killbill.billing.payment.dispatcher.PluginDispatcher;
-import org.killbill.billing.payment.retry.BaseRetryService.RetryServiceScheduler;
-import org.killbill.billing.payment.retry.RetryService;
 import org.killbill.billing.retry.plugin.api.RetryPluginApi;
 import org.killbill.billing.retry.plugin.api.RetryPluginApiException;
 import org.killbill.commons.locker.GlobalLocker;
@@ -106,31 +103,29 @@ public abstract class RetryOperationCallback extends PluginOperation {
     public OperationResult doOperationCallback() throws OperationException {
         return dispatchWithTimeout(new WithAccountLockCallback<OperationResult>() {
             @Override
-            public OperationResult doOperation() throws PaymentApiException {
-                try {
-                    if (isRetryAborted(directPaymentStateContext.getDirectPaymentTransactionExternalKey(),
-                                       ((RetryableDirectPaymentStateContext) directPaymentStateContext).getPluginName())) {
-                        return OperationResult.EXCEPTION;
-                    }
-
-                    try {
-                        doPluginOperation();
-                    } catch (PaymentApiException e) {
-                        final DateTime nextRetryDate = getNextRetryDate(directPaymentStateContext.getDirectPaymentTransactionExternalKey(),
-                                                                        ((RetryableDirectPaymentStateContext) directPaymentStateContext).getPluginName());
-                        if (nextRetryDate == null) {
-                            // Very hacky, we are using EXCEPTION result to transition to final ABORTED state.
-                            throw new OperationException(e, OperationResult.EXCEPTION);
-                        } else {
-                            ((RetryableDirectPaymentStateContext) directPaymentStateContext).setRetryDate(nextRetryDate);
-                            throw new OperationException(e, OperationResult.FAILURE);
-                        }
-                    }
-                    return OperationResult.SUCCESS;
-                } catch (final Exception e) {
-                    // We don't care about the ErrorCode since it will be unwrapped
-                    throw new PaymentApiException(e, ErrorCode.__UNKNOWN_ERROR_CODE);
+            public OperationResult doOperation() throws OperationException {
+                if (isRetryAborted(directPaymentStateContext.getDirectPaymentTransactionExternalKey(),
+                                   ((RetryableDirectPaymentStateContext) directPaymentStateContext).getPluginName())) {
+                    return OperationResult.EXCEPTION;
                 }
+
+                try {
+                    doPluginOperation();
+                } catch (PaymentApiException e) {
+                    final DateTime nextRetryDate = getNextRetryDate(directPaymentStateContext.getDirectPaymentTransactionExternalKey(),
+                                                                    ((RetryableDirectPaymentStateContext) directPaymentStateContext).getPluginName());
+                    if (nextRetryDate == null) {
+                        // Very hacky, we are using EXCEPTION result to transition to final ABORTED state.
+                        throw new OperationException(e, OperationResult.EXCEPTION);
+                    } else {
+                        ((RetryableDirectPaymentStateContext) directPaymentStateContext).setRetryDate(nextRetryDate);
+                        throw new OperationException(e, OperationResult.FAILURE);
+                    }
+                } catch (Exception e) {
+                    // STEPH_RETRY this will abort the retry logic, is that really what we want?
+                    throw new OperationException(e, OperationResult.EXCEPTION);
+                }
+                return OperationResult.SUCCESS;
             }
         });
     }

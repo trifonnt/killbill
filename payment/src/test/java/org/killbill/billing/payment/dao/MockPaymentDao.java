@@ -114,7 +114,9 @@ public class MockPaymentDao implements PaymentDao {
 
     @Override
     public DirectPaymentModelDao getDirectPayment(final UUID directPaymentId, final InternalTenantContext context) {
-        return null;
+        synchronized (this) {
+            return payments.get(directPaymentId);
+        }
     }
 
     @Override

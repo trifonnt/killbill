@@ -18,6 +18,7 @@ package org.killbill.billing.payment.core.sm;
 
 import org.killbill.automaton.OperationResult;
 import org.killbill.billing.osgi.api.OSGIServiceRegistration;
+import org.killbill.billing.payment.api.PaymentApiException;
 import org.killbill.billing.payment.core.DirectPaymentProcessor;
 import org.killbill.billing.payment.dispatcher.PluginDispatcher;
 import org.killbill.billing.retry.plugin.api.RetryPluginApi;
@@ -30,7 +31,7 @@ public class RetryAuthorizeOperationCallback extends RetryOperationCallback {
     }
 
     @Override
-    protected OperationResult doPluginOperation() throws Exception {
+    protected OperationResult doPluginOperation() throws PaymentApiException {
         directPaymentProcessor.createAuthorization(directPaymentStateContext.account, directPaymentStateContext.paymentMethodId, directPaymentStateContext.directPaymentId, directPaymentStateContext.getAmount(), directPaymentStateContext.getCurrency(), directPaymentStateContext.directPaymentExternalKey, directPaymentStateContext.directPaymentTransactionExternalKey, directPaymentStateContext.getProperties(), directPaymentStateContext.callContext, directPaymentStateContext.internalCallContext);
         return OperationResult.SUCCESS;
     }
