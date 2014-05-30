@@ -33,13 +33,16 @@ import org.killbill.billing.util.callcontext.CallContext;
 public class RetryableDirectPaymentStateContext extends DirectPaymentStateContext {
 
     private DateTime retryDate;
+    private String pluginName;
 
-    public RetryableDirectPaymentStateContext(@Nullable final UUID directPaymentId, @Nullable final String directPaymentTransactionExternalKey, final TransactionType transactionType, final Account account, @Nullable final UUID paymentMethodId, final BigDecimal amount, final Currency currency, final Iterable<PluginProperty> properties, final InternalCallContext internalCallContext, final CallContext callContext) throws PaymentApiException {
+    public RetryableDirectPaymentStateContext(@Nullable String pluginName, @Nullable final UUID directPaymentId, @Nullable final String directPaymentTransactionExternalKey, final TransactionType transactionType, final Account account, @Nullable final UUID paymentMethodId, final BigDecimal amount, final Currency currency, final Iterable<PluginProperty> properties, final InternalCallContext internalCallContext, final CallContext callContext) {
         super(directPaymentId, directPaymentTransactionExternalKey, transactionType, account, paymentMethodId, amount, currency, properties, internalCallContext, callContext);
+        this.pluginName = pluginName;
     }
 
-    public RetryableDirectPaymentStateContext(@Nullable final UUID directPaymentId, @Nullable final String directPaymentExternalKey, @Nullable final String directPaymentTransactionExternalKey, final TransactionType transactionType, final Account account, @Nullable final UUID paymentMethodId, final BigDecimal amount, final Currency currency, final Iterable<PluginProperty> properties, final InternalCallContext internalCallContext, final CallContext callContext) throws PaymentApiException {
+    public RetryableDirectPaymentStateContext(@Nullable String pluginName, @Nullable final UUID directPaymentId, @Nullable final String directPaymentExternalKey, @Nullable final String directPaymentTransactionExternalKey, final TransactionType transactionType, final Account account, @Nullable final UUID paymentMethodId, final BigDecimal amount, final Currency currency, final Iterable<PluginProperty> properties, final InternalCallContext internalCallContext, final CallContext callContext) {
         super(directPaymentId, directPaymentExternalKey, directPaymentTransactionExternalKey, transactionType, account, paymentMethodId, amount, currency, properties, internalCallContext, callContext);
+        this.pluginName = pluginName;
     }
 
     public DateTime getRetryDate() {
@@ -48,5 +51,9 @@ public class RetryableDirectPaymentStateContext extends DirectPaymentStateContex
 
     public void setRetryDate(final DateTime retryDate) {
         this.retryDate = retryDate;
+    }
+
+    public String getPluginName() {
+        return pluginName;
     }
 }

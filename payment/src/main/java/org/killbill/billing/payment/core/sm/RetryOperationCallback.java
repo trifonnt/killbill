@@ -18,6 +18,8 @@ package org.killbill.billing.payment.core.sm;
 
 import java.util.Set;
 
+import javax.annotation.Nullable;
+
 import org.joda.time.DateTime;
 import org.killbill.automaton.OperationException;
 import org.killbill.automaton.OperationResult;
@@ -48,10 +50,21 @@ public abstract class RetryOperationCallback extends PluginOperation {
     // STEPH issue because externalKey namespace across plugin is not unique
     // If there is no plugin
     //
-    private boolean isRetryAborted(final String externalKey) {
-        final Set<String> allServices = retryPluginRegistry.getAllServices();
-        for (String pluginName : allServices) {
+    private boolean isRetryAborted(final String externalKey, @Nullable final String pluginName) {
+
+        if (pluginName != null) {
             final RetryPluginApi plugin = retryPluginRegistry.getServiceForName(pluginName);
+            try {
+                final boolean aborted = plugin.isRetryAborted(externalKey);
+                return aborted;
+            } catch (RetryPluginApiException e) {
+                return true;
+            }
+        }
+
+        final Set<String> allServices = retryPluginRegistry.getAllServices();
+        for (String cur : allServices) {
+            final RetryPluginApi plugin = retryPluginRegistry.getServiceForName(cur);
             try {
                 final boolean aborted = plugin.isRetryAborted(externalKey);
                 if (!aborted) {
@@ -63,10 +76,21 @@ public abstract class RetryOperationCallback extends PluginOperation {
         return true;
     }
 
-    private DateTime getNextRetryDate(final String externalKey) {
-        final Set<String> allServices = retryPluginRegistry.getAllServices();
-        for (String pluginName : allServices) {
+    private DateTime getNextRetryDate(final String externalKey, final String pluginName) {
+
+        if (pluginName != null) {
             final RetryPluginApi plugin = retryPluginRegistry.getServiceForName(pluginName);
+            try {
+                final DateTime result = plugin.getNextRetryDate(externalKey);
+                return result;
+            } catch (RetryPluginApiException e) {
+                return null;
+            }
+        }
+
+        final Set<String> allServices = retryPluginRegistry.getAllServices();
+        for (String cur : allServices) {
+            final RetryPluginApi plugin = retryPluginRegistry.getServiceForName(cur);
             try {
                 final DateTime result = plugin.getNextRetryDate(externalKey);
                 if (result != null) {
@@ -84,14 +108,16 @@ public abstract class RetryOperationCallback extends PluginOperation {
             @Override
             public OperationResult doOperation() throws PaymentApiException {
                 try {
-                    if (isRetryAborted(directPaymentStateContext.getDirectPaymentTransactionExternalKey())) {
+                    if (isRetryAborted(directPaymentStateContext.getDirectPaymentTransactionExternalKey(),
+                                       ((RetryableDirectPaymentStateContext) directPaymentStateContext).getPluginName())) {
                         return OperationResult.EXCEPTION;
                     }
 
                     try {
                         doPluginOperation();
                     } catch (PaymentApiException e) {
-                        final DateTime nextRetryDate = getNextRetryDate(directPaymentStateContext.getDirectPaymentTransactionExternalKey());
+                        final DateTime nextRetryDate = getNextRetryDate(directPaymentStateContext.getDirectPaymentTransactionExternalKey(),
+                                                                        ((RetryableDirectPaymentStateContext) directPaymentStateContext).getPluginName());
                         if (nextRetryDate == null) {
                             // Very hacky, we are using EXCEPTION result to transition to final ABORTED state.
                             throw new OperationException(e, OperationResult.EXCEPTION);

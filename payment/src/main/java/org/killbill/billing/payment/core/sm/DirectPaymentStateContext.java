@@ -56,7 +56,7 @@ public class DirectPaymentStateContext {
     // Use to create new transactions only
     public DirectPaymentStateContext(@Nullable final UUID directPaymentId, @Nullable final String directPaymentTransactionExternalKey, final TransactionType transactionType,
                                      final Account account, @Nullable final UUID paymentMethodId, final BigDecimal amount, final Currency currency, final Iterable<PluginProperty> properties,
-                                     final InternalCallContext internalCallContext, final CallContext callContext) throws PaymentApiException {
+                                     final InternalCallContext internalCallContext, final CallContext callContext) {
         this(directPaymentId, null, directPaymentTransactionExternalKey, transactionType, account, paymentMethodId,
              amount, currency, properties, internalCallContext, callContext);
     }
@@ -65,7 +65,7 @@ public class DirectPaymentStateContext {
     public DirectPaymentStateContext(@Nullable final UUID directPaymentId, @Nullable final String directPaymentExternalKey,
                                      @Nullable final String directPaymentTransactionExternalKey, final TransactionType transactionType,
                                      final Account account, @Nullable final UUID paymentMethodId, final BigDecimal amount, final Currency currency,
-                                     final Iterable<PluginProperty> properties, final InternalCallContext internalCallContext, final CallContext callContext) throws PaymentApiException {
+                                     final Iterable<PluginProperty> properties, final InternalCallContext internalCallContext, final CallContext callContext) {
         this.directPaymentId = directPaymentId;
         this.directPaymentExternalKey = directPaymentExternalKey;
         this.directPaymentTransactionExternalKey = directPaymentTransactionExternalKey;

@@ -27,6 +27,7 @@ import org.killbill.automaton.StateMachineConfig;
 import org.killbill.billing.account.api.Account;
 import org.killbill.billing.catalog.api.Currency;
 import org.killbill.billing.invoice.api.InvoiceApiException;
+import org.killbill.billing.osgi.api.OSGIServiceDescriptor;
 import org.killbill.billing.osgi.api.OSGIServiceRegistration;
 import org.killbill.billing.payment.PaymentTestSuiteNoDB;
 import org.killbill.billing.payment.api.PaymentApiException;
@@ -39,6 +40,7 @@ import org.killbill.billing.payment.dao.PaymentDao;
 import org.killbill.billing.payment.dispatcher.PluginDispatcher;
 import org.killbill.billing.payment.glue.PaymentModule;
 import org.killbill.billing.payment.plugin.api.PaymentPluginApi;
+import org.killbill.billing.payment.provider.MockRetryProviderPlugin;
 import org.killbill.billing.payment.retry.BaseRetryService.RetryServiceScheduler;
 import org.killbill.billing.retry.plugin.api.RetryPluginApi;
 import org.killbill.billing.tag.TagInternalApi;
@@ -91,24 +93,29 @@ public class TestRetryableDirectPaymentAutomatonRunner extends PaymentTestSuiteN
     private final BigDecimal amount = BigDecimal.ONE;
     private final Currency currency = Currency.EUR;
     private final ImmutableList<PluginProperty> emptyProperties = ImmutableList.<PluginProperty>of();
+    private final MockRetryProviderPlugin mockRetryProviderPlugin = new MockRetryProviderPlugin();
+
+    private MockRetryableDirectPaymentAutomatonRunner runner;
+    private RetryableDirectPaymentStateContext directPaymentStateContext;
+    private MockRetryAuthorizeOperationCallback mockRetryAuthorizeOperationCallback;
 
     @BeforeClass(groups = "slow")
     public void beforeClass() throws Exception {
         super.beforeClass();
         account = testHelper.createTestAccount("lolo@gmail.com", false);
-    }
+        retryPluginRegistry.registerService(new OSGIServiceDescriptor() {
+            @Override
+            public String getPluginSymbolicName() {
+                return null;
+            }
 
-    @BeforeMethod(groups = "fast")
-    public void beforeMethod() throws Exception {
-        super.beforeMethod();
-        ((MockPaymentDao) paymentDao).reset();
-    }
+            @Override
+            public String getRegistrationName() {
+                return MockRetryProviderPlugin.PLUGIN_NAME;
+            }
+        }, mockRetryProviderPlugin);
 
-
-    @Test(groups = "fast")
-    public void testCreatePaymentWithNoDefaultPaymentMethod() throws InvoiceApiException, EventBusException, PaymentApiException {
-
-        MockRetryableDirectPaymentAutomatonRunner runner = new MockRetryableDirectPaymentAutomatonRunner(
+        runner = new MockRetryableDirectPaymentAutomatonRunner(
                 stateMachineConfig,
                 retryStateMachineConfig,
                 paymentDao,
@@ -122,8 +129,9 @@ public class TestRetryableDirectPaymentAutomatonRunner extends PaymentTestSuiteN
                 paymentConfig,
                 executor);
 
-        final RetryableDirectPaymentStateContext directPaymentStateContext =
-                new RetryableDirectPaymentStateContext(null,
+        directPaymentStateContext =
+                new RetryableDirectPaymentStateContext(MockRetryProviderPlugin.PLUGIN_NAME,
+                                                       null,
                                                        directPaymentExternalKey,
                                                        directPaymentTransactionExternalKey,
                                                        TransactionType.AUTHORIZE,
@@ -135,7 +143,7 @@ public class TestRetryableDirectPaymentAutomatonRunner extends PaymentTestSuiteN
                                                        internalCallContext,
                                                        callContext);
 
-        MockRetryAuthorizeOperationCallback mockRetryAuthorizeOperationCallback =
+        mockRetryAuthorizeOperationCallback =
                 new MockRetryAuthorizeOperationCallback(new MemoryGlobalLocker(),
                                                         runner.getPaymentPluginDispatcher(),
                                                         directPaymentStateContext,
@@ -143,6 +151,22 @@ public class TestRetryableDirectPaymentAutomatonRunner extends PaymentTestSuiteN
                                                         runner.getRetryPluginRegistry(),
                                                         paymentDao,
                                                         clock);
+    }
+
+    @BeforeMethod(groups = "fast")
+    public void beforeMethod() throws Exception {
+        super.beforeMethod();
+        ((MockPaymentDao) paymentDao).reset();
+    }
+
+
+    @Test(groups = "fast")
+    public void testCreatePaymentWithNoDefaultPaymentMethod() throws InvoiceApiException, EventBusException, PaymentApiException {
+
+        mockRetryProviderPlugin
+                .setAborted(false)
+                .setNextRetryDate(null);
+
 
         mockRetryAuthorizeOperationCallback
                 .setResult(OperationResult.SUCCESS)

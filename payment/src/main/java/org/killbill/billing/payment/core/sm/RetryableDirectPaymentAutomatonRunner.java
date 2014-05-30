@@ -177,7 +177,7 @@ public class RetryableDirectPaymentAutomatonRunner extends DirectPaymentAutomato
                                                      @Nullable final BigDecimal amount, @Nullable final Currency currency,
                                                      final Iterable<PluginProperty> properties,
                                                      final CallContext callContext, final InternalCallContext internalCallContext) throws PaymentApiException {
-        return new RetryableDirectPaymentStateContext(directPaymentId, directPaymentExternalKey, directPaymentTransactionExternalKey, transactionType, account, paymentMethodId, amount, currency, properties, internalCallContext, callContext);
+        return new RetryableDirectPaymentStateContext(null, directPaymentId, directPaymentExternalKey, directPaymentTransactionExternalKey, transactionType, account, paymentMethodId, amount, currency, properties, internalCallContext, callContext);
     }
 
 
