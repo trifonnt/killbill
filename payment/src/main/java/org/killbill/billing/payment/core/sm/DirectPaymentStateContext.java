@@ -37,12 +37,12 @@ public class DirectPaymentStateContext {
     // HACK
     protected UUID paymentMethodId;
 
-    // Can be updated (e.g. for auth or purchase)
-    protected UUID directPaymentId;
     // Stateful objects created by the callbacks and passed to the other following callbacks in the automaton
     protected DirectPaymentTransactionModelDao directPaymentTransactionModelDao;
     protected PaymentInfoPlugin paymentInfoPlugin;
 
+    // Can be updated later via directPaymentTransactionModelDao (e.g. for auth or purchase)
+    protected final UUID directPaymentId;
     protected final String directPaymentExternalKey;
     protected final String directPaymentTransactionExternalKey;
     protected final Account account;

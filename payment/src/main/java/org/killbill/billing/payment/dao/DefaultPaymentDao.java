@@ -135,8 +135,8 @@ public class DefaultPaymentDao implements PaymentDao {
             @Override
             public Void inTransaction(final EntitySqlDaoWrapperFactory<EntitySqlDao> entitySqlDaoWrapperFactory) throws Exception {
                 entitySqlDaoWrapperFactory.become(DirectTransactionSqlDao.class).updateTransactionStatus(directTransactionId.toString(),
-                                                                                                         processedAmount, processedCurrency.toString(),
-                                                                                                         paymentStatus.toString(),
+                                                                                                         processedAmount, processedCurrency == null ? null : processedCurrency.toString(),
+                                                                                                         paymentStatus == null ? null : paymentStatus.toString(),
                                                                                                          gatewayErrorCode, gatewayErrorMsg, context);
                 entitySqlDaoWrapperFactory.become(DirectPaymentSqlDao.class).updateCurrentPaymentStateName(directPaymentId.toString(), currentPaymentStateName, context);
                 return null;

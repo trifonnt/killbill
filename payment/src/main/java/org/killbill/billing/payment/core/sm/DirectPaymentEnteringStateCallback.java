@@ -19,6 +19,8 @@ package org.killbill.billing.payment.core.sm;
 
 import java.util.UUID;
 
+import javax.annotation.Nullable;
+
 import org.killbill.automaton.Operation;
 import org.killbill.automaton.OperationResult;
 import org.killbill.automaton.State;
@@ -48,30 +50,43 @@ public abstract class DirectPaymentEnteringStateCallback implements EnteringStat
     public void enteringState(final State newState, final Operation.OperationCallback operationCallback, final OperationResult operationResult, final LeavingStateCallback leavingStateCallback) {
         logger.debug("Entering state {} with result {}", newState.getName(), operationResult);
 
+        // Check for illegal state (should never happen)
+        Preconditions.checkState(directPaymentStateContext.getDirectPaymentTransactionModelDao() != null && directPaymentStateContext.getDirectPaymentTransactionModelDao().getId() != null);
+
         final UUID directPaymentTransactionId = directPaymentStateContext.getDirectPaymentTransactionModelDao().getId();
         final PaymentInfoPlugin paymentInfoPlugin = directPaymentStateContext.getPaymentInfoPlugin();
+        final PaymentStatus paymentStatus = paymentPluginStatusToPaymentStatus(paymentInfoPlugin, operationResult);
 
-        // Check for illegal states (should never happen)
-        Preconditions.checkState(directPaymentTransactionId != null);
-        Preconditions.checkState(OperationResult.EXCEPTION.equals(operationResult) || paymentInfoPlugin != null);
-
-        if (paymentInfoPlugin != null) {
-            final PaymentStatus paymentStatus = processOperationResultForPayment(operationResult);
-            daoHelper.processPaymentInfoPlugin(paymentStatus, paymentInfoPlugin, directPaymentTransactionId, newState.getName());
-        }
+        daoHelper.processPaymentInfoPlugin(paymentStatus, paymentInfoPlugin, directPaymentTransactionId, newState.getName());
     }
 
-    protected PaymentStatus processOperationResultForPayment(final OperationResult operationResult) {
-        switch (operationResult) {
+    private PaymentStatus paymentPluginStatusToPaymentStatus(@Nullable final PaymentInfoPlugin paymentInfoPlugin, final OperationResult operationResult) {
+        if (paymentInfoPlugin == null) {
+            if (OperationResult.EXCEPTION.equals(operationResult)) {
+                // We got an exception during the plugin call
+                return PaymentStatus.PLUGIN_FAILURE_ABORTED;
+            } else {
+                // The plugin completed the call but returned null?! Bad plugin...
+                return PaymentStatus.UNKNOWN;
+            }
+        }
+
+        if (paymentInfoPlugin.getStatus() == null) {
+            // The plugin completed the call but returned an incomplete PaymentInfoPlugin?! Bad plugin...
+            return PaymentStatus.UNKNOWN;
+        }
+
+        switch (paymentInfoPlugin.getStatus()) {
+            case UNDEFINED:
+                return PaymentStatus.UNKNOWN;
+            case PROCESSED:
+                return PaymentStatus.SUCCESS;
             case PENDING:
                 return PaymentStatus.PENDING;
-            case SUCCESS:
-                return PaymentStatus.SUCCESS;
-            case FAILURE:
+            case ERROR:
                 return PaymentStatus.PAYMENT_FAILURE_ABORTED;
-            case EXCEPTION:
             default:
-                return PaymentStatus.PLUGIN_FAILURE_ABORTED;
+                return PaymentStatus.UNKNOWN;
         }
     }
 }
