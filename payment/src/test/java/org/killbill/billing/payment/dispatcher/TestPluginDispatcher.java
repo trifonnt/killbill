@@ -71,7 +71,7 @@ public class TestPluginDispatcher extends PaymentTestSuiteNoDB {
     }
 
     @Test(groups = "fast")
-    public void testDispatchWithRuntimeExceptionWrappedInPaymentApiException() throws TimeoutException, PaymentApiException {
+    public void testDispatchWithRuntimeException() throws TimeoutException, PaymentApiException {
         boolean gotIt = false;
         try {
             voidPluginDispatcher.dispatchWithTimeout(new Callable<Void>() {
@@ -84,8 +84,9 @@ public class TestPluginDispatcher extends PaymentTestSuiteNoDB {
         } catch (final TimeoutException e) {
             Assert.fail("Failed : should have had RuntimeException exception");
         } catch (final PaymentApiException e) {
-            gotIt = true;
+            Assert.fail("Failed : should have had RuntimeException exception");
         } catch (final RuntimeException e) {
+            gotIt = true;
         }
         Assert.assertTrue(gotIt);
     }

@@ -17,6 +17,7 @@
 
 package org.killbill.billing.payment.core.sm;
 
+import org.killbill.automaton.Operation.OperationCallback;
 import org.killbill.automaton.OperationException;
 import org.killbill.automaton.OperationResult;
 import org.killbill.billing.ErrorCode;
@@ -29,7 +30,7 @@ import org.killbill.billing.payment.plugin.api.PaymentPluginApiException;
 import org.killbill.commons.locker.GlobalLocker;
 
 // Encapsulates the payment specific logic
-public abstract class DirectPaymentOperation extends PluginOperation<PaymentInfoPlugin, PaymentPluginApiException> {
+public abstract class DirectPaymentOperation extends PluginOperation implements OperationCallback {
 
     protected final DirectPaymentStateContext directPaymentStateContext;
     protected final PaymentPluginApi plugin;
@@ -41,6 +42,8 @@ public abstract class DirectPaymentOperation extends PluginOperation<PaymentInfo
         this.directPaymentStateContext = directPaymentStateContext;
         this.plugin = daoHelper.getPaymentProviderPlugin();
     }
+
+    protected abstract PaymentInfoPlugin doPluginOperation() throws PaymentPluginApiException;
 
     @Override
     public OperationResult doOperationCallback() throws OperationException {

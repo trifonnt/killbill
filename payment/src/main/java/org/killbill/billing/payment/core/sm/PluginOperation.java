@@ -20,7 +20,6 @@ package org.killbill.billing.payment.core.sm;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeoutException;
 
-import org.killbill.automaton.Operation.OperationCallback;
 import org.killbill.automaton.OperationException;
 import org.killbill.automaton.OperationResult;
 import org.killbill.billing.account.api.Account;
@@ -36,7 +35,7 @@ import org.slf4j.LoggerFactory;
 import com.google.common.base.Objects;
 
 // Encapsulates the plugin delegation logic
-public abstract class PluginOperation<T, E extends Exception> implements OperationCallback {
+public abstract class PluginOperation {
 
     private final Logger logger = LoggerFactory.getLogger(PluginOperation.class);
 
@@ -51,8 +50,6 @@ public abstract class PluginOperation<T, E extends Exception> implements Operati
         this.paymentPluginDispatcher = paymentPluginDispatcher;
         this.directPaymentStateContext = directPaymentStateContext;
     }
-
-    protected abstract T doPluginOperation() throws E;
 
     protected OperationResult dispatchWithTimeout(final WithAccountLockCallback<OperationResult> callback) throws OperationException {
         final Account account = directPaymentStateContext.getAccount();
