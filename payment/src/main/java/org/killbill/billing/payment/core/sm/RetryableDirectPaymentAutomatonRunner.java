@@ -78,7 +78,6 @@ public class RetryableDirectPaymentAutomatonRunner extends DirectPaymentAutomato
 
     protected final OSGIServiceRegistration<RetryPluginApi> retryPluginRegistry;
 
-    // STEPH_RETRY DirectPaymentAutomatonRunner is not guice injected, should probably make it as well.
     @Inject
     public RetryableDirectPaymentAutomatonRunner(@Named(PaymentModule.STATE_MACHINE_PAYMENT) final StateMachineConfig stateMachineConfig, @Named(PaymentModule.STATE_MACHINE_RETRY) final StateMachineConfig retryStateMachine, final PaymentDao paymentDao, final GlobalLocker locker, final OSGIServiceRegistration<PaymentPluginApi> pluginRegistry, final OSGIServiceRegistration<RetryPluginApi> retryPluginRegistry, final Clock clock, final TagInternalApi tagApi, final DirectPaymentProcessor directPaymentProcessor, @Named(RETRYABLE_NAMED) final RetryServiceScheduler retryServiceScheduler, final PaymentConfig paymentConfig,
                                                  @com.google.inject.name.Named(PLUGIN_EXECUTOR_NAMED) final ExecutorService executor) {

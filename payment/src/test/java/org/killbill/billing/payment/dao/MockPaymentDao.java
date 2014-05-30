@@ -81,7 +81,7 @@ public class MockPaymentDao implements PaymentDao {
     public DirectPaymentTransactionModelDao getDirectPaymentTransactionByExternalKey(final String transactionExternalKey, final InternalTenantContext context) {
         synchronized (this) {
             for (DirectPaymentTransactionModelDao cur : transactions.values()) {
-                if (cur.getExternalKey().equals(transactionExternalKey)) {
+                if (cur.getTransactionExternalKey().equals(transactionExternalKey)) {
                     return cur;
                 }
             }

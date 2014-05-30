@@ -23,13 +23,10 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.TimeUnit;
 
 import javax.annotation.Nullable;
 import javax.inject.Inject;
 
-import org.killbill.automaton.DefaultStateMachineConfig;
-import org.killbill.automaton.OperationResult;
 import org.killbill.automaton.StateMachineConfig;
 import org.killbill.billing.ErrorCode;
 import org.killbill.billing.account.api.Account;
@@ -50,7 +47,6 @@ import org.killbill.billing.payment.core.sm.DirectPaymentAutomatonRunner;
 import org.killbill.billing.payment.dao.DirectPaymentModelDao;
 import org.killbill.billing.payment.dao.DirectPaymentTransactionModelDao;
 import org.killbill.billing.payment.dao.PaymentDao;
-import org.killbill.billing.payment.dispatcher.PluginDispatcher;
 import org.killbill.billing.payment.glue.PaymentModule;
 import org.killbill.billing.payment.plugin.api.PaymentInfoPlugin;
 import org.killbill.billing.payment.plugin.api.PaymentPluginApi;
@@ -67,7 +63,6 @@ import org.killbill.billing.util.entity.dao.DefaultPaginationHelper.SourcePagina
 import org.killbill.bus.api.PersistentBus;
 import org.killbill.clock.Clock;
 import org.killbill.commons.locker.GlobalLocker;
-import org.killbill.xmlloader.XMLLoader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -76,7 +71,6 @@ import com.google.common.base.Predicate;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Ordering;
-import com.google.common.io.Resources;
 import com.google.inject.name.Named;
 
 import static org.killbill.billing.payment.glue.PaymentModule.PLUGIN_EXECUTOR_NAMED;
@@ -103,11 +97,11 @@ public class DirectPaymentProcessor extends ProcessorBase {
                                   final Clock clock,
                                   final GlobalLocker locker,
                                   final PaymentConfig paymentConfig,
-                                  @Named(PLUGIN_EXECUTOR_NAMED) final ExecutorService executor) {
+                                  @Named(PLUGIN_EXECUTOR_NAMED) final ExecutorService executor,
+                                  final DirectPaymentAutomatonRunner directPaymentAutomatonRunner) {
         super(pluginRegistry, accountUserApi, eventBus, paymentDao, nonEntityDao, tagUserApi, locker, executor, invoiceApi);
         this.internalCallContextFactory = internalCallContextFactory;
-
-        directPaymentAutomatonRunner = new DirectPaymentAutomatonRunner(stateMachineConfig, paymentConfig, paymentDao, locker, pluginRegistry, clock, executor);
+        this.directPaymentAutomatonRunner = directPaymentAutomatonRunner;
     }
 
     public DirectPayment createAuthorization(final Account account, @Nullable final UUID paymentMethodId, @Nullable final UUID directPaymentId, final BigDecimal amount, final Currency currency,
@@ -371,7 +365,7 @@ public class DirectPaymentProcessor extends ProcessorBase {
         final Iterable<DirectPaymentTransaction> transactions = Iterables.transform(filteredTransactions, new Function<DirectPaymentTransactionModelDao, DirectPaymentTransaction>() {
             @Override
             public DirectPaymentTransaction apply(final DirectPaymentTransactionModelDao input) {
-                return new DefaultDirectPaymentTransaction(input.getId(), input.getExternalKey(), input.getCreatedDate(), input.getUpdatedDate(), input.getDirectPaymentId(),
+                return new DefaultDirectPaymentTransaction(input.getId(), input.getTransactionExternalKey(), input.getCreatedDate(), input.getUpdatedDate(), input.getDirectPaymentId(),
                                                            input.getTransactionType(), input.getEffectiveDate(), input.getPaymentStatus(), input.getAmount(), input.getCurrency(),
                                                            input.getGatewayErrorCode(), input.getGatewayErrorMsg(), pluginInfo);
             }

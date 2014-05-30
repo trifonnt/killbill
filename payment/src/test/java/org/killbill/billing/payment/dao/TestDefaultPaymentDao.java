@@ -151,7 +151,7 @@ public class TestDefaultPaymentDao extends PaymentTestSuiteWithEmbeddedDB {
 
     private void verifyDirectPaymentTransaction(final DirectPaymentTransactionModelDao loadedDirectPaymentTransactionModelDao, final DirectPaymentTransactionModelDao specifiedDirectPaymentTransactionModelDao) {
         Assert.assertEquals(loadedDirectPaymentTransactionModelDao.getDirectPaymentId(), specifiedDirectPaymentTransactionModelDao.getDirectPaymentId());
-        Assert.assertEquals(loadedDirectPaymentTransactionModelDao.getExternalKey(), specifiedDirectPaymentTransactionModelDao.getExternalKey());
+        Assert.assertEquals(loadedDirectPaymentTransactionModelDao.getTransactionExternalKey(), specifiedDirectPaymentTransactionModelDao.getTransactionExternalKey());
         Assert.assertEquals(loadedDirectPaymentTransactionModelDao.getTransactionType(), specifiedDirectPaymentTransactionModelDao.getTransactionType());
         Assert.assertEquals(loadedDirectPaymentTransactionModelDao.getEffectiveDate().compareTo(specifiedDirectPaymentTransactionModelDao.getEffectiveDate()), 0);
         Assert.assertEquals(loadedDirectPaymentTransactionModelDao.getPaymentStatus(), specifiedDirectPaymentTransactionModelDao.getPaymentStatus());

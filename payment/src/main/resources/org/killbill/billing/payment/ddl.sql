@@ -236,7 +236,7 @@ DROP TABLE IF EXISTS direct_transactions;
 CREATE TABLE direct_transactions (
     record_id int(11) unsigned NOT NULL AUTO_INCREMENT,
     id char(36) NOT NULL,
-    external_key varchar(255),
+    transaction_external_key varchar(255),
     transaction_type varchar(32) NOT NULL,
     effective_date datetime NOT NULL,
     payment_status varchar(50),
@@ -257,13 +257,14 @@ CREATE TABLE direct_transactions (
 ) /*! CHARACTER SET utf8 COLLATE utf8_bin */;
 CREATE UNIQUE INDEX direct_transactions_id ON direct_transactions(id);
 CREATE INDEX direct_transactions_direct_id ON direct_transactions(direct_payment_id);
+CREATE INDEX direct_transactions_direct_key ON direct_transactions(transaction_external_key);
 CREATE INDEX direct_transactions_tenant_account_record_id ON direct_transactions(tenant_record_id, account_record_id);
 
 DROP TABLE IF EXISTS direct_transaction_history;
 CREATE TABLE direct_transaction_history (
     record_id int(11) unsigned NOT NULL AUTO_INCREMENT,
     id char(36) NOT NULL,
-    external_key varchar(255),
+    transaction_external_key varchar(255),
     target_record_id int(11) unsigned NOT NULL,
     transaction_type varchar(32) NOT NULL,
     effective_date datetime NOT NULL,
