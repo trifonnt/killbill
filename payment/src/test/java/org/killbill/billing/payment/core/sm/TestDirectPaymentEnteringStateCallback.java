@@ -76,7 +76,7 @@ public class TestDirectPaymentEnteringStateCallback extends PaymentTestSuiteWith
 
     @Test(groups = "slow")
     public void testEnterStateAndProcessPaymentInfoPlugin() throws Exception {
-        // Create the payment and first transaction
+        // Create the payment and first transaction (would be done by DirectPaymentLeavingStateCallback)
         daoHelper.createNewDirectPaymentTransaction();
         Assert.assertEquals(paymentDao.getDirectPaymentTransaction(directPaymentStateContext.getDirectPaymentTransactionModelDao().getId(), internalCallContext).getPaymentStatus(), PaymentStatus.UNKNOWN);
 
@@ -89,7 +89,7 @@ public class TestDirectPaymentEnteringStateCallback extends PaymentTestSuiteWith
         Mockito.when(paymentInfoPlugin.getGatewayError()).thenReturn(UUID.randomUUID().toString());
         directPaymentStateContext.setPaymentInfoPlugin(paymentInfoPlugin);
 
-        // Call the plugin
+        // Process the plugin result
         callback.enteringState(state, operationCallback, operationResult, leavingStateCallback);
 
         // Verify the updated transaction
