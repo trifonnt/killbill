@@ -17,8 +17,6 @@
 
 package org.killbill.billing.payment.core.sm;
 
-import java.util.UUID;
-
 import javax.annotation.Nullable;
 
 import org.killbill.automaton.Operation;
@@ -53,11 +51,10 @@ public abstract class DirectPaymentEnteringStateCallback implements EnteringStat
         // Check for illegal state (should never happen)
         Preconditions.checkState(directPaymentStateContext.getDirectPaymentTransactionModelDao() != null && directPaymentStateContext.getDirectPaymentTransactionModelDao().getId() != null);
 
-        final UUID directPaymentTransactionId = directPaymentStateContext.getDirectPaymentTransactionModelDao().getId();
         final PaymentInfoPlugin paymentInfoPlugin = directPaymentStateContext.getPaymentInfoPlugin();
         final PaymentStatus paymentStatus = paymentPluginStatusToPaymentStatus(paymentInfoPlugin, operationResult);
 
-        daoHelper.processPaymentInfoPlugin(paymentStatus, paymentInfoPlugin, directPaymentTransactionId, newState.getName());
+        daoHelper.processPaymentInfoPlugin(paymentStatus, paymentInfoPlugin, newState.getName());
     }
 
     private PaymentStatus paymentPluginStatusToPaymentStatus(@Nullable final PaymentInfoPlugin paymentInfoPlugin, final OperationResult operationResult) {

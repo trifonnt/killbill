@@ -39,7 +39,7 @@ public abstract class DirectPaymentOperation extends PluginOperation<PaymentInfo
                                      final DirectPaymentStateContext directPaymentStateContext) throws PaymentApiException {
         super(locker, paymentPluginDispatcher, directPaymentStateContext);
         this.directPaymentStateContext = directPaymentStateContext;
-        this.plugin = daoHelper.getPaymentProviderPlugin(directPaymentStateContext.getInternalCallContext());
+        this.plugin = daoHelper.getPaymentProviderPlugin();
     }
 
     @Override

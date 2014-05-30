@@ -22,6 +22,6 @@ import org.killbill.billing.payment.api.PaymentApiException;
 public class RefundInitiated extends DirectPaymentLeavingStateCallback {
 
     public RefundInitiated(final DirectPaymentAutomatonDAOHelper daoHelper, final DirectPaymentStateContext directPaymentStateContext) throws PaymentApiException {
-        super(daoHelper, directPaymentStateContext);
+        super(daoHelper);
     }
 }

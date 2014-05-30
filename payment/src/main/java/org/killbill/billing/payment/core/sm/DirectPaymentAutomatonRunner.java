@@ -116,7 +116,7 @@ public class DirectPaymentAutomatonRunner {
             Preconditions.checkState(paymentMethodId == null || nonNullPaymentMethodId.equals(paymentMethodId), "Specified payment method id " + paymentMethodId + " doesn't match the one on the payment " + nonNullPaymentMethodId);
         } else {
             // If the payment method is not specified, retrieve the default one on the account
-            nonNullPaymentMethodId = Objects.firstNonNull(paymentMethodId, daoHelper.getDefaultPaymentMethodId(account));
+            nonNullPaymentMethodId = Objects.firstNonNull(paymentMethodId, daoHelper.getDefaultPaymentMethodId());
 
             switch (transactionType) {
                 case AUTHORIZE:
