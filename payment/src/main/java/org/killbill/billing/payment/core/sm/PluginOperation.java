@@ -20,16 +20,14 @@ package org.killbill.billing.payment.core.sm;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeoutException;
 
-import org.killbill.automaton.Operation.OperationCallback;
 import org.killbill.automaton.OperationException;
 import org.killbill.automaton.OperationResult;
 import org.killbill.billing.account.api.Account;
 import org.killbill.billing.payment.api.PaymentApiException;
 import org.killbill.billing.payment.core.ProcessorBase.CallableWithAccountLock;
+import org.killbill.billing.payment.core.ProcessorBase.CallableWithoutAccountLock;
 import org.killbill.billing.payment.core.ProcessorBase.WithAccountLockCallback;
 import org.killbill.billing.payment.dispatcher.PluginDispatcher;
-import org.killbill.billing.payment.plugin.api.PaymentInfoPlugin;
-import org.killbill.billing.payment.plugin.api.PaymentPluginApiException;
 import org.killbill.commons.locker.GlobalLocker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,7 +35,7 @@ import org.slf4j.LoggerFactory;
 import com.google.common.base.Objects;
 
 // Encapsulates the plugin delegation logic
-public abstract class PluginOperation implements OperationCallback {
+public abstract class PluginOperation {
 
     private final Logger logger = LoggerFactory.getLogger(PluginOperation.class);
 
@@ -61,9 +59,15 @@ public abstract class PluginOperation implements OperationCallback {
         logger.debug("Dispatching plugin call for account {}", account.getExternalKey());
 
         try {
-            final Callable<OperationResult> task = new CallableWithAccountLock<OperationResult>(locker,
-                                                                                                account.getExternalKey(),
-                                                                                                callback);
+            final Callable<OperationResult> task;
+            if (directPaymentStateContext.shouldLockAccount()) {
+                task = new CallableWithAccountLock<OperationResult>(locker,
+                                                                    account.getExternalKey(),
+                                                                    callback);
+            } else {
+                task = new CallableWithoutAccountLock<OperationResult>(callback);
+            }
+
             final OperationResult operationResult = paymentPluginDispatcher.dispatchWithTimeout(task);
             logger.debug("Successful plugin call for account {} with result {}", account.getExternalKey(), operationResult);
             return operationResult;

@@ -69,7 +69,12 @@ public class RetryableDirectPaymentApi implements DirectPaymentApi {
     }
 
     @Override
-    public DirectPayment createCredit(final Account account, final UUID directPaymentId, final BigDecimal amount, final Currency currency, final String directPaymentTransactionExternalKey, final Iterable<PluginProperty> properties, final CallContext context) throws PaymentApiException {
+    public DirectPayment createRefund(final Account account, final UUID uuid, final BigDecimal bigDecimal, final Currency currency, final String s, final Iterable<PluginProperty> pluginProperties, final CallContext callContext) throws PaymentApiException {
+        return null;
+    }
+
+    @Override
+    public DirectPayment createCredit(final Account account, final UUID uuid, final UUID uuid2, final BigDecimal bigDecimal, final Currency currency, final String s, final String s2, final Iterable<PluginProperty> pluginProperties, final CallContext callContext) throws PaymentApiException {
         return null;
     }
 

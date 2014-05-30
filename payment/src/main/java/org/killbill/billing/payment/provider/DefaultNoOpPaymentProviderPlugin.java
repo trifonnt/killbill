@@ -36,8 +36,6 @@ import org.killbill.billing.payment.plugin.api.PaymentInfoPlugin;
 import org.killbill.billing.payment.plugin.api.PaymentMethodInfoPlugin;
 import org.killbill.billing.payment.plugin.api.PaymentPluginApiException;
 import org.killbill.billing.payment.plugin.api.PaymentPluginStatus;
-import org.killbill.billing.payment.plugin.api.RefundInfoPlugin;
-import org.killbill.billing.payment.plugin.api.RefundPluginStatus;
 import org.killbill.billing.util.callcontext.CallContext;
 import org.killbill.billing.util.callcontext.TenantContext;
 import org.killbill.billing.util.entity.DefaultPagination;
@@ -45,6 +43,7 @@ import org.killbill.billing.util.entity.Pagination;
 import org.killbill.clock.Clock;
 
 import com.google.common.base.Predicate;
+import com.google.common.collect.Collections2;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.LinkedListMultimap;
@@ -61,7 +60,7 @@ public class DefaultNoOpPaymentProviderPlugin implements NoOpPaymentPluginApi {
 
     private final Map<String, PaymentInfoPlugin> payments = new ConcurrentHashMap<String, PaymentInfoPlugin>();
     // Note: we can't use HashMultiMap as we care about storing duplicate key/value pairs
-    private final Multimap<String, RefundInfoPlugin> refunds = LinkedListMultimap.<String, RefundInfoPlugin>create();
+    private final Multimap<String, PaymentInfoPlugin> refunds = LinkedListMultimap.<String, PaymentInfoPlugin>create();
     private final Map<String, List<PaymentMethodPlugin>> paymentMethods = new ConcurrentHashMap<String, List<PaymentMethodPlugin>>();
 
     private final Clock clock;
@@ -118,6 +117,12 @@ public class DefaultNoOpPaymentProviderPlugin implements NoOpPaymentPluginApi {
     }
 
     @Override
+    public PaymentInfoPlugin creditPayment(final UUID kbAccountId, final UUID kbPaymentId, final UUID kbPaymentMethodId, final BigDecimal amount, final Currency currency, final Iterable<PluginProperty> properties, final CallContext context)
+            throws PaymentPluginApiException {
+        return getInternalNoopPaymentInfoResult(kbPaymentId, amount, currency);
+    }
+
+    @Override
     public PaymentInfoPlugin getPaymentInfo(final UUID kbAccountId, final UUID kbPaymentId, final Iterable<PluginProperty> properties, final TenantContext context) throws PaymentPluginApiException {
         final PaymentInfoPlugin payment = payments.get(kbPaymentId.toString());
         if (payment == null) {
@@ -128,14 +133,16 @@ public class DefaultNoOpPaymentProviderPlugin implements NoOpPaymentPluginApi {
 
     @Override
     public Pagination<PaymentInfoPlugin> searchPayments(final String searchKey, final Long offset, final Long limit, final Iterable<PluginProperty> properties, final TenantContext tenantContext) throws PaymentPluginApiException {
-        final ImmutableList<PaymentInfoPlugin> allResults = ImmutableList.<PaymentInfoPlugin>copyOf(Iterables.<PaymentInfoPlugin>filter(Iterables.<PaymentInfoPlugin>concat(payments.values()), new Predicate<PaymentInfoPlugin>() {
-            @Override
-            public boolean apply(final PaymentInfoPlugin input) {
-                return (input.getKbPaymentId() != null && input.getKbPaymentId().toString().equals(searchKey)) ||
-                       (input.getFirstPaymentReferenceId() != null && input.getFirstPaymentReferenceId().contains(searchKey)) ||
-                       (input.getSecondPaymentReferenceId() != null && input.getSecondPaymentReferenceId().contains(searchKey));
-            }
-        }));
+        final ImmutableList<PaymentInfoPlugin> allResults = ImmutableList.<PaymentInfoPlugin>copyOf(Collections2.<PaymentInfoPlugin>filter(payments.values(),
+                                                                                                                                           new Predicate<PaymentInfoPlugin>() {
+                                                                                                                                               @Override
+                                                                                                                                               public boolean apply(final PaymentInfoPlugin input) {
+                                                                                                                                                   return (input.getKbPaymentId() != null && input.getKbPaymentId().toString().equals(searchKey)) ||
+                                                                                                                                                          (input.getFirstPaymentReferenceId() != null && input.getFirstPaymentReferenceId().contains(searchKey)) ||
+                                                                                                                                                          (input.getSecondPaymentReferenceId() != null && input.getSecondPaymentReferenceId().contains(searchKey));
+                                                                                                                                               }
+                                                                                                                                           }
+                                                                                                                                          ));
 
         final List<PaymentInfoPlugin> results;
         if (offset >= allResults.size()) {
@@ -181,7 +188,7 @@ public class DefaultNoOpPaymentProviderPlugin implements NoOpPaymentPluginApi {
     @Override
     public PaymentMethodPlugin getPaymentMethodDetail(final UUID kbAccountId, final UUID kbPaymentMethodId, final Iterable<PluginProperty> properties, final TenantContext context) throws PaymentPluginApiException {
         final List<PaymentMethodPlugin> paymentMethodPlugins = paymentMethods.get(kbPaymentMethodId.toString());
-        if (paymentMethodPlugins == null || paymentMethodPlugins.size() == 0) {
+        if (paymentMethodPlugins == null || paymentMethodPlugins.isEmpty()) {
             return null;
         } else {
             return paymentMethodPlugins.get(0);
@@ -239,14 +246,14 @@ public class DefaultNoOpPaymentProviderPlugin implements NoOpPaymentPluginApi {
     }
 
     @Override
-    public RefundInfoPlugin processRefund(final UUID kbAccountId, final UUID kbPaymentId, final BigDecimal refundAmount, final Currency currency, final Iterable<PluginProperty> properties, final CallContext context) throws PaymentPluginApiException {
+    public PaymentInfoPlugin processRefund(final UUID kbAccountId, final UUID kbPaymentId, final BigDecimal refundAmount, final Currency currency, final Iterable<PluginProperty> properties, final CallContext context) throws PaymentPluginApiException {
         final PaymentInfoPlugin paymentInfoPlugin = getPaymentInfo(kbAccountId, kbPaymentId, properties, context);
         if (paymentInfoPlugin == null) {
             throw new PaymentPluginApiException("", String.format("No payment found for payment id %s (plugin %s)", kbPaymentId.toString(), PLUGIN_NAME));
         }
 
         BigDecimal maxAmountRefundable = paymentInfoPlugin.getAmount();
-        for (final RefundInfoPlugin refund : refunds.get(kbPaymentId.toString())) {
+        for (final PaymentInfoPlugin refund : refunds.get(kbPaymentId.toString())) {
             maxAmountRefundable = maxAmountRefundable.add(refund.getAmount().negate());
         }
         if (maxAmountRefundable.compareTo(refundAmount) < 0) {
@@ -254,37 +261,39 @@ public class DefaultNoOpPaymentProviderPlugin implements NoOpPaymentPluginApi {
                                                                   refundAmount, kbPaymentId.toString(), paymentInfoPlugin.getAmount(), PLUGIN_NAME));
         }
 
-        final DefaultNoOpRefundInfoPlugin refundInfoPlugin = new DefaultNoOpRefundInfoPlugin(kbPaymentId, refundAmount, currency, clock.getUTCNow(), clock.getUTCNow(), RefundPluginStatus.PROCESSED, null);
+        final DefaultNoOpPaymentInfoPlugin refundInfoPlugin = new DefaultNoOpPaymentInfoPlugin(kbPaymentId, refundAmount, currency, clock.getUTCNow(), clock.getUTCNow(), PaymentPluginStatus.PROCESSED, null);
         refunds.put(kbPaymentId.toString(), refundInfoPlugin);
 
         return refundInfoPlugin;
     }
 
     @Override
-    public List<RefundInfoPlugin> getRefundInfo(final UUID kbAccountId, final UUID kbPaymentId, final Iterable<PluginProperty> properties, final TenantContext context) {
-        return ImmutableList.<RefundInfoPlugin>copyOf(refunds.get(kbPaymentId.toString()));
+    public List<PaymentInfoPlugin> getRefundInfo(final UUID kbAccountId, final UUID kbPaymentId, final Iterable<PluginProperty> properties, final TenantContext context) {
+        return ImmutableList.<PaymentInfoPlugin>copyOf(refunds.get(kbPaymentId.toString()));
     }
 
     @Override
-    public Pagination<RefundInfoPlugin> searchRefunds(final String searchKey, final Long offset, final Long limit, final Iterable<PluginProperty> properties, final TenantContext tenantContext) throws PaymentPluginApiException {
-        final ImmutableList<RefundInfoPlugin> allResults = ImmutableList.<RefundInfoPlugin>copyOf(Iterables.<RefundInfoPlugin>filter(Iterables.<RefundInfoPlugin>concat(refunds.values()), new Predicate<RefundInfoPlugin>() {
-            @Override
-            public boolean apply(final RefundInfoPlugin input) {
-                return (input.getFirstRefundReferenceId() != null && input.getFirstRefundReferenceId().contains(searchKey)) ||
-                       (input.getSecondRefundReferenceId() != null && input.getSecondRefundReferenceId().contains(searchKey));
-            }
-        }));
+    public Pagination<PaymentInfoPlugin> searchRefunds(final String searchKey, final Long offset, final Long limit, final Iterable<PluginProperty> properties, final TenantContext tenantContext) throws PaymentPluginApiException {
+        final List<PaymentInfoPlugin> allResults = ImmutableList.<PaymentInfoPlugin>copyOf(Collections2.<PaymentInfoPlugin>filter(refunds.values(),
+                                                                                                                                  new Predicate<PaymentInfoPlugin>() {
+                                                                                                                                      @Override
+                                                                                                                                      public boolean apply(final PaymentInfoPlugin input) {
+                                                                                                                                          return (input.getFirstPaymentReferenceId() != null && input.getFirstPaymentReferenceId().contains(searchKey)) ||
+                                                                                                                                                 (input.getSecondPaymentReferenceId() != null && input.getSecondPaymentReferenceId().contains(searchKey));
+                                                                                                                                      }
+                                                                                                                                  }
+                                                                                                                                 ));
 
-        final List<RefundInfoPlugin> results;
+        final List<PaymentInfoPlugin> results;
         if (offset >= allResults.size()) {
-            results = ImmutableList.<RefundInfoPlugin>of();
+            results = ImmutableList.<PaymentInfoPlugin>of();
         } else if (offset + limit > allResults.size()) {
             results = allResults.subList(offset.intValue(), allResults.size());
         } else {
             results = allResults.subList(offset.intValue(), offset.intValue() + limit.intValue());
         }
 
-        return new DefaultPagination<RefundInfoPlugin>(offset, limit, (long) results.size(), (long) refunds.values().size(), results.iterator());
+        return new DefaultPagination<PaymentInfoPlugin>(offset, limit, (long) results.size(), (long) refunds.values().size(), results.iterator());
     }
 
     private PaymentInfoPlugin getInternalNoopPaymentInfoResult(final UUID kbPaymentId, final BigDecimal amount, final Currency currency) throws PaymentPluginApiException {
@@ -293,7 +302,11 @@ public class DefaultNoOpPaymentProviderPlugin implements NoOpPaymentPluginApi {
         }
 
         final PaymentPluginStatus status = (makeAllInvoicesFailWithError.get() || makeNextInvoiceFailWithError.getAndSet(false)) ? PaymentPluginStatus.ERROR : PaymentPluginStatus.PROCESSED;
-        final PaymentInfoPlugin result = new DefaultNoOpPaymentInfoPlugin(kbPaymentId, amount, currency, clock.getUTCNow(), clock.getUTCNow(), status, null);
+        BigDecimal totalAmount = amount;
+        if (payments.get(kbPaymentId.toString()) != null) {
+            totalAmount = totalAmount.add(payments.get(kbPaymentId.toString()).getAmount());
+        }
+        final PaymentInfoPlugin result = new DefaultNoOpPaymentInfoPlugin(kbPaymentId, totalAmount, currency, clock.getUTCNow(), clock.getUTCNow(), status, null);
         payments.put(kbPaymentId.toString(), result);
         return result;
     }

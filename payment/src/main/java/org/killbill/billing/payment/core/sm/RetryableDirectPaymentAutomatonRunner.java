@@ -124,7 +124,6 @@ public class RetryableDirectPaymentAutomatonRunner extends DirectPaymentAutomato
 
             state.runOperation(retryOperation, callback, enteringStateCallback, leavingStateCallback);
 
-            // STEPH_RETRY exception handling *seems* similar to DirectPaymentAutomatonRunner, can we share?
         } catch (MissingEntryException e) {
             throw new PaymentApiException(e.getCause(), ErrorCode.PAYMENT_INTERNAL_ERROR, e.getMessage());
         } catch (OperationException e) {

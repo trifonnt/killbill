@@ -31,6 +31,7 @@ import java.util.concurrent.TimeoutException;
 import javax.annotation.Nullable;
 import javax.inject.Inject;
 
+import org.killbill.automaton.OperationException;
 import org.killbill.billing.ErrorCode;
 import org.killbill.billing.account.api.Account;
 import org.killbill.billing.account.api.AccountApiException;
@@ -316,6 +317,8 @@ public class PaymentProcessor extends ProcessorBase {
             ));
         } catch (final TimeoutException e) {
             throw new PaymentApiException(ErrorCode.UNEXPECTED_ERROR, "Unexpected timeout for payment creation (AUTO_PAY_OFF)");
+        } catch (OperationException e) {
+            e.printStackTrace();
         }
     }
 
@@ -419,6 +422,10 @@ public class PaymentProcessor extends ProcessorBase {
             } else {
                 return null;
             }
+        } catch (OperationException e) {
+
+            e.printStackTrace();
+            return null;
         }
     }
 
@@ -571,6 +578,8 @@ public class PaymentProcessor extends ProcessorBase {
         } catch (final TimeoutException e) {
             log.warn(String.format("Retry for payment %s timedout", paymentId));
             // STEPH we should throw some exception so NotificationQ does not clear status and retries us
+        } catch (OperationException e) {
+            e.printStackTrace();
         }
     }
 

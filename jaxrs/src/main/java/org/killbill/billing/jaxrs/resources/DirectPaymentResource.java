@@ -88,7 +88,7 @@ public class DirectPaymentResource extends JaxRsResourceBase {
     @Path("/{directPaymentId:" + UUID_PATTERN + "}/")
     @Produces(APPLICATION_JSON)
     public Response getDirectPayment(@PathParam("directPaymentId") final String directPaymentIdStr,
-                                     @QueryParam(QUERY_PAYMENT_METHOD_PLUGIN_INFO) @DefaultValue("false") final Boolean withPluginInfo,
+                                     @QueryParam(QUERY_WITH_PLUGIN_INFO) @DefaultValue("false") final Boolean withPluginInfo,
                                      @QueryParam(QUERY_PLUGIN_PROPERTY) final List<String> pluginPropertiesString,
                                      @QueryParam(QUERY_AUDIT) @DefaultValue("NONE") final AuditMode auditMode,
                                      @javax.ws.rs.core.Context final HttpServletRequest request) throws PaymentApiException {
@@ -209,10 +209,10 @@ public class DirectPaymentResource extends JaxRsResourceBase {
     }
 
     @POST
-    @Path("/{directPaymentId:" + UUID_PATTERN + "}/" + CREDITS)
+    @Path("/{directPaymentId:" + UUID_PATTERN + "}/" + REFUNDS)
     @Consumes(APPLICATION_JSON)
     @Produces(APPLICATION_JSON)
-    public Response creditPayment(final DirectTransactionJson json,
+    public Response refundPayment(final DirectTransactionJson json,
                                   @PathParam("directPaymentId") final String directPaymentIdStr,
                                   @QueryParam(QUERY_PLUGIN_PROPERTY) final List<String> pluginPropertiesString,
                                   @HeaderParam(HDR_CREATED_BY) final String createdBy,
@@ -228,7 +228,7 @@ public class DirectPaymentResource extends JaxRsResourceBase {
         final Account account = accountUserApi.getAccountById(initialPayment.getAccountId(), callContext);
         final Currency currency = json.getCurrency() == null ? account.getCurrency() : Currency.valueOf(json.getCurrency());
 
-        final DirectPayment payment = directPaymentApi.createCredit(account, directPaymentId, json.getAmount(), currency,
+        final DirectPayment payment = directPaymentApi.createRefund(account, directPaymentId, json.getAmount(), currency,
                                                                     json.getDirectTransactionExternalKey(), pluginProperties, callContext);
         return uriBuilder.buildResponse(uriInfo, DirectPaymentResource.class, "getDirectPayment", payment.getId());
     }

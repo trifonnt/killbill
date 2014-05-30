@@ -562,7 +562,7 @@ public class AccountResource extends JaxRsResourceBase {
     @Path("/{accountId:" + UUID_PATTERN + "}/" + PAYMENT_METHODS)
     @Produces(APPLICATION_JSON)
     public Response getPaymentMethods(@PathParam("accountId") final String accountId,
-                                      @QueryParam(QUERY_PAYMENT_METHOD_PLUGIN_INFO) @DefaultValue("false") final Boolean withPluginInfo,
+                                      @QueryParam(QUERY_WITH_PLUGIN_INFO) @DefaultValue("false") final Boolean withPluginInfo,
                                       @QueryParam(QUERY_PLUGIN_PROPERTY) final List<String> pluginPropertiesString,
                                       @QueryParam(QUERY_AUDIT) @DefaultValue("NONE") final AuditMode auditMode,
                                       @javax.ws.rs.core.Context final HttpServletRequest request) throws AccountApiException, PaymentApiException {
@@ -664,6 +664,11 @@ public class AccountResource extends JaxRsResourceBase {
                 result = directPaymentApi.createPurchase(account, paymentMethodId, directPaymentId, json.getAmount(), currency,
                                                          json.getDirectPaymentExternalKey(), json.getDirectTransactionExternalKey(),
                                                          pluginProperties, callContext);
+                break;
+            case CREDIT:
+                result = directPaymentApi.createCredit(account, paymentMethodId, directPaymentId, json.getAmount(), currency,
+                                                       json.getDirectPaymentExternalKey(), json.getDirectTransactionExternalKey(),
+                                                       pluginProperties, callContext);
                 break;
             default:
                 return Response.status(Status.PRECONDITION_FAILED).entity("TransactionType " + transactionType + " is not allowed for an account").build();

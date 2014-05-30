@@ -36,8 +36,6 @@ import org.killbill.billing.payment.plugin.api.PaymentInfoPlugin;
 import org.killbill.billing.payment.plugin.api.PaymentMethodInfoPlugin;
 import org.killbill.billing.payment.plugin.api.PaymentPluginApi;
 import org.killbill.billing.payment.plugin.api.PaymentPluginStatus;
-import org.killbill.billing.payment.plugin.api.RefundInfoPlugin;
-import org.killbill.billing.payment.plugin.api.RefundPluginStatus;
 import org.testng.Assert;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
@@ -122,7 +120,7 @@ public class TestJrubyPaymentPlugin extends TestOSGIBase {
         final PaymentPluginApi api = getTestPluginPaymentApi();
 
         final DateTime beforeCall = new DateTime().toDateTime(DateTimeZone.UTC).minusSeconds(1);
-        final RefundInfoPlugin res = api.processRefund(UUID.randomUUID(), UUID.randomUUID(), BigDecimal.TEN, Currency.USD, ImmutableList.<PluginProperty>of(), callContext);
+        final PaymentInfoPlugin res = api.processRefund(UUID.randomUUID(), UUID.randomUUID(), BigDecimal.TEN, Currency.USD, ImmutableList.<PluginProperty>of(), callContext);
         final DateTime afterCall = new DateTime().toDateTime(DateTimeZone.UTC).plusSeconds(1);
 
         Assert.assertTrue(res.getAmount().compareTo(BigDecimal.TEN) == 0);
@@ -135,7 +133,7 @@ public class TestJrubyPaymentPlugin extends TestOSGIBase {
         assertEquals(res.getGatewayError(), "gateway_error");
         assertEquals(res.getGatewayErrorCode(), "gateway_error_code");
 
-        assertEquals(res.getStatus(), RefundPluginStatus.PROCESSED);
+        assertEquals(res.getStatus(), PaymentPluginStatus.PROCESSED);
     }
 
     @Test(groups = "slow")

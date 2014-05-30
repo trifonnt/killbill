@@ -15,6 +15,8 @@ tableFields(prefix) ::= <<
 , <prefix>payment_status
 , <prefix>amount
 , <prefix>currency
+, <prefix>processed_amount
+, <prefix>processed_currency
 , <prefix>direct_payment_id
 , <prefix>gateway_error_code
 , <prefix>gateway_error_msg
@@ -31,6 +33,8 @@ tableValues() ::= <<
 , :paymentStatus
 , :amount
 , :currency
+, :processedAmount
+, :processedCurrency
 , :directPaymentId
 , :gatewayErrorCode
 , :gatewayErrorMsg
@@ -52,11 +56,22 @@ where external_key = :transactionExternalKey
 updateTransactionStatus() ::= <<
 update <tableName()>
 set payment_status = :paymentStatus
+, processed_amount = :processedAmount
+, processed_currency = :processedCurrency
 , gateway_error_code = :gatewayErrorCode
 , gateway_error_msg = :gatewayErrorMsg
 , updated_by = :updatedBy
 , updated_date = :createdDate
 where id = :id
 <AND_CHECK_TENANT()>
+;
+>>
+
+getByDirectPaymentId() ::= <<
+select <allTableFields()>
+from <tableName()>
+where direct_payment_id = :directPaymentId
+<AND_CHECK_TENANT()>
+<defaultOrderBy()>
 ;
 >>

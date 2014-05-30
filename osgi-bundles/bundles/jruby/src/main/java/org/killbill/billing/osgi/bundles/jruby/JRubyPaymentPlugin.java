@@ -36,7 +36,7 @@ import org.killbill.billing.payment.plugin.api.PaymentInfoPlugin;
 import org.killbill.billing.payment.plugin.api.PaymentMethodInfoPlugin;
 import org.killbill.billing.payment.plugin.api.PaymentPluginApi;
 import org.killbill.billing.payment.plugin.api.PaymentPluginApiException;
-import org.killbill.billing.payment.plugin.api.RefundInfoPlugin;
+import org.killbill.billing.payment.plugin.api.PaymentInfoPlugin;
 import org.killbill.billing.util.callcontext.CallContext;
 import org.killbill.billing.util.callcontext.TenantContext;
 import org.killbill.billing.util.entity.Pagination;
@@ -111,6 +111,16 @@ public class JRubyPaymentPlugin extends JRubyPlugin implements PaymentPluginApi 
     }
 
     @Override
+    public PaymentInfoPlugin creditPayment(final UUID kbAccountId, final UUID kbPaymentId, final UUID kbPaymentMethodId, final BigDecimal amount, final Currency currency, final Iterable<PluginProperty> properties, final CallContext context) throws PaymentPluginApiException {
+        return callWithRuntimeAndChecking(new PluginCallback<PaymentInfoPlugin>(VALIDATION_PLUGIN_TYPE.PAYMENT) {
+            @Override
+            public PaymentInfoPlugin doCall(final Ruby runtime) throws PaymentPluginApiException {
+                return ((PaymentPluginApi) pluginInstance).creditPayment(kbAccountId, kbPaymentId, kbPaymentMethodId, amount, currency, properties, context);
+            }
+        });
+    }
+
+    @Override
     public PaymentInfoPlugin getPaymentInfo(final UUID kbAccountId, final UUID kbPaymentId, final Iterable<PluginProperty> properties, final TenantContext context) throws PaymentPluginApiException {
         return callWithRuntimeAndChecking(new PluginCallback<PaymentInfoPlugin>(VALIDATION_PLUGIN_TYPE.PAYMENT) {
             @Override
@@ -131,10 +141,10 @@ public class JRubyPaymentPlugin extends JRubyPlugin implements PaymentPluginApi 
     }
 
     @Override
-    public RefundInfoPlugin processRefund(final UUID kbAccountId, final UUID kbPaymentId, final BigDecimal refundAmount, final Currency currency, final Iterable<PluginProperty> properties, final CallContext context) throws PaymentPluginApiException {
-        return callWithRuntimeAndChecking(new PluginCallback<RefundInfoPlugin>(VALIDATION_PLUGIN_TYPE.PAYMENT) {
+    public PaymentInfoPlugin processRefund(final UUID kbAccountId, final UUID kbPaymentId, final BigDecimal refundAmount, final Currency currency, final Iterable<PluginProperty> properties, final CallContext context) throws PaymentPluginApiException {
+        return callWithRuntimeAndChecking(new PluginCallback<PaymentInfoPlugin>(VALIDATION_PLUGIN_TYPE.PAYMENT) {
             @Override
-            public RefundInfoPlugin doCall(final Ruby runtime) throws PaymentPluginApiException {
+            public PaymentInfoPlugin doCall(final Ruby runtime) throws PaymentPluginApiException {
                 return ((PaymentPluginApi) pluginInstance).processRefund(kbAccountId, kbPaymentId, refundAmount, currency, properties, context);
             }
         });
@@ -142,20 +152,20 @@ public class JRubyPaymentPlugin extends JRubyPlugin implements PaymentPluginApi 
     }
 
     @Override
-    public List<RefundInfoPlugin> getRefundInfo(final UUID kbAccountId, final UUID kbPaymentId, final Iterable<PluginProperty> properties, final TenantContext context) throws PaymentPluginApiException {
-        return callWithRuntimeAndChecking(new PluginCallback<List<RefundInfoPlugin>>(VALIDATION_PLUGIN_TYPE.PAYMENT) {
+    public List<PaymentInfoPlugin> getRefundInfo(final UUID kbAccountId, final UUID kbPaymentId, final Iterable<PluginProperty> properties, final TenantContext context) throws PaymentPluginApiException {
+        return callWithRuntimeAndChecking(new PluginCallback<List<PaymentInfoPlugin>>(VALIDATION_PLUGIN_TYPE.PAYMENT) {
             @Override
-            public List<RefundInfoPlugin> doCall(final Ruby runtime) throws PaymentPluginApiException {
+            public List<PaymentInfoPlugin> doCall(final Ruby runtime) throws PaymentPluginApiException {
                 return ((PaymentPluginApi) pluginInstance).getRefundInfo(kbAccountId, kbPaymentId, properties, context);
             }
         });
     }
 
     @Override
-    public Pagination<RefundInfoPlugin> searchRefunds(final String searchKey, final Long offset, final Long limit, final Iterable<PluginProperty> properties, final TenantContext tenantContext) throws PaymentPluginApiException {
-        return callWithRuntimeAndChecking(new PluginCallback<Pagination<RefundInfoPlugin>>(VALIDATION_PLUGIN_TYPE.PAYMENT) {
+    public Pagination<PaymentInfoPlugin> searchRefunds(final String searchKey, final Long offset, final Long limit, final Iterable<PluginProperty> properties, final TenantContext tenantContext) throws PaymentPluginApiException {
+        return callWithRuntimeAndChecking(new PluginCallback<Pagination<PaymentInfoPlugin>>(VALIDATION_PLUGIN_TYPE.PAYMENT) {
             @Override
-            public Pagination<RefundInfoPlugin> doCall(final Ruby runtime) throws PaymentPluginApiException {
+            public Pagination<PaymentInfoPlugin> doCall(final Ruby runtime) throws PaymentPluginApiException {
                 return ((PaymentPluginApi) pluginInstance).searchRefunds(searchKey, offset, limit, properties, tenantContext);
             }
         });

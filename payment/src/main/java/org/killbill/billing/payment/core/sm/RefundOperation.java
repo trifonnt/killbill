@@ -26,11 +26,11 @@ import org.killbill.commons.locker.GlobalLocker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class CreditOperation extends DirectPaymentOperation {
+public class RefundOperation extends DirectPaymentOperation {
 
-    private final Logger logger = LoggerFactory.getLogger(CreditOperation.class);
+    private final Logger logger = LoggerFactory.getLogger(RefundOperation.class);
 
-    public CreditOperation(final DirectPaymentAutomatonDAOHelper daoHelper,
+    public RefundOperation(final DirectPaymentAutomatonDAOHelper daoHelper,
                            final GlobalLocker locker, final PluginDispatcher<OperationResult> paymentPluginDispatcher,
                            final DirectPaymentStateContext directPaymentStateContext) throws PaymentApiException {
         super(daoHelper, locker, paymentPluginDispatcher, directPaymentStateContext);
@@ -38,10 +38,9 @@ public class CreditOperation extends DirectPaymentOperation {
 
     @Override
     protected PaymentInfoPlugin doPluginOperation() throws PaymentPluginApiException {
-        logger.debug("Starting CREDIT for payment {} ({} {})", directPaymentStateContext.getDirectPaymentId(), directPaymentStateContext.getAmount(), directPaymentStateContext.getCurrency());
-        return plugin.creditPayment(directPaymentStateContext.getAccount().getId(),
+        logger.debug("Starting REFUND for payment {} ({} {})", directPaymentStateContext.getDirectPaymentId(), directPaymentStateContext.getAmount(), directPaymentStateContext.getCurrency());
+        return plugin.processRefund(directPaymentStateContext.getAccount().getId(),
                                     directPaymentStateContext.getDirectPaymentId(),
-                                    directPaymentStateContext.getPaymentMethodId(),
                                     directPaymentStateContext.getAmount(),
                                     directPaymentStateContext.getCurrency(),
                                     directPaymentStateContext.getProperties(),

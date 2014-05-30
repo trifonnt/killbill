@@ -37,35 +37,38 @@ public class DirectPaymentStateContext {
     // HACK
     protected UUID paymentMethodId;
 
-    // Can be updated (e.g. for auth or purchase)
-    protected UUID directPaymentId;
     // Stateful objects created by the callbacks and passed to the other following callbacks in the automaton
     protected DirectPaymentTransactionModelDao directPaymentTransactionModelDao;
     protected PaymentInfoPlugin paymentInfoPlugin;
 
+    // Can be updated later via directPaymentTransactionModelDao (e.g. for auth or purchase)
+    protected final UUID directPaymentId;
     protected final String directPaymentExternalKey;
     protected final String directPaymentTransactionExternalKey;
     protected final Account account;
     protected final BigDecimal amount;
     protected final Currency currency;
     protected final TransactionType transactionType;
+    protected final boolean shouldLockAccount;
     protected final Iterable<PluginProperty> properties;
     protected final InternalCallContext internalCallContext;
     protected final CallContext callContext;
 
     // Use to create new transactions only
     public DirectPaymentStateContext(@Nullable final UUID directPaymentId, @Nullable final String directPaymentTransactionExternalKey, final TransactionType transactionType,
-                                     final Account account, @Nullable final UUID paymentMethodId, final BigDecimal amount, final Currency currency, final Iterable<PluginProperty> properties,
-                                     final InternalCallContext internalCallContext, final CallContext callContext) {
+                                     final Account account, @Nullable final UUID paymentMethodId, final BigDecimal amount, final Currency currency,
+                                     final boolean shouldLockAccount, final Iterable<PluginProperty> properties,
+                                     final InternalCallContext internalCallContext, final CallContext callContext)  {
         this(directPaymentId, null, directPaymentTransactionExternalKey, transactionType, account, paymentMethodId,
-             amount, currency, properties, internalCallContext, callContext);
+             amount, currency, shouldLockAccount, properties, internalCallContext, callContext);
     }
 
     // Used to create new payment and transactions
     public DirectPaymentStateContext(@Nullable final UUID directPaymentId, @Nullable final String directPaymentExternalKey,
                                      @Nullable final String directPaymentTransactionExternalKey, final TransactionType transactionType,
                                      final Account account, @Nullable final UUID paymentMethodId, final BigDecimal amount, final Currency currency,
-                                     final Iterable<PluginProperty> properties, final InternalCallContext internalCallContext, final CallContext callContext) {
+                                     final boolean shouldLockAccount, final Iterable<PluginProperty> properties,
+                                     final InternalCallContext internalCallContext, final CallContext callContext) {
         this.directPaymentId = directPaymentId;
         this.directPaymentExternalKey = directPaymentExternalKey;
         this.directPaymentTransactionExternalKey = directPaymentTransactionExternalKey;
@@ -74,6 +77,7 @@ public class DirectPaymentStateContext {
         this.paymentMethodId = paymentMethodId;
         this.amount = amount;
         this.currency = currency;
+        this.shouldLockAccount = shouldLockAccount;
         this.properties = properties;
         this.internalCallContext = internalCallContext;
         this.callContext = callContext;
@@ -129,6 +133,10 @@ public class DirectPaymentStateContext {
 
     public TransactionType getTransactionType() {
         return transactionType;
+    }
+
+    public boolean shouldLockAccount() {
+        return shouldLockAccount;
     }
 
     public Iterable<PluginProperty> getProperties() {

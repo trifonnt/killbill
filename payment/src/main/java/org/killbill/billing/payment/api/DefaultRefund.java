@@ -22,11 +22,10 @@ import java.util.UUID;
 import javax.annotation.Nullable;
 
 import org.joda.time.DateTime;
-
 import org.killbill.billing.catalog.api.Currency;
 import org.killbill.billing.entity.EntityBase;
 import org.killbill.billing.payment.dao.RefundModelDao;
-import org.killbill.billing.payment.plugin.api.RefundInfoPlugin;
+import org.killbill.billing.payment.plugin.api.PaymentInfoPlugin;
 
 public class DefaultRefund extends EntityBase implements Refund {
 
@@ -36,12 +35,12 @@ public class DefaultRefund extends EntityBase implements Refund {
     private final boolean isAdjusted;
     private final DateTime effectiveDate;
     private final RefundStatus refundStatus;
-    private final RefundInfoPlugin refundInfoPlugin;
+    private final PaymentInfoPlugin refundInfoPlugin;
 
     public DefaultRefund(final UUID id, @Nullable final DateTime createdDate, @Nullable final DateTime updatedDate,
                          final UUID paymentId, final BigDecimal amount,
                          final Currency currency, final boolean isAdjusted, final DateTime effectiveDate,
-                         final RefundStatus refundStatus, final RefundInfoPlugin refundInfoPlugin) {
+                         final RefundStatus refundStatus, final PaymentInfoPlugin refundInfoPlugin) {
         super(id, createdDate, updatedDate);
         this.paymentId = paymentId;
         this.amount = amount;
@@ -52,7 +51,7 @@ public class DefaultRefund extends EntityBase implements Refund {
         this.refundInfoPlugin = refundInfoPlugin;
     }
 
-    public DefaultRefund(final RefundModelDao refundModelDao, @Nullable final RefundInfoPlugin refundInfoPlugin) {
+    public DefaultRefund(final RefundModelDao refundModelDao, @Nullable final PaymentInfoPlugin refundInfoPlugin) {
         this(refundModelDao.getId(), refundModelDao.getCreatedDate(), refundModelDao.getUpdatedDate(),
              refundModelDao.getPaymentId(), refundModelDao.getAmount(), refundModelDao.getCurrency(),
              refundModelDao.isAdjusted(), refundModelDao.getCreatedDate(), refundModelDao.getRefundStatus(), refundInfoPlugin);
@@ -95,7 +94,7 @@ public class DefaultRefund extends EntityBase implements Refund {
     }
 
     @Override
-    public RefundInfoPlugin getRefundInfoPlugin() {
+    public PaymentInfoPlugin getRefundInfoPlugin() {
         return refundInfoPlugin;
     }
 

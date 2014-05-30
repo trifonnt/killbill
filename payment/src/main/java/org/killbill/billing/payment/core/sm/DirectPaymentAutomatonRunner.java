@@ -85,49 +85,57 @@ public class DirectPaymentAutomatonRunner {
 
     }
 
-    public UUID run(final TransactionType transactionType, final Account account, @Nullable final UUID paymentMethodId,
+    public UUID run(final TransactionType transactionType, final Account account,
                     @Nullable final UUID directPaymentId, final String directPaymentTransactionExternalKey,
-                    final Iterable<PluginProperty> properties,
+                    final boolean shouldLockAccount, final Iterable<PluginProperty> properties,
                     final CallContext callContext, final InternalCallContext internalCallContext) throws PaymentApiException {
-        return run(transactionType, account, paymentMethodId, directPaymentId, null, directPaymentTransactionExternalKey, null, null, properties, callContext, internalCallContext);
+        return run(transactionType, account, null, directPaymentId, null, directPaymentTransactionExternalKey, null, null, shouldLockAccount, properties, callContext, internalCallContext);
     }
 
-    public UUID run(final TransactionType transactionType, final Account account, @Nullable final UUID paymentMethodId,
+    public UUID run(final TransactionType transactionType, final Account account,
                     @Nullable final UUID directPaymentId, final String directPaymentTransactionExternalKey,
                     final BigDecimal amount, final Currency currency,
-                    final Iterable<PluginProperty> properties,
+                    final boolean shouldLockAccount, final Iterable<PluginProperty> properties,
                     final CallContext callContext, final InternalCallContext internalCallContext) throws PaymentApiException {
-        return run(transactionType, account, paymentMethodId, directPaymentId, null, directPaymentTransactionExternalKey, amount, currency, properties, callContext, internalCallContext);
+        return run(transactionType, account, null, directPaymentId, null, directPaymentTransactionExternalKey, amount, currency, shouldLockAccount, properties, callContext, internalCallContext);
     }
 
     public UUID run(final TransactionType transactionType, final Account account, @Nullable final UUID paymentMethodId,
                     @Nullable final UUID directPaymentId, @Nullable final String directPaymentExternalKey, final String directPaymentTransactionExternalKey,
                     @Nullable final BigDecimal amount, @Nullable final Currency currency,
-                    final Iterable<PluginProperty> properties,
+                    final boolean shouldLockAccount, final Iterable<PluginProperty> properties,
                     final CallContext callContext, final InternalCallContext internalCallContext) throws PaymentApiException {
         final DateTime utcNow = clock.getUTCNow();
 
-        final DirectPaymentStateContext directPaymentStateContext = new DirectPaymentStateContext(directPaymentId, directPaymentExternalKey, directPaymentTransactionExternalKey, transactionType, account, paymentMethodId, amount, currency, properties, internalCallContext, callContext);
+        final DirectPaymentStateContext directPaymentStateContext = new DirectPaymentStateContext(directPaymentId, directPaymentExternalKey, directPaymentTransactionExternalKey, transactionType,
+                                                                                                  account, paymentMethodId, amount, currency, shouldLockAccount, properties, internalCallContext, callContext);
         final DirectPaymentAutomatonDAOHelper daoHelper = new DirectPaymentAutomatonDAOHelper(directPaymentStateContext, utcNow, paymentDao, pluginRegistry, internalCallContext);
 
-        // If the payment method is not specified, retrieve the default one on the account
-        directPaymentStateContext.setPaymentMethodId(Objects.firstNonNull(paymentMethodId, daoHelper.getDefaultPaymentMethodId(account)));
-
-        String currentStateMachineName;
+        final UUID nonNullPaymentMethodId;
+        final String currentStateMachineName;
         final String currentStateName;
         if (directPaymentId != null) {
             final DirectPaymentModelDao directPaymentModelDao = daoHelper.getDirectPayment();
+            nonNullPaymentMethodId = directPaymentModelDao.getPaymentMethodId();
             currentStateName = directPaymentModelDao.getCurrentStateName();
             currentStateMachineName = getStateMachineName(currentStateName);
 
             // Check for illegal states (should never happen)
             Preconditions.checkState(currentStateMachineName != null, "State machine name cannot be null for direct payment " + directPaymentId);
             Preconditions.checkState(currentStateName != null, "State name cannot be null for direct payment " + directPaymentId);
+            Preconditions.checkState(paymentMethodId == null || nonNullPaymentMethodId.equals(paymentMethodId), "Specified payment method id " + paymentMethodId + " doesn't match the one on the payment " + nonNullPaymentMethodId);
         } else {
+            // If the payment method is not specified, retrieve the default one on the account
+            nonNullPaymentMethodId = Objects.firstNonNull(paymentMethodId, daoHelper.getDefaultPaymentMethodId());
+
             switch (transactionType) {
                 case AUTHORIZE:
                     currentStateMachineName = "AUTHORIZE";
                     currentStateName = "AUTH_INIT";
+                    break;
+                case CREDIT:
+                    currentStateMachineName = "CREDIT";
+                    currentStateName = "CREDIT_INIT";
                     break;
                 case PURCHASE:
                     currentStateMachineName = "PURCHASE";
@@ -137,6 +145,8 @@ public class DirectPaymentAutomatonRunner {
                     throw new IllegalStateException("Unsupported transaction type " + transactionType + " for null direct payment id");
             }
         }
+
+        directPaymentStateContext.setPaymentMethodId(nonNullPaymentMethodId);
 
         final String operationStateMachineName;
         final String operationName;
@@ -171,6 +181,13 @@ public class DirectPaymentAutomatonRunner {
                 operationCallback = new VoidOperation(daoHelper, locker, paymentPluginDispatcher, directPaymentStateContext);
                 leavingStateCallback = new VoidInitiated(daoHelper, directPaymentStateContext);
                 enteringStateCallback = new VoidCompleted(daoHelper, directPaymentStateContext);
+                break;
+            case REFUND:
+                operationStateMachineName = "REFUND";
+                operationName = "OP_REFUND";
+                operationCallback = new RefundOperation(daoHelper, locker, paymentPluginDispatcher, directPaymentStateContext);
+                leavingStateCallback = new RefundInitiated(daoHelper, directPaymentStateContext);
+                enteringStateCallback = new RefundCompleted(daoHelper, directPaymentStateContext);
                 break;
             case CREDIT:
                 operationStateMachineName = "CREDIT";

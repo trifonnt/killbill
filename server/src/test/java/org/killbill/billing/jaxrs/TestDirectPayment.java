@@ -26,69 +26,86 @@ import org.killbill.billing.client.model.Account;
 import org.killbill.billing.client.model.DirectPayment;
 import org.killbill.billing.client.model.DirectPayments;
 import org.killbill.billing.client.model.DirectTransaction;
+import org.killbill.billing.client.model.PaymentMethod;
+import org.killbill.billing.client.model.PaymentMethodPluginDetail;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
-public class TestDirectPayment extends TestJaxrsBase {
+import com.google.common.base.Objects;
 
-    private final String directPaymentExternalKey = UUID.randomUUID().toString();
-    private final String directTransactionExternalKey = UUID.randomUUID().toString();
+public class TestDirectPayment extends TestJaxrsBase {
 
     @Test(groups = "slow")
     public void testCreateRetrievePayment() throws Exception {
         final Account account = createAccountWithDefaultPaymentMethod();
+        testCreateRetrievePayment(account, null, UUID.randomUUID().toString(), 1);
 
+        final PaymentMethod paymentMethodJson = new PaymentMethod(null, account.getAccountId(), false, PLUGIN_NAME, new PaymentMethodPluginDetail());
+        final PaymentMethod nonDefaultPaymentMethod = killBillClient.createPaymentMethod(paymentMethodJson, createdBy, reason, comment);
+        testCreateRetrievePayment(account, nonDefaultPaymentMethod.getPaymentMethodId(), UUID.randomUUID().toString(), 2);
+    }
+
+    public void testCreateRetrievePayment(final Account account, @Nullable final UUID paymentMethodId,
+                                          final String directPaymentExternalKey, final int directPaymentNb) throws Exception {
         // Authorization
+        final String authDirectTransactionExternalKey = UUID.randomUUID().toString();
         final DirectTransaction authTransaction = new DirectTransaction();
         authTransaction.setAmount(BigDecimal.TEN);
         authTransaction.setCurrency(account.getCurrency());
         authTransaction.setDirectPaymentExternalKey(directPaymentExternalKey);
-        authTransaction.setDirectTransactionExternalKey(directTransactionExternalKey);
+        authTransaction.setDirectTransactionExternalKey(authDirectTransactionExternalKey);
         authTransaction.setTransactionType("AUTHORIZE");
-        final DirectPayment authDirectPayment = killBillClient.createDirectPayment(account.getAccountId(), authTransaction, createdBy, reason, comment);
-        verifyDirectPayment(account, authDirectPayment, BigDecimal.TEN, BigDecimal.ZERO, BigDecimal.ZERO, 1);
+        final DirectPayment authDirectPayment = killBillClient.createDirectPayment(account.getAccountId(), paymentMethodId, authTransaction, createdBy, reason, comment);
+        verifyDirectPayment(account, paymentMethodId, authDirectPayment, directPaymentExternalKey, authDirectTransactionExternalKey,
+                            BigDecimal.TEN, BigDecimal.ZERO, BigDecimal.ZERO, 1, directPaymentNb);
 
         // Capture 1
+        final String capture1DirectTransactionExternalKey = UUID.randomUUID().toString();
         final DirectTransaction captureTransaction = new DirectTransaction();
         captureTransaction.setDirectPaymentId(authDirectPayment.getDirectPaymentId());
         captureTransaction.setAmount(BigDecimal.ONE);
         captureTransaction.setCurrency(account.getCurrency());
         captureTransaction.setDirectPaymentExternalKey(directPaymentExternalKey);
-        captureTransaction.setDirectTransactionExternalKey(directTransactionExternalKey);
+        captureTransaction.setDirectTransactionExternalKey(capture1DirectTransactionExternalKey);
         final DirectPayment capturedDirectPayment1 = killBillClient.captureAuthorization(captureTransaction, createdBy, reason, comment);
-        verifyDirectPayment(account, capturedDirectPayment1, BigDecimal.TEN, BigDecimal.ONE, BigDecimal.ZERO, 2);
+        verifyDirectPayment(account, paymentMethodId, capturedDirectPayment1, directPaymentExternalKey, authDirectTransactionExternalKey,
+                            BigDecimal.TEN, BigDecimal.ONE, BigDecimal.ZERO, 2, directPaymentNb);
         verifyDirectPaymentTransaction(authDirectPayment.getDirectPaymentId(), capturedDirectPayment1.getTransactions().get(1),
+                                       directPaymentExternalKey, capture1DirectTransactionExternalKey,
                                        account, captureTransaction.getAmount(), "CAPTURE");
 
         // Capture 2
+        final String capture2DirectTransactionExternalKey = UUID.randomUUID().toString();
+        captureTransaction.setDirectTransactionExternalKey(capture2DirectTransactionExternalKey);
         final DirectPayment capturedDirectPayment2 = killBillClient.captureAuthorization(captureTransaction, createdBy, reason, comment);
-        verifyDirectPayment(account, capturedDirectPayment2, BigDecimal.TEN, new BigDecimal("2"), BigDecimal.ZERO, 3);
+        verifyDirectPayment(account, paymentMethodId, capturedDirectPayment2, directPaymentExternalKey, authDirectTransactionExternalKey,
+                            BigDecimal.TEN, new BigDecimal("2"), BigDecimal.ZERO, 3, directPaymentNb);
         verifyDirectPaymentTransaction(authDirectPayment.getDirectPaymentId(), capturedDirectPayment2.getTransactions().get(2),
+                                       directPaymentExternalKey, capture2DirectTransactionExternalKey,
                                        account, captureTransaction.getAmount(), "CAPTURE");
 
-        // Credit
-        final DirectTransaction creditTransaction = new DirectTransaction();
-        creditTransaction.setDirectPaymentId(authDirectPayment.getDirectPaymentId());
-        creditTransaction.setAmount(new BigDecimal("223.12"));
-        creditTransaction.setCurrency(account.getCurrency());
-        creditTransaction.setDirectPaymentExternalKey(directPaymentExternalKey);
-        creditTransaction.setDirectTransactionExternalKey(directTransactionExternalKey);
-        final DirectPayment creditDirectPayment = killBillClient.creditPayment(creditTransaction, createdBy, reason, comment);
-        verifyDirectPayment(account, creditDirectPayment, BigDecimal.TEN, new BigDecimal("2"), new BigDecimal("223.12"), 4);
-        verifyDirectPaymentTransaction(authDirectPayment.getDirectPaymentId(), creditDirectPayment.getTransactions().get(3),
-                                       account, creditTransaction.getAmount(), "CREDIT");
-
-        // Void
-        final DirectPayment voidDirectPayment = killBillClient.voidPayment(authDirectPayment.getDirectPaymentId(), directTransactionExternalKey, createdBy, reason, comment);
-        verifyDirectPayment(account, voidDirectPayment, BigDecimal.TEN, new BigDecimal("2"), new BigDecimal("223.12"), 5);
-        verifyDirectPaymentTransaction(authDirectPayment.getDirectPaymentId(), voidDirectPayment.getTransactions().get(4),
-                                       account, null, "VOID");
+        // Refund
+        final String refundDirectTransactionExternalKey = UUID.randomUUID().toString();
+        final DirectTransaction refundTransaction = new DirectTransaction();
+        refundTransaction.setDirectPaymentId(authDirectPayment.getDirectPaymentId());
+        refundTransaction.setAmount(new BigDecimal("2"));
+        refundTransaction.setCurrency(account.getCurrency());
+        refundTransaction.setDirectPaymentExternalKey(directPaymentExternalKey);
+        refundTransaction.setDirectTransactionExternalKey(refundDirectTransactionExternalKey);
+        final DirectPayment refundDirectPayment = killBillClient.refundPayment(refundTransaction, createdBy, reason, comment);
+        verifyDirectPayment(account, paymentMethodId, refundDirectPayment, directPaymentExternalKey, authDirectTransactionExternalKey,
+                            BigDecimal.TEN, new BigDecimal("2"), new BigDecimal("2"), 4, directPaymentNb);
+        verifyDirectPaymentTransaction(authDirectPayment.getDirectPaymentId(), refundDirectPayment.getTransactions().get(3),
+                                       directPaymentExternalKey, refundDirectTransactionExternalKey,
+                                       account, refundTransaction.getAmount(), "REFUND");
     }
 
-    private void verifyDirectPayment(final Account account, final DirectPayment directPayment,
+    private void verifyDirectPayment(final Account account, @Nullable final UUID paymentMethodId, final DirectPayment directPayment,
+                                     final String directPaymentExternalKey, final String authDirectTransactionExternalKey,
                                      final BigDecimal authAmount, final BigDecimal capturedAmount,
-                                     final BigDecimal refundedAmount, final int nbTransactions) throws KillBillClientException {
+                                     final BigDecimal refundedAmount, final int nbTransactions, final int directPaymentNb) throws KillBillClientException {
         Assert.assertEquals(directPayment.getAccountId(), account.getAccountId());
+        Assert.assertEquals(directPayment.getPaymentMethodId(), Objects.firstNonNull(paymentMethodId, account.getPaymentMethodId()));
         Assert.assertNotNull(directPayment.getDirectPaymentId());
         Assert.assertNotNull(directPayment.getPaymentNumber());
         Assert.assertEquals(directPayment.getDirectPaymentExternalKey(), directPaymentExternalKey);
@@ -96,25 +113,25 @@ public class TestDirectPayment extends TestJaxrsBase {
         Assert.assertEquals(directPayment.getCapturedAmount().compareTo(capturedAmount), 0);
         Assert.assertEquals(directPayment.getRefundedAmount().compareTo(refundedAmount), 0);
         Assert.assertEquals(directPayment.getCurrency(), account.getCurrency());
-        Assert.assertEquals(directPayment.getPaymentMethodId(), account.getPaymentMethodId());
         Assert.assertEquals(directPayment.getTransactions().size(), nbTransactions);
 
         verifyDirectPaymentTransaction(directPayment.getDirectPaymentId(), directPayment.getTransactions().get(0),
-                                       account, authAmount, "AUTHORIZE");
+                                       directPaymentExternalKey, authDirectTransactionExternalKey, account, authAmount, "AUTHORIZE");
 
         final DirectPayments directPayments = killBillClient.getDirectPayments();
-        Assert.assertEquals(directPayments.size(), 1);
-        Assert.assertEquals(directPayments.get(0), directPayment);
+        Assert.assertEquals(directPayments.size(), directPaymentNb);
+        Assert.assertEquals(directPayments.get(directPaymentNb - 1), directPayment);
 
         final DirectPayment retrievedDirectPayment = killBillClient.getDirectPayment(directPayment.getDirectPaymentId());
         Assert.assertEquals(retrievedDirectPayment, directPayment);
 
         final DirectPayments directPaymentsForAccount = killBillClient.getDirectPaymentsForAccount(account.getAccountId());
-        Assert.assertEquals(directPaymentsForAccount.size(), 1);
-        Assert.assertEquals(directPaymentsForAccount.get(0), directPayment);
+        Assert.assertEquals(directPaymentsForAccount.size(), directPaymentNb);
+        Assert.assertEquals(directPaymentsForAccount.get(directPaymentNb - 1), directPayment);
     }
 
     private void verifyDirectPaymentTransaction(final UUID directPaymentId, final DirectTransaction directTransaction,
+                                                final String directPaymentExternalKey, final String directTransactionExternalKey,
                                                 final Account account, @Nullable final BigDecimal amount, final String transactionType) {
         Assert.assertEquals(directTransaction.getDirectPaymentId(), directPaymentId);
         Assert.assertNotNull(directTransaction.getDirectTransactionId());

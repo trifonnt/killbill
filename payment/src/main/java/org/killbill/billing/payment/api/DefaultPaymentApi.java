@@ -29,6 +29,7 @@ import java.util.UUID;
 import org.killbill.billing.ErrorCode;
 import org.killbill.billing.account.api.Account;
 import org.killbill.billing.callcontext.InternalCallContext;
+import org.killbill.billing.catalog.api.Currency;
 import org.killbill.billing.payment.core.PaymentMethodProcessor;
 import org.killbill.billing.payment.core.PaymentProcessor;
 import org.killbill.billing.payment.core.RefundProcessor;
@@ -82,6 +83,11 @@ public class DefaultPaymentApi implements PaymentApi {
     public void notifyPendingPaymentOfStateChanged(final Account account, final UUID paymentId, final boolean isSuccess, final CallContext context) throws PaymentApiException {
         paymentProcessor.notifyPendingPaymentOfStateChanged(account, paymentId, isSuccess,
                                                             internalCallContextFactory.createInternalCallContext(account.getId(), context));
+    }
+
+    @Override
+    public void notifyPaymentOfChargeback(final Account account, final UUID paymentId, final BigDecimal amount, final Currency currency, final CallContext callContext) throws PaymentApiException {
+        // TODO Implement when merging with DirectPaymentApi
     }
 
     @Override

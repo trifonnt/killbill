@@ -21,6 +21,7 @@ import java.util.Set;
 import javax.annotation.Nullable;
 
 import org.joda.time.DateTime;
+import org.killbill.automaton.Operation.OperationCallback;
 import org.killbill.automaton.OperationException;
 import org.killbill.automaton.OperationResult;
 import org.killbill.billing.osgi.api.OSGIServiceRegistration;
@@ -32,7 +33,7 @@ import org.killbill.billing.retry.plugin.api.RetryPluginApi;
 import org.killbill.billing.retry.plugin.api.RetryPluginApiException;
 import org.killbill.commons.locker.GlobalLocker;
 
-public abstract class RetryOperationCallback extends PluginOperation {
+public abstract class RetryOperationCallback extends PluginOperation implements OperationCallback {
 
     protected final DirectPaymentProcessor directPaymentProcessor;
     private final OSGIServiceRegistration<RetryPluginApi> retryPluginRegistry;

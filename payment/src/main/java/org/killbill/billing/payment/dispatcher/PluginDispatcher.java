@@ -63,6 +63,8 @@ public class PluginDispatcher<T> {
                 throw (PaymentApiException) e.getCause();
             } else if (e.getCause() instanceof OperationException) {
                 throw (OperationException) e.getCause();
+            } else if (e.getCause() instanceof RuntimeException) {
+                throw (RuntimeException) e.getCause();
             } else {
                 throw new PaymentApiException(Objects.firstNonNull(e.getCause(), e), ErrorCode.PAYMENT_INTERNAL_ERROR, e.getMessage());
             }

@@ -109,7 +109,7 @@ public class MockPaymentDao implements PaymentDao {
     }
 
     @Override
-    public void updateDirectPaymentAndTransactionOnCompletion(final UUID directPaymentId, final PaymentStatus paymentStatus, final BigDecimal processedAmount, final Currency processedCurrency, final UUID directTransactionId, final String gatewayErrorCode, final String gatewayErrorMsg, final String currentPaymentStateName, final InternalCallContext context) {
+    public void updateDirectPaymentAndTransactionOnCompletion(final UUID directPaymentId, final String currentPaymentStateName, final UUID directTransactionId, final PaymentStatus paymentStatus, final BigDecimal processedAmount, final Currency processedCurrency, final String gatewayErrorCode, final String gatewayErrorMsg, final InternalCallContext context) {
     }
 
     @Override
@@ -131,6 +131,11 @@ public class MockPaymentDao implements PaymentDao {
 
     @Override
     public List<DirectPaymentTransactionModelDao> getDirectTransactionsForAccount(final UUID accountId, final InternalTenantContext context) {
+        return null;
+    }
+
+    @Override
+    public List<DirectPaymentTransactionModelDao> getDirectTransactionsForDirectPayment(final UUID directPaymentId, final InternalTenantContext context) {
         return null;
     }
 
