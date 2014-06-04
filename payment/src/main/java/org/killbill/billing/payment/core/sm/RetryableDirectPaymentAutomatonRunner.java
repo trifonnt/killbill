@@ -41,6 +41,7 @@ import org.killbill.billing.callcontext.InternalCallContext;
 import org.killbill.billing.callcontext.InternalTenantContext;
 import org.killbill.billing.catalog.api.Currency;
 import org.killbill.billing.osgi.api.OSGIServiceRegistration;
+import org.killbill.billing.payment.api.DirectPayment;
 import org.killbill.billing.payment.api.PaymentApiException;
 import org.killbill.billing.payment.api.PluginProperty;
 import org.killbill.billing.payment.api.TransactionType;
@@ -91,19 +92,19 @@ public class RetryableDirectPaymentAutomatonRunner extends DirectPaymentAutomato
         this.retryOperation = fetchRetryOperation();
     }
 
-    public UUID run(final TransactionType transactionType, final Account account, @Nullable final UUID paymentMethodId,
+    public DirectPayment run(final boolean isApiPayment, final TransactionType transactionType, final Account account, @Nullable final UUID paymentMethodId,
                     @Nullable final UUID directPaymentId, @Nullable final String directPaymentExternalKey, final String directPaymentTransactionExternalKey,
-                    @Nullable final BigDecimal amount, @Nullable final Currency currency,
+                    @Nullable final BigDecimal amount, @Nullable final Currency currency, final boolean isExternalPayment,
                     final Iterable<PluginProperty> properties,
-                    final CallContext callContext, final InternalCallContext internalCallContext) throws PaymentApiException {
-        return run(initialState, transactionType, account, paymentMethodId, directPaymentId, directPaymentExternalKey, directPaymentTransactionExternalKey,
-                   amount, currency, properties, callContext, internalCallContext);
+                    @Nullable final String pluginName, final CallContext callContext, final InternalCallContext internalCallContext) throws PaymentApiException {
+        return run(initialState, isApiPayment, transactionType, account, paymentMethodId, directPaymentId, directPaymentExternalKey, directPaymentTransactionExternalKey,
+                   amount, currency, isExternalPayment, properties, pluginName, callContext, internalCallContext);
     }
 
-    public UUID run(final State state, final TransactionType transactionType, final Account account, @Nullable final UUID paymentMethodId,
+    public DirectPayment run(final State state, final boolean isApiPayment, final TransactionType transactionType, final Account account, @Nullable final UUID paymentMethodId,
                     @Nullable final UUID directPaymentId, @Nullable final String directPaymentExternalKey, final String directPaymentTransactionExternalKey,
-                    @Nullable final BigDecimal amount, @Nullable final Currency currency,
-                    final Iterable<PluginProperty> properties,
+                    @Nullable final BigDecimal amount, @Nullable final Currency currency, final boolean isExternalPayment,
+                    final Iterable<PluginProperty> properties, @Nullable final String pluginName,
                     final CallContext callContext, final InternalCallContext internalCallContext) throws PaymentApiException {
 
         if (isAccountAutoPayOff(account.getId(), internalCallContext)) {
@@ -111,10 +112,10 @@ public class RetryableDirectPaymentAutomatonRunner extends DirectPaymentAutomato
             throw new PaymentApiException(ErrorCode.__UNKNOWN_ERROR_CODE);
         }
 
-        final RetryableDirectPaymentStateContext directPaymentStateContext = createContext(transactionType, account, paymentMethodId,
+        final RetryableDirectPaymentStateContext directPaymentStateContext = createContext(isApiPayment, transactionType, account, paymentMethodId,
                                                                                            directPaymentId, directPaymentExternalKey,
                                                                                            directPaymentTransactionExternalKey,
-                                                                                           amount, currency, properties, callContext, internalCallContext);
+                                                                                           amount, currency, isExternalPayment, properties, pluginName, callContext, internalCallContext);
         try {
 
             final OperationCallback callback = createOperationCallback(transactionType, directPaymentStateContext);
@@ -134,7 +135,7 @@ public class RetryableDirectPaymentAutomatonRunner extends DirectPaymentAutomato
                 throw new PaymentApiException(e.getCause(), ErrorCode.PAYMENT_INTERNAL_ERROR, e.getMessage());
             }
         }
-        return directPaymentStateContext.getDirectPaymentId();
+        return directPaymentStateContext.getResult();
     }
 
     public final State fetchState(final String stateName) {
@@ -170,12 +171,12 @@ public class RetryableDirectPaymentAutomatonRunner extends DirectPaymentAutomato
     }
 
     @VisibleForTesting
-    RetryableDirectPaymentStateContext createContext(final TransactionType transactionType, final Account account, @Nullable final UUID paymentMethodId,
+    RetryableDirectPaymentStateContext createContext(final boolean isApiPayment, final TransactionType transactionType, final Account account, @Nullable final UUID paymentMethodId,
                                                      @Nullable final UUID directPaymentId, @Nullable final String directPaymentExternalKey, final String directPaymentTransactionExternalKey,
-                                                     @Nullable final BigDecimal amount, @Nullable final Currency currency,
+                                                     @Nullable final BigDecimal amount, @Nullable final Currency currency, final boolean isExternalPayment,
                                                      final Iterable<PluginProperty> properties,
-                                                     final CallContext callContext, final InternalCallContext internalCallContext) throws PaymentApiException {
-        return new RetryableDirectPaymentStateContext(null, directPaymentId, directPaymentExternalKey, directPaymentTransactionExternalKey, transactionType, account, paymentMethodId, amount, currency, properties, internalCallContext, callContext);
+                                                     final String pluginName, final CallContext callContext, final InternalCallContext internalCallContext) throws PaymentApiException {
+        return new RetryableDirectPaymentStateContext(pluginName, isApiPayment, directPaymentId, directPaymentExternalKey, directPaymentTransactionExternalKey, transactionType, account, paymentMethodId, amount, currency, isExternalPayment, properties, internalCallContext, callContext);
     }
 
 
@@ -187,16 +188,16 @@ public class RetryableDirectPaymentAutomatonRunner extends DirectPaymentAutomato
                 callback = new RetryAuthorizeOperationCallback(locker, paymentPluginDispatcher, directPaymentStateContext, directPaymentProcessor, retryPluginRegistry);
                 break;
             case CAPTURE:
-                callback = null;
+                callback = new RetryCaptureOperationCallback(locker, paymentPluginDispatcher, directPaymentStateContext, directPaymentProcessor, retryPluginRegistry);
                 break;
             case PURCHASE:
-                callback = null;
+                callback = new RetryPurchaseOperationCallback(locker, paymentPluginDispatcher, directPaymentStateContext, directPaymentProcessor, retryPluginRegistry);
                 break;
             case VOID:
-                callback = null;
+                callback = new RetryVoidOperationCallback(locker, paymentPluginDispatcher, directPaymentStateContext, directPaymentProcessor, retryPluginRegistry);
                 break;
             case CREDIT:
-                callback = null;
+                callback = new RetryCreditOperationCallback(locker, paymentPluginDispatcher, directPaymentStateContext, directPaymentProcessor, retryPluginRegistry);
                 break;
             default:
                 throw new IllegalStateException("Unsupported transaction type " + transactionType);

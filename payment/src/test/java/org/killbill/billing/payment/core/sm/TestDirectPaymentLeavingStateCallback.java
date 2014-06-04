@@ -116,7 +116,8 @@ public class TestDirectPaymentLeavingStateCallback extends PaymentTestSuiteWithE
                                                                                        directPaymentStateContext.getAccount().getId(),
                                                                                        directPaymentStateContext.getPaymentMethodId(),
                                                                                        1,
-                                                                                       directPaymentStateContext.getDirectPaymentExternalKey());
+                                                                                       directPaymentStateContext.getDirectPaymentExternalKey(),
+                                                                                       null, null);
             final DirectPaymentTransactionModelDao newPaymentTransactionModelDao = new DirectPaymentTransactionModelDao(clock.getUTCNow(),
                                                                                                                         clock.getUTCNow(),
                                                                                                                         directPaymentStateContext.getDirectPaymentTransactionExternalKey(),

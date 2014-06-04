@@ -17,6 +17,7 @@
 package org.killbill.billing.payment.provider;
 
 import org.joda.time.DateTime;
+import org.killbill.billing.payment.retry.DefaultRetryPluginResult;
 import org.killbill.billing.retry.plugin.api.RetryPluginApi;
 import org.killbill.billing.retry.plugin.api.RetryPluginApiException;
 
@@ -25,12 +26,8 @@ public class DefaultRetryProviderPlugin implements RetryPluginApi {
     public static final String PLUGIN_NAME = "__DEFAULT_RETRY__";
 
     @Override
-    public boolean isRetryAborted(final String s) throws RetryPluginApiException {
-        return false;
+    public RetryPluginResult getRetryResult(final RetryPluginContext retryPluginContext) throws RetryPluginApiException {
+        return new DefaultRetryPluginResult(false, null, null);
     }
 
-    @Override
-    public DateTime getNextRetryDate(final String s) throws RetryPluginApiException {
-        return null;
-    }
 }

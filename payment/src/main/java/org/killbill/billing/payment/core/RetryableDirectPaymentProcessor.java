@@ -82,19 +82,20 @@ public class RetryableDirectPaymentProcessor extends ProcessorBase {
         this.retryableDirectPaymentAutomatonRunner = retryableDirectPaymentAutomatonRunner;
     }
 
-    public DirectPayment createAuthorization(final Account account, final UUID paymentMethodId, @Nullable final UUID directPaymentId, final BigDecimal amount, final Currency currency, final String paymentExternalKey, final String transactionExternalKey, final Iterable<PluginProperty> properties, final CallContext callContext, final InternalCallContext internalCallContext) throws PaymentApiException {
-        final UUID nonNullDirectPaymentId = retryableDirectPaymentAutomatonRunner.run(TransactionType.AUTHORIZE,
-                                                                                      account,
-                                                                                      paymentMethodId,
-                                                                                      directPaymentId,
-                                                                                      paymentExternalKey,
-                                                                                      transactionExternalKey,
-                                                                                      amount,
-                                                                                      currency,
-                                                                                      properties,
-                                                                                      callContext,
-                                                                                      internalCallContext);
-        return directPaymentProcessor.getPayment(nonNullDirectPaymentId, true, properties, callContext, internalCallContext);
+    public DirectPayment createAuthorization(final Account account, final UUID paymentMethodId, @Nullable final UUID directPaymentId, final BigDecimal amount, final Currency currency, final String paymentExternalKey, final String transactionExternalKey, final boolean isEternalPayment, final Iterable<PluginProperty> properties, final CallContext callContext, final InternalCallContext internalCallContext) throws PaymentApiException {
+        return retryableDirectPaymentAutomatonRunner.run(true,
+                                                         TransactionType.AUTHORIZE,
+                                                         account,
+                                                         paymentMethodId,
+                                                         directPaymentId,
+                                                         paymentExternalKey,
+                                                         transactionExternalKey,
+                                                         amount,
+                                                         currency,
+                                                         isEternalPayment,
+                                                         properties,
+                                                         null,
+                                                         callContext, internalCallContext);
     }
 
     public void retryPaymentTransaction(final String transactionExternalKey, final Iterable<PluginProperty> properties, final InternalCallContext internalCallContext) {
@@ -104,6 +105,9 @@ public class RetryableDirectPaymentProcessor extends ProcessorBase {
             final DirectPaymentTransactionModelDao transaction = paymentDao.getDirectPaymentTransactionByExternalKey(transactionExternalKey, internalCallContext);
             final DirectPaymentModelDao payment = paymentDao.getDirectPayment(transaction.getDirectPaymentId(), internalCallContext);
 
+            // STEPH we should retrieve the info, but also, if this is an external payment does retrying really make sense?
+            final boolean isExternalPayment = false;
+
             final Account account = accountInternalApi.getAccountById(payment.getAccountId(), internalCallContext);
             final UUID tenantId = nonEntityDao.retrieveIdFromObject(internalCallContext.getTenantRecordId(), ObjectType.TENANT);
             final CallContext callContext = internalCallContext.toCallContext(tenantId);
@@ -111,19 +115,21 @@ public class RetryableDirectPaymentProcessor extends ProcessorBase {
             final State state = retryableDirectPaymentAutomatonRunner.fetchState(attempt.getStateName());
             switch (transaction.getTransactionType()) {
                 case AUTHORIZE:
-                    final UUID nonNullDirectPaymentId = retryableDirectPaymentAutomatonRunner.run(state,
-                                                                                                  TransactionType.AUTHORIZE,
-                                                                                                  account,
-                                                                                                  payment.getPaymentMethodId(),
-                                                                                                  payment.getId(),
-                                                                                                  payment.getExternalKey(),
-                                                                                                  transactionExternalKey,
-                                                                                                  transaction.getAmount(),
-                                                                                                  transaction.getCurrency(),
-                                                                                                  properties,
-                                                                                                  callContext,
-                                                                                                  internalCallContext);
-                    directPaymentProcessor.getPayment(nonNullDirectPaymentId, true, properties, callContext, internalCallContext);
+                    retryableDirectPaymentAutomatonRunner.run(state,
+                                                              false,
+                                                              TransactionType.AUTHORIZE,
+                                                              account,
+                                                              payment.getPaymentMethodId(),
+                                                              payment.getId(),
+                                                              payment.getExternalKey(),
+                                                              transactionExternalKey,
+                                                              transaction.getAmount(),
+                                                              transaction.getCurrency(),
+                                                              isExternalPayment,
+                                                              properties,
+                                                              null,
+                                                              callContext,
+                                                              internalCallContext);
                     break;
                 case CAPTURE:
                     break;

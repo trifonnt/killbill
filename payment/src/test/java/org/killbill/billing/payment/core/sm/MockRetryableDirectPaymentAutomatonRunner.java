@@ -71,14 +71,14 @@ public class MockRetryableDirectPaymentAutomatonRunner extends RetryableDirectPa
 
 
     @Override
-    RetryableDirectPaymentStateContext createContext(final TransactionType transactionType, final Account account, @Nullable final UUID paymentMethodId,
+    RetryableDirectPaymentStateContext createContext(final boolean isApiPayment, final TransactionType transactionType, final Account account, @Nullable final UUID paymentMethodId,
                                                      @Nullable final UUID directPaymentId, @Nullable final String directPaymentExternalKey, final String directPaymentTransactionExternalKey,
                                                      @Nullable final BigDecimal amount, @Nullable final Currency currency,
                                                      final Iterable<PluginProperty> properties,
-                                                     final CallContext callContext, final InternalCallContext internalCallContext) throws PaymentApiException {
+                                                     final String pluginName, final CallContext callContext, final InternalCallContext internalCallContext) throws PaymentApiException {
         if (context == null) {
-            return super.createContext(transactionType, account, paymentMethodId, directPaymentId, directPaymentExternalKey, directPaymentTransactionExternalKey,
-                               amount, currency, properties, callContext, internalCallContext);
+            return super.createContext(isApiPayment, transactionType, account, paymentMethodId, directPaymentId, directPaymentExternalKey, directPaymentTransactionExternalKey,
+                               amount, currency, properties, pluginName, callContext, internalCallContext);
         } else {
             return context;
         }

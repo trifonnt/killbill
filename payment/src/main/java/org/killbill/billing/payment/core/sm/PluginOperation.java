@@ -59,14 +59,9 @@ public abstract class PluginOperation {
         logger.debug("Dispatching plugin call for account {}", account.getExternalKey());
 
         try {
-            final Callable<OperationResult> task;
-            if (directPaymentStateContext.shouldLockAccount()) {
-                task = new CallableWithAccountLock<OperationResult>(locker,
-                                                                    account.getExternalKey(),
-                                                                    callback);
-            } else {
-                task = new CallableWithoutAccountLock<OperationResult>(callback);
-            }
+            final Callable<OperationResult> task = new CallableWithAccountLock<OperationResult>(locker,
+                                                                                                account.getExternalKey(),
+                                                                                                callback);
 
             final OperationResult operationResult = paymentPluginDispatcher.dispatchWithTimeout(task);
             logger.debug("Successful plugin call for account {} with result {}", account.getExternalKey(), operationResult);

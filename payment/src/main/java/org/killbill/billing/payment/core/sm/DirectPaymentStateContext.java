@@ -25,7 +25,6 @@ import javax.annotation.Nullable;
 import org.killbill.billing.account.api.Account;
 import org.killbill.billing.callcontext.InternalCallContext;
 import org.killbill.billing.catalog.api.Currency;
-import org.killbill.billing.payment.api.PaymentApiException;
 import org.killbill.billing.payment.api.PluginProperty;
 import org.killbill.billing.payment.api.TransactionType;
 import org.killbill.billing.payment.dao.DirectPaymentTransactionModelDao;
@@ -40,16 +39,17 @@ public class DirectPaymentStateContext {
     // Stateful objects created by the callbacks and passed to the other following callbacks in the automaton
     protected DirectPaymentTransactionModelDao directPaymentTransactionModelDao;
     protected PaymentInfoPlugin paymentInfoPlugin;
+    protected BigDecimal amount;
 
     // Can be updated later via directPaymentTransactionModelDao (e.g. for auth or purchase)
     protected final UUID directPaymentId;
     protected final String directPaymentExternalKey;
     protected final String directPaymentTransactionExternalKey;
     protected final Account account;
-    protected final BigDecimal amount;
     protected final Currency currency;
     protected final TransactionType transactionType;
-    protected final boolean shouldLockAccount;
+    protected final boolean shouldLockAccountAndDispatch;
+    protected final boolean isExternalPayment;
     protected final Iterable<PluginProperty> properties;
     protected final InternalCallContext internalCallContext;
     protected final CallContext callContext;
@@ -57,17 +57,17 @@ public class DirectPaymentStateContext {
     // Use to create new transactions only
     public DirectPaymentStateContext(@Nullable final UUID directPaymentId, @Nullable final String directPaymentTransactionExternalKey, final TransactionType transactionType,
                                      final Account account, @Nullable final UUID paymentMethodId, final BigDecimal amount, final Currency currency,
-                                     final boolean shouldLockAccount, final Iterable<PluginProperty> properties,
+                                     final boolean shouldLockAccountAndDispatch, final boolean isExternalPayment, final Iterable<PluginProperty> properties,
                                      final InternalCallContext internalCallContext, final CallContext callContext)  {
         this(directPaymentId, null, directPaymentTransactionExternalKey, transactionType, account, paymentMethodId,
-             amount, currency, shouldLockAccount, properties, internalCallContext, callContext);
+             amount, currency, shouldLockAccountAndDispatch, isExternalPayment, properties, internalCallContext, callContext);
     }
 
     // Used to create new payment and transactions
     public DirectPaymentStateContext(@Nullable final UUID directPaymentId, @Nullable final String directPaymentExternalKey,
                                      @Nullable final String directPaymentTransactionExternalKey, final TransactionType transactionType,
                                      final Account account, @Nullable final UUID paymentMethodId, final BigDecimal amount, final Currency currency,
-                                     final boolean shouldLockAccount, final Iterable<PluginProperty> properties,
+                                     final boolean shouldLockAccountAndDispatch, final boolean isExternalPayment, final Iterable<PluginProperty> properties,
                                      final InternalCallContext internalCallContext, final CallContext callContext) {
         this.directPaymentId = directPaymentId;
         this.directPaymentExternalKey = directPaymentExternalKey;
@@ -77,7 +77,8 @@ public class DirectPaymentStateContext {
         this.paymentMethodId = paymentMethodId;
         this.amount = amount;
         this.currency = currency;
-        this.shouldLockAccount = shouldLockAccount;
+        this.shouldLockAccountAndDispatch = shouldLockAccountAndDispatch;
+        this.isExternalPayment = isExternalPayment;
         this.properties = properties;
         this.internalCallContext = internalCallContext;
         this.callContext = callContext;
@@ -135,8 +136,12 @@ public class DirectPaymentStateContext {
         return transactionType;
     }
 
-    public boolean shouldLockAccount() {
-        return shouldLockAccount;
+    public boolean shouldLockAccountAndDispatch() {
+        return shouldLockAccountAndDispatch;
+    }
+
+    public boolean isExternalPayment() {
+        return isExternalPayment;
     }
 
     public Iterable<PluginProperty> getProperties() {

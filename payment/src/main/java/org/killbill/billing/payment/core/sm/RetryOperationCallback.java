@@ -16,21 +16,32 @@
 
 package org.killbill.billing.payment.core.sm;
 
+import java.math.BigDecimal;
 import java.util.Set;
 
 import javax.annotation.Nullable;
 
-import org.joda.time.DateTime;
 import org.killbill.automaton.Operation.OperationCallback;
 import org.killbill.automaton.OperationException;
 import org.killbill.automaton.OperationResult;
+import org.killbill.billing.account.api.Account;
+import org.killbill.billing.callcontext.DefaultCallContext;
+import org.killbill.billing.catalog.api.Currency;
 import org.killbill.billing.osgi.api.OSGIServiceRegistration;
+import org.killbill.billing.payment.api.DirectPayment;
 import org.killbill.billing.payment.api.PaymentApiException;
+import org.killbill.billing.payment.api.PluginProperty;
+import org.killbill.billing.payment.api.TransactionType;
 import org.killbill.billing.payment.core.DirectPaymentProcessor;
 import org.killbill.billing.payment.core.ProcessorBase.WithAccountLockCallback;
 import org.killbill.billing.payment.dispatcher.PluginDispatcher;
+import org.killbill.billing.payment.retry.DefaultRetryPluginResult;
 import org.killbill.billing.retry.plugin.api.RetryPluginApi;
+import org.killbill.billing.retry.plugin.api.RetryPluginApi.RetryPluginContext;
+import org.killbill.billing.retry.plugin.api.RetryPluginApi.RetryPluginResult;
 import org.killbill.billing.retry.plugin.api.RetryPluginApiException;
+import org.killbill.billing.retry.plugin.api.UnknownEntryException;
+import org.killbill.billing.util.callcontext.CallContext;
 import org.killbill.commons.locker.GlobalLocker;
 
 public abstract class RetryOperationCallback extends PluginOperation implements OperationCallback {
@@ -46,43 +57,16 @@ public abstract class RetryOperationCallback extends PluginOperation implements 
 
     //
     // STEPH issue because externalKey namespace across plugin is not unique
-    // If there is no plugin
     //
-    private boolean isRetryAborted(final String externalKey, @Nullable final String pluginName) {
+    private RetryPluginResult getPluginResult(@Nullable final String pluginName, final RetryPluginContext retryContext) throws RetryPluginApiException {
 
         if (pluginName != null) {
             final RetryPluginApi plugin = retryPluginRegistry.getServiceForName(pluginName);
             try {
-                final boolean aborted = plugin.isRetryAborted(externalKey);
-                return aborted;
-            } catch (RetryPluginApiException e) {
-                return true;
-            }
-        }
-
-        final Set<String> allServices = retryPluginRegistry.getAllServices();
-        for (String cur : allServices) {
-            final RetryPluginApi plugin = retryPluginRegistry.getServiceForName(cur);
-            try {
-                final boolean aborted = plugin.isRetryAborted(externalKey);
-                if (!aborted) {
-                    return false;
-                }
-            } catch (RetryPluginApiException ignore) {
-            }
-        }
-        return true;
-    }
-
-    private DateTime getNextRetryDate(final String externalKey, final String pluginName) {
-
-        if (pluginName != null) {
-            final RetryPluginApi plugin = retryPluginRegistry.getServiceForName(pluginName);
-            try {
-                final DateTime result = plugin.getNextRetryDate(externalKey);
+                final RetryPluginResult result = plugin.getRetryResult(retryContext);
                 return result;
-            } catch (RetryPluginApiException e) {
-                return null;
+            } catch (UnknownEntryException e) {
+                return new DefaultRetryPluginResult(true);
             }
         }
 
@@ -90,14 +74,14 @@ public abstract class RetryOperationCallback extends PluginOperation implements 
         for (String cur : allServices) {
             final RetryPluginApi plugin = retryPluginRegistry.getServiceForName(cur);
             try {
-                final DateTime result = plugin.getNextRetryDate(externalKey);
-                if (result != null) {
+                final RetryPluginResult result = plugin.getRetryResult(retryContext);
+                if (!result.isAborted()) {
                     return result;
                 }
-            } catch (RetryPluginApiException ignore) {
+            } catch (UnknownEntryException ignore) {
             }
         }
-        return null;
+        return new DefaultRetryPluginResult(true);
     }
 
     @Override
@@ -105,21 +89,43 @@ public abstract class RetryOperationCallback extends PluginOperation implements 
         return dispatchWithTimeout(new WithAccountLockCallback<OperationResult>() {
             @Override
             public OperationResult doOperation() throws OperationException {
-                if (isRetryAborted(directPaymentStateContext.getDirectPaymentTransactionExternalKey(),
-                                   ((RetryableDirectPaymentStateContext) directPaymentStateContext).getPluginName())) {
-                    return OperationResult.EXCEPTION;
+
+                final RetryableDirectPaymentStateContext retryableDirectPaymentStateContext = (RetryableDirectPaymentStateContext) directPaymentStateContext;
+                final DefaultPluginRetryContext retryContext = new DefaultPluginRetryContext(directPaymentStateContext.account,
+                                                                                             directPaymentStateContext.getDirectPaymentExternalKey(),
+                                                                                             directPaymentStateContext.directPaymentTransactionExternalKey,
+                                                                                             directPaymentStateContext.transactionType,
+                                                                                             directPaymentStateContext.amount,
+                                                                                             directPaymentStateContext.currency,
+                                                                                             directPaymentStateContext.properties,
+                                                                                             retryableDirectPaymentStateContext.isApiPayment(),
+                                                                                             directPaymentStateContext.callContext);
+
+                // Note that we are using OperationResult.EXCEPTION result to transition to final ABORTED state -- see RetryStates.xml
+                final RetryPluginResult pluginResult;
+                try {
+                    pluginResult = getPluginResult(retryableDirectPaymentStateContext.getPluginName(), retryContext);
+                    if (pluginResult.isAborted()) {
+                        return OperationResult.EXCEPTION;
+                    }
+                } catch (RetryPluginApiException e) {
+                    throw new OperationException(e, OperationResult.EXCEPTION);
                 }
 
                 try {
-                    doPluginOperation();
+                    // Adjust amount with value returned by plugin if necessary
+                    if (directPaymentStateContext.getAmount() == null ||
+                        (pluginResult.getAdjustedAmount() != null && pluginResult.getAdjustedAmount().compareTo(directPaymentStateContext.getAmount()) != 0)) {
+                        ((RetryableDirectPaymentStateContext) directPaymentStateContext).setAmount(pluginResult.getAdjustedAmount());
+                    }
+
+                    final DirectPayment result = doPluginOperation();
+                    ((RetryableDirectPaymentStateContext) directPaymentStateContext).setResult(result);
                 } catch (PaymentApiException e) {
-                    final DateTime nextRetryDate = getNextRetryDate(directPaymentStateContext.getDirectPaymentTransactionExternalKey(),
-                                                                    ((RetryableDirectPaymentStateContext) directPaymentStateContext).getPluginName());
-                    if (nextRetryDate == null) {
-                        // Very hacky, we are using EXCEPTION result to transition to final ABORTED state.
+                    if (pluginResult.getNextRetryDate() == null) {
                         throw new OperationException(e, OperationResult.EXCEPTION);
                     } else {
-                        ((RetryableDirectPaymentStateContext) directPaymentStateContext).setRetryDate(nextRetryDate);
+                        ((RetryableDirectPaymentStateContext) directPaymentStateContext).setRetryDate(pluginResult.getNextRetryDate());
                         throw new OperationException(e, OperationResult.FAILURE);
                     }
                 } catch (Exception e) {
@@ -129,5 +135,69 @@ public abstract class RetryOperationCallback extends PluginOperation implements 
                 return OperationResult.SUCCESS;
             }
         });
+    }
+
+    public class DefaultPluginRetryContext extends DefaultCallContext implements RetryPluginContext {
+
+        private final Account account;
+        private final String paymentExternalKey;
+        private final String transactionExternalKey;
+        private final TransactionType transactionType;
+        private final BigDecimal amount;
+        private final Currency currency;
+        private final boolean isApiPayment;
+        private final Iterable<PluginProperty> properties;
+
+        public DefaultPluginRetryContext(final Account account, final String paymentExternalKey, final String transactionExternalKey, final TransactionType transactionType, final BigDecimal amount, final Currency currency, final Iterable<PluginProperty> properties, final boolean isApiPayment, final CallContext callContext) {
+            super(callContext.getTenantId(), callContext.getUserName(), callContext.getCallOrigin(), callContext.getUserType(), callContext.getReasonCode(), callContext.getComments(), callContext.getUserToken(), callContext.getCreatedDate(), callContext.getUpdatedDate());
+            this.account = account;
+            this.paymentExternalKey = paymentExternalKey;
+            this.transactionExternalKey = transactionExternalKey;
+            this.transactionType = transactionType;
+            this.amount = amount;
+            this.currency = currency;
+            this.properties = properties;
+            this.isApiPayment = isApiPayment;
+        }
+
+        @Override
+        public Account getAccount() {
+            return account;
+        }
+
+        @Override
+        public String getPaymentExternalKey() {
+            return paymentExternalKey;
+        }
+
+        @Override
+        public String getTransactionExternalKey() {
+            return transactionExternalKey;
+        }
+
+        @Override
+        public TransactionType getTransactionType() {
+            return transactionType;
+        }
+
+        @Override
+        public BigDecimal getAmount() {
+            return amount;
+        }
+
+        @Override
+        public Currency getCurrency() {
+            return currency;
+        }
+
+        @Override
+        public boolean isApiPayment() {
+            return isApiPayment;
+        }
+
+        @Override
+        public Iterable<PluginProperty> getPluginProperties() {
+            return properties;
+        }
     }
 }

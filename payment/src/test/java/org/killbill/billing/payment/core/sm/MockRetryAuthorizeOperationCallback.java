@@ -16,8 +16,13 @@
 
 package org.killbill.billing.payment.core.sm;
 
+import java.util.Collections;
+
 import org.killbill.automaton.OperationResult;
 import org.killbill.billing.osgi.api.OSGIServiceRegistration;
+import org.killbill.billing.payment.api.DefaultDirectPayment;
+import org.killbill.billing.payment.api.DirectPayment;
+import org.killbill.billing.payment.api.DirectPaymentTransaction;
 import org.killbill.billing.payment.api.PaymentApiException;
 import org.killbill.billing.payment.api.PaymentStatus;
 import org.killbill.billing.payment.core.DirectPaymentProcessor;
@@ -44,7 +49,7 @@ public class MockRetryAuthorizeOperationCallback extends RetryAuthorizeOperation
     }
 
     @Override
-    protected OperationResult doPluginOperation() throws PaymentApiException {
+    protected DirectPayment doPluginOperation() throws PaymentApiException {
         if (exception != null) {
             if (exception instanceof PaymentApiException) {
                 throw (PaymentApiException) exception;
@@ -52,7 +57,6 @@ public class MockRetryAuthorizeOperationCallback extends RetryAuthorizeOperation
                 throw new RuntimeException(exception);
             }
         }
-        if (result == OperationResult.SUCCESS) {
             final DirectPaymentModelDao payment = new DirectPaymentModelDao(clock.getUTCNow(),
                                                                             clock.getUTCNow(),
                                                                             directPaymentStateContext.account.getId(),
@@ -70,9 +74,9 @@ public class MockRetryAuthorizeOperationCallback extends RetryAuthorizeOperation
                                                                                                       directPaymentStateContext.currency,
                                                                                                       "",
                                                                                                       "");
-            paymentDao.insertDirectPaymentWithFirstTransaction(payment, transaction, directPaymentStateContext.internalCallContext);
-        }
-        return result;
+        final DirectPaymentModelDao paymentModelDao = paymentDao.insertDirectPaymentWithFirstTransaction(payment, transaction, directPaymentStateContext.internalCallContext);
+        return new DefaultDirectPayment(paymentModelDao.getId(), paymentModelDao.getCreatedDate(), paymentModelDao.getUpdatedDate(), paymentModelDao.getAccountId(),
+                                        paymentModelDao.getPaymentMethodId(), paymentModelDao.getPaymentNumber(), paymentModelDao.getExternalKey(), Collections.<DirectPaymentTransaction>emptyList());
     }
 
     public MockRetryAuthorizeOperationCallback setException(final Exception exception) {

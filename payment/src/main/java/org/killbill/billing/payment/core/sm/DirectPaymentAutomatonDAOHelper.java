@@ -105,6 +105,7 @@ public class DirectPaymentAutomatonDAOHelper {
     }
 
     public PaymentPluginApi getPaymentProviderPlugin() throws PaymentApiException {
+
         final UUID paymentMethodId = directPaymentStateContext.getPaymentMethodId();
         final PaymentMethodModelDao methodDao = paymentDao.getPaymentMethodIncludedDeleted(paymentMethodId, internalCallContext);
         if (methodDao == null) {

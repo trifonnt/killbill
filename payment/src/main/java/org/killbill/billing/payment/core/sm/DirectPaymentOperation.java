@@ -45,21 +45,41 @@ public abstract class DirectPaymentOperation extends PluginOperation implements 
 
     @Override
     public OperationResult doOperationCallback() throws OperationException {
+        if (directPaymentStateContext.shouldLockAccountAndDispatch()) {
+            return doOperationCallbackWithDispatchAndAccountLock();
+        } else {
+            return doSimpleOperationCallback();
+        }
+    }
+
+    private OperationResult doOperationCallbackWithDispatchAndAccountLock() throws OperationException {
         return dispatchWithTimeout(new WithAccountLockCallback<OperationResult>() {
             @Override
             public OperationResult doOperation() throws PaymentApiException {
-                try {
-                    final PaymentInfoPlugin paymentInfoPlugin = doPluginOperation();
-
-                    directPaymentStateContext.setPaymentInfoPlugin(paymentInfoPlugin);
-
-                    return processPaymentInfoPlugin();
-                } catch (final Exception e) {
-                    // We don't care about the ErrorCode since it will be unwrapped
-                    throw new PaymentApiException(e, ErrorCode.__UNKNOWN_ERROR_CODE);
-                }
+                return doOperation();
             }
         });
+    }
+
+    private OperationResult doSimpleOperationCallback() throws OperationException {
+        try {
+            return doOperation();
+        } catch (PaymentApiException e) {
+            throw new OperationException(e, OperationResult.FAILURE);
+        }
+    }
+
+    private OperationResult doOperation() throws PaymentApiException {
+        try {
+            final PaymentInfoPlugin paymentInfoPlugin = doPluginOperation();
+
+            directPaymentStateContext.setPaymentInfoPlugin(paymentInfoPlugin);
+
+            return processPaymentInfoPlugin();
+        } catch (final PaymentPluginApiException e) {
+            // We don't care about the ErrorCode since it will be unwrapped
+            throw new PaymentApiException(e, ErrorCode.__UNKNOWN_ERROR_CODE);
+        }
     }
 
     private OperationResult processPaymentInfoPlugin() {

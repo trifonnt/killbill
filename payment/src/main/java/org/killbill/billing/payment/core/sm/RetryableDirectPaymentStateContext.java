@@ -25,23 +25,28 @@ import org.joda.time.DateTime;
 import org.killbill.billing.account.api.Account;
 import org.killbill.billing.callcontext.InternalCallContext;
 import org.killbill.billing.catalog.api.Currency;
+import org.killbill.billing.payment.api.DirectPayment;
 import org.killbill.billing.payment.api.PluginProperty;
 import org.killbill.billing.payment.api.TransactionType;
 import org.killbill.billing.util.callcontext.CallContext;
 
 public class RetryableDirectPaymentStateContext extends DirectPaymentStateContext {
 
+    private boolean isApiPayment;
     private DateTime retryDate;
     private String pluginName;
+    private DirectPayment result;
 
-    public RetryableDirectPaymentStateContext(@Nullable String pluginName, @Nullable final UUID directPaymentId, @Nullable final String directPaymentTransactionExternalKey, final TransactionType transactionType, final Account account, @Nullable final UUID paymentMethodId, final BigDecimal amount, final Currency currency, final Iterable<PluginProperty> properties, final InternalCallContext internalCallContext, final CallContext callContext) {
-        super(directPaymentId, directPaymentTransactionExternalKey, transactionType, account, paymentMethodId, amount, currency, false, properties, internalCallContext, callContext);
+    public RetryableDirectPaymentStateContext(@Nullable String pluginName, boolean isApiPayment, @Nullable final UUID directPaymentId, @Nullable final String directPaymentTransactionExternalKey, final TransactionType transactionType, final Account account, @Nullable final UUID paymentMethodId, final BigDecimal amount, final Currency currency, final boolean isExternalPayment, final Iterable<PluginProperty> properties, final InternalCallContext internalCallContext, final CallContext callContext) {
+        super(directPaymentId, directPaymentTransactionExternalKey, transactionType, account, paymentMethodId, amount, currency, true, isExternalPayment, properties, internalCallContext, callContext);
         this.pluginName = pluginName;
+        this.isApiPayment = isApiPayment;
     }
 
-    public RetryableDirectPaymentStateContext(@Nullable String pluginName, @Nullable final UUID directPaymentId, @Nullable final String directPaymentExternalKey, @Nullable final String directPaymentTransactionExternalKey, final TransactionType transactionType, final Account account, @Nullable final UUID paymentMethodId, final BigDecimal amount, final Currency currency, final Iterable<PluginProperty> properties, final InternalCallContext internalCallContext, final CallContext callContext) {
-        super(directPaymentId, directPaymentExternalKey, directPaymentTransactionExternalKey, transactionType, account, paymentMethodId, amount, currency, false, properties, internalCallContext, callContext);
+    public RetryableDirectPaymentStateContext(@Nullable String pluginName, boolean isApiPayment, @Nullable final UUID directPaymentId, @Nullable final String directPaymentExternalKey, @Nullable final String directPaymentTransactionExternalKey, final TransactionType transactionType, final Account account, @Nullable final UUID paymentMethodId, final BigDecimal amount, final Currency currency, final boolean isExternalPayment, final Iterable<PluginProperty> properties, final InternalCallContext internalCallContext, final CallContext callContext) {
+        super(directPaymentId, directPaymentExternalKey, directPaymentTransactionExternalKey, transactionType, account, paymentMethodId, amount, currency, true, isExternalPayment, properties, internalCallContext, callContext);
         this.pluginName = pluginName;
+        this.isApiPayment = isApiPayment;
     }
 
     public DateTime getRetryDate() {
@@ -54,5 +59,25 @@ public class RetryableDirectPaymentStateContext extends DirectPaymentStateContex
 
     public String getPluginName() {
         return pluginName;
+    }
+
+    public void setPluginName(final String pluginName) {
+        this.pluginName = pluginName;
+    }
+
+    public DirectPayment getResult() {
+        return result;
+    }
+
+    public void setResult(final DirectPayment result) {
+        this.result = result;
+    }
+
+    public boolean isApiPayment() {
+        return isApiPayment;
+    }
+
+    public void setAmount(final BigDecimal adjustedAmount) {
+        this.amount = adjustedAmount;
     }
 }

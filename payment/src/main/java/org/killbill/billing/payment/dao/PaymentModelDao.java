@@ -24,12 +24,12 @@ import javax.annotation.Nullable;
 import org.joda.time.DateTime;
 import org.killbill.billing.catalog.api.Currency;
 import org.killbill.billing.entity.EntityBase;
-import org.killbill.billing.payment.api.Payment;
+import org.killbill.billing.payment.api.DirectPayment;
 import org.killbill.billing.payment.api.PaymentStatus;
 import org.killbill.billing.util.dao.TableName;
 import org.killbill.billing.util.entity.dao.EntityModelDao;
 
-public class PaymentModelDao extends EntityBase implements EntityModelDao<Payment> {
+public class PaymentModelDao extends EntityBase implements EntityModelDao<DirectPayment> {
 
     public static final Integer INVALID_PAYMENT_NUMBER = new Integer(-13);
 

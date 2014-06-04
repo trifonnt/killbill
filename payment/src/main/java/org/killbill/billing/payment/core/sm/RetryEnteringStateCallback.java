@@ -41,6 +41,7 @@ public class RetryEnteringStateCallback implements EnteringStateCallback {
     @Override
     public void enteringState(final State state, final OperationCallback operationCallback, final OperationResult operationResult, final LeavingStateCallback leavingStateCallback) {
         final PaymentAttemptModelDao attempt = retryableDirectPaymentAutomatonRunner.paymentDao.getPaymentAttemptByExternalKey(directPaymentStateContext.getDirectPaymentTransactionExternalKey(), directPaymentStateContext.internalCallContext);
+        // STEPH should probably also update direct_payment_id now that it is available.
         retryableDirectPaymentAutomatonRunner.paymentDao.updatePaymentAttempt(attempt.getId(), state.getName(), directPaymentStateContext.internalCallContext);
 
         if ("RETRIED".equals(state.getName())) {

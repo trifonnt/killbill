@@ -26,7 +26,7 @@ import javax.inject.Inject;
 import org.killbill.billing.ErrorCode;
 import org.killbill.billing.account.api.Account;
 import org.killbill.billing.callcontext.InternalTenantContext;
-import org.killbill.billing.payment.api.Payment;
+import org.killbill.billing.payment.api.DirectPayment;
 import org.killbill.billing.payment.api.PaymentApiException;
 import org.killbill.billing.payment.api.PaymentInternalApi;
 import org.killbill.billing.payment.api.PaymentMethod;
@@ -46,8 +46,8 @@ public class DefaultPaymentInternalApi implements PaymentInternalApi {
     }
 
     @Override
-    public Payment getPayment(final UUID paymentId, final Iterable<PluginProperty> properties, final InternalTenantContext context) throws PaymentApiException {
-        final Payment payment = paymentProcessor.getPayment(paymentId, false, properties, context);
+    public DirectPayment getPayment(final UUID paymentId, final Iterable<PluginProperty> properties, final InternalTenantContext context) throws PaymentApiException {
+        final DirectPayment payment = paymentProcessor.getPayment(paymentId, false, properties, context);
         if (payment == null) {
             throw new PaymentApiException(ErrorCode.PAYMENT_NO_SUCH_PAYMENT, paymentId);
         }
@@ -60,7 +60,7 @@ public class DefaultPaymentInternalApi implements PaymentInternalApi {
     }
 
     @Override
-    public List<Payment> getAccountPayments(final UUID accountId, final InternalTenantContext context) throws PaymentApiException {
+    public List<DirectPayment> getAccountPayments(final UUID accountId, final InternalTenantContext context) throws PaymentApiException {
         return paymentProcessor.getAccountPayments(accountId, context);
     }
 

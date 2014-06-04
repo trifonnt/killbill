@@ -37,6 +37,7 @@ public class DefaultDirectPayment extends EntityBase implements DirectPayment {
     private final String externalKey;
     private final BigDecimal authAmount;
     private final BigDecimal captureAmount;
+    private final BigDecimal purchasedAmount;
     private final BigDecimal refundAmount;
     private final Currency currency;
     private final List<DirectPaymentTransaction> transactions;
@@ -54,6 +55,7 @@ public class DefaultDirectPayment extends EntityBase implements DirectPayment {
         this.transactions = transactions;
         this.authAmount = getAmountForType(transactions, TransactionType.AUTHORIZE);
         this.captureAmount = getAmountForType(transactions, TransactionType.CAPTURE);
+        this.purchasedAmount = getAmountForType(transactions, TransactionType.PURCHASE);
         this.refundAmount = getAmountForType(transactions, TransactionType.REFUND);
         this.currency = (transactions != null && !transactions.isEmpty()) ? transactions.get(0).getCurrency() : null;
     }
@@ -108,6 +110,11 @@ public class DefaultDirectPayment extends EntityBase implements DirectPayment {
     }
 
     @Override
+    public BigDecimal getPurchasedAmount() {
+        return purchasedAmount;
+    }
+
+    @Override
     public BigDecimal getRefundedAmount() {
         return refundAmount;
     }
@@ -131,6 +138,7 @@ public class DefaultDirectPayment extends EntityBase implements DirectPayment {
         sb.append(", externalKey='").append(externalKey).append('\'');
         sb.append(", authAmount=").append(authAmount);
         sb.append(", captureAmount=").append(captureAmount);
+        sb.append(", purchasedAmount=").append(purchasedAmount);
         sb.append(", refundAmount=").append(refundAmount);
         sb.append(", currency=").append(currency);
         sb.append(", transactions=").append(transactions);
@@ -159,6 +167,9 @@ public class DefaultDirectPayment extends EntityBase implements DirectPayment {
             return false;
         }
         if (captureAmount != null ? captureAmount.compareTo(that.captureAmount) != 0 : that.captureAmount != null) {
+            return false;
+        }
+        if (purchasedAmount != null ? purchasedAmount.compareTo(that.purchasedAmount) != 0 : that.purchasedAmount != null) {
             return false;
         }
         if (currency != that.currency) {
@@ -192,6 +203,7 @@ public class DefaultDirectPayment extends EntityBase implements DirectPayment {
         result = 31 * result + (externalKey != null ? externalKey.hashCode() : 0);
         result = 31 * result + (authAmount != null ? authAmount.hashCode() : 0);
         result = 31 * result + (captureAmount != null ? captureAmount.hashCode() : 0);
+        result = 31 * result + (purchasedAmount != null ? purchasedAmount.hashCode() : 0);
         result = 31 * result + (refundAmount != null ? refundAmount.hashCode() : 0);
         result = 31 * result + (currency != null ? currency.hashCode() : 0);
         result = 31 * result + (transactions != null ? transactions.hashCode() : 0);

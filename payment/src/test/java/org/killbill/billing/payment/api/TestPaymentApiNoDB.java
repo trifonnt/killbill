@@ -120,27 +120,28 @@ public class TestPaymentApiNoDB extends PaymentTestSuiteNoDB {
                                                             Currency.USD));
 
         try {
-            final Payment paymentInfo = paymentApi.createPayment(account, invoice.getId(), requestedAmount, PLUGIN_PROPERTIES, callContext);
+            final DirectPayment paymentInfo = paymentApi.createPayment(account, invoice.getId(), requestedAmount, PLUGIN_PROPERTIES, callContext);
             if (expectedAmount == null) {
                 fail("Expected to fail because requested amount > invoice amount");
             }
             assertNotNull(paymentInfo.getId());
-            assertTrue(paymentInfo.getAmount().compareTo(expectedAmount) == 0);
+            assertTrue(paymentInfo.getPurchasedAmount().compareTo(expectedAmount) == 0);
             assertNotNull(paymentInfo.getPaymentNumber());
-            assertEquals(paymentInfo.getPaymentStatus(), PaymentStatus.SUCCESS);
-            assertEquals(paymentInfo.getAttempts().size(), 1);
-            assertEquals(paymentInfo.getInvoiceId(), invoice.getId());
+            // STEPH should DirectPayment be extended to export its state name ?
+            //assertEquals(paymentInfo.get(), PaymentStatus.SUCCESS);
+            assertEquals(paymentInfo.getExternalKey(), invoice.getId().toString());
             assertEquals(paymentInfo.getCurrency(), Currency.USD);
+            assertTrue(paymentInfo.getTransactions().get(0).getAmount().compareTo(expectedAmount) == 0);
+            assertEquals(paymentInfo.getTransactions().get(0).getCurrency(), Currency.USD);
+            assertEquals(paymentInfo.getTransactions().get(0).getDirectPaymentId(), paymentInfo.getId());
+            assertEquals(paymentInfo.getTransactions().get(0).getTransactionType(), TransactionType.PURCHASE);
+            assertEquals(paymentInfo.getTransactions().get(0).getPaymentStatus(), PaymentStatus.SUCCESS);
 
-            final PaymentAttempt paymentAttempt = paymentInfo.getAttempts().get(0);
-            assertNotNull(paymentAttempt);
-            assertNotNull(paymentAttempt.getId());
         } catch (final PaymentApiException e) {
             if (expectedAmount != null) {
                 fail("Failed to create payment", e);
             } else {
                 log.info(e.getMessage());
-                assertEquals(e.getCode(), ErrorCode.PAYMENT_AMOUNT_DENIED.getCode());
             }
         }
     }

@@ -19,7 +19,6 @@
 package org.killbill.billing.payment.api;
 
 import java.math.BigDecimal;
-import java.util.List;
 import java.util.UUID;
 
 import org.joda.time.LocalDate;
@@ -71,11 +70,5 @@ public class TestPaymentApi extends PaymentTestSuiteWithEmbeddedDB {
         } catch (final PaymentApiException e) {
             Assert.assertEquals(e.getCode(), ErrorCode.PAYMENT_NO_DEFAULT_PAYMENT_METHOD.getCode());
         }
-
-        final List<Payment> payments = paymentApi.getAccountPayments(account.getId(), callContext);
-        Assert.assertEquals(payments.size(), 1);
-
-        final Payment payment = payments.get(0);
-        Assert.assertEquals(payment.getPaymentStatus(), PaymentStatus.PAYMENT_FAILURE_ABORTED);
     }
 }
