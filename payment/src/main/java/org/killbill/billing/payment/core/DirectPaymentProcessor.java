@@ -33,10 +33,14 @@ import org.killbill.billing.account.api.AccountInternalApi;
 import org.killbill.billing.callcontext.InternalCallContext;
 import org.killbill.billing.callcontext.InternalTenantContext;
 import org.killbill.billing.catalog.api.Currency;
+import org.killbill.billing.events.BusInternalEvent;
 import org.killbill.billing.invoice.api.InvoiceInternalApi;
 import org.killbill.billing.osgi.api.OSGIServiceRegistration;
 import org.killbill.billing.payment.api.DefaultDirectPayment;
 import org.killbill.billing.payment.api.DefaultDirectPaymentTransaction;
+import org.killbill.billing.payment.api.DefaultPaymentErrorEvent;
+import org.killbill.billing.payment.api.DefaultPaymentInfoEvent;
+import org.killbill.billing.payment.api.DefaultPaymentPluginErrorEvent;
 import org.killbill.billing.payment.api.DirectPayment;
 import org.killbill.billing.payment.api.DirectPaymentTransaction;
 import org.killbill.billing.payment.api.PaymentApiException;
@@ -115,6 +119,7 @@ public class DirectPaymentProcessor extends ProcessorBase {
                                                                              internalCallContext);
 
         return getPayment(nonNullDirectPaymentId, true, properties, callContext, internalCallContext);
+
     }
 
     public DirectPayment createCapture(final Account account, final UUID directPaymentId, final BigDecimal amount, final Currency currency,
@@ -373,5 +378,52 @@ public class DirectPaymentProcessor extends ProcessorBase {
         final List<DirectPaymentTransaction> sortedTransactions = perPaymentTransactionOrdering.immutableSortedCopy(transactions);
         return new DefaultDirectPayment(curDirectPaymentModelDao.getId(), curDirectPaymentModelDao.getCreatedDate(), curDirectPaymentModelDao.getUpdatedDate(), curDirectPaymentModelDao.getAccountId(),
                                         curDirectPaymentModelDao.getPaymentMethodId(), curDirectPaymentModelDao.getPaymentNumber(), curDirectPaymentModelDao.getExternalKey(), sortedTransactions);
+    }
+
+    private void postPaymentEvent(final Account account, final DirectPayment directPayment, final UUID directPaymentTransactionId, final InternalCallContext context) {
+        final BusInternalEvent event = buildPaymentEvent(account, directPayment, directPaymentTransactionId, context);
+        postPaymentEvent(event, account.getId(), context);
+    }
+
+    private BusInternalEvent buildPaymentEvent(final Account account, final DirectPayment directPayment, final UUID directPaymentTransactionId, final InternalCallContext context) {
+        final DirectPaymentTransaction directPaymentTransaction = Iterables.<DirectPaymentTransaction>tryFind(directPayment.getTransactions(),
+                                                                                                              new Predicate<DirectPaymentTransaction>() {
+                                                                                                                  @Override
+                                                                                                                  public boolean apply(final DirectPaymentTransaction input) {
+                                                                                                                      return input.getId().equals(directPaymentTransactionId);
+                                                                                                                  }
+                                                                                                              }).get();
+
+        switch (directPaymentTransaction.getPaymentStatus()) {
+            case SUCCESS:
+            case PENDING:
+                return new DefaultPaymentInfoEvent(account.getId(),
+                                                   null,
+                                                   directPayment.getId(),
+                                                   directPaymentTransaction.getAmount(),
+                                                   directPayment.getPaymentNumber(),
+                                                   directPaymentTransaction.getPaymentStatus(),
+                                                   directPaymentTransaction.getEffectiveDate(),
+                                                   context.getAccountRecordId(),
+                                                   context.getTenantRecordId(),
+                                                   context.getUserToken());
+            case PAYMENT_FAILURE_ABORTED:
+                return new DefaultPaymentErrorEvent(account.getId(),
+                                                    null,
+                                                    directPayment.getId(),
+                                                    directPaymentTransaction.getPaymentInfoPlugin() == null ? null : directPaymentTransaction.getPaymentInfoPlugin().getGatewayError(),
+                                                    context.getAccountRecordId(),
+                                                    context.getTenantRecordId(),
+                                                    context.getUserToken());
+            case PLUGIN_FAILURE_ABORTED:
+            default:
+                return new DefaultPaymentPluginErrorEvent(account.getId(),
+                                                          null,
+                                                          directPayment.getId(),
+                                                          directPaymentTransaction.getPaymentInfoPlugin() == null ? null : directPaymentTransaction.getPaymentInfoPlugin().getGatewayError(),
+                                                          context.getAccountRecordId(),
+                                                          context.getTenantRecordId(),
+                                                          context.getUserToken());
+        }
     }
 }
