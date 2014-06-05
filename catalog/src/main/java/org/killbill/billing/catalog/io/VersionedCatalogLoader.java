@@ -26,7 +26,7 @@ import com.google.common.io.Resources;
 import com.google.inject.Inject;
 import org.killbill.billing.catalog.StandaloneCatalog;
 import org.killbill.billing.catalog.VersionedCatalog;
-import org.killbill.billing.lifecycle.KillbillService.ServiceException;
+import org.killbill.billing.platform.api.KillbillService.ServiceException;
 import org.killbill.clock.Clock;
 import org.killbill.xmlloader.UriAccessor;
 import org.killbill.xmlloader.XMLLoader;
