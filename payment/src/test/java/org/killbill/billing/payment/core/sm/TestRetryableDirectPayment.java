@@ -17,6 +17,7 @@
 package org.killbill.billing.payment.core.sm;
 
 import java.math.BigDecimal;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 
@@ -62,6 +63,7 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.inject.Inject;
 
 import static org.killbill.billing.payment.glue.PaymentModule.PLUGIN_EXECUTOR_NAMED;
@@ -106,6 +108,7 @@ public class TestRetryableDirectPayment extends PaymentTestSuiteNoDB {
     private final BigDecimal amount = BigDecimal.ONE;
     private final Currency currency = Currency.EUR;
     private final ImmutableList<PluginProperty> emptyProperties = ImmutableList.<PluginProperty>of();
+    private final Map<UUID, BigDecimal> emptyIdsWithAmounts = ImmutableMap.<UUID, BigDecimal>of();
     private final MockRetryProviderPlugin mockRetryProviderPlugin = new MockRetryProviderPlugin();
 
     private MockRetryableDirectPaymentAutomatonRunner runner;
@@ -215,6 +218,7 @@ public class TestRetryableDirectPayment extends PaymentTestSuiteNoDB {
                    amount,
                    currency,
                    false,
+                   emptyIdsWithAmounts,
                    emptyProperties,
                    null,
                    callContext,
@@ -250,6 +254,7 @@ public class TestRetryableDirectPayment extends PaymentTestSuiteNoDB {
                    amount,
                    currency,
                    false,
+                   emptyIdsWithAmounts,
                    emptyProperties,
                    null,
                    callContext,
@@ -285,6 +290,7 @@ public class TestRetryableDirectPayment extends PaymentTestSuiteNoDB {
                    amount,
                    currency,
                    false,
+                   emptyIdsWithAmounts,
                    emptyProperties,
                    null,
                    callContext, internalCallContext);
@@ -320,6 +326,7 @@ public class TestRetryableDirectPayment extends PaymentTestSuiteNoDB {
                        amount,
                        currency,
                        false,
+                       emptyIdsWithAmounts,
                        emptyProperties,
                        null,
                        callContext, internalCallContext);
@@ -359,6 +366,7 @@ public class TestRetryableDirectPayment extends PaymentTestSuiteNoDB {
                        amount,
                        currency,
                        false,
+                       emptyIdsWithAmounts,
                        emptyProperties,
                        null,
                        callContext, internalCallContext);
@@ -397,6 +405,7 @@ public class TestRetryableDirectPayment extends PaymentTestSuiteNoDB {
                        amount,
                        currency,
                        false,
+                       emptyIdsWithAmounts,
                        emptyProperties,
                        null,
                        callContext, internalCallContext);
@@ -435,6 +444,7 @@ public class TestRetryableDirectPayment extends PaymentTestSuiteNoDB {
                        amount,
                        currency,
                        false,
+                       emptyIdsWithAmounts,
                        emptyProperties,
                        null,
                        callContext, internalCallContext);
@@ -476,6 +486,7 @@ public class TestRetryableDirectPayment extends PaymentTestSuiteNoDB {
                    amount,
                    currency,
                    false,
+                   emptyIdsWithAmounts,
                    emptyProperties,
                    null,
                    callContext,
@@ -517,6 +528,7 @@ public class TestRetryableDirectPayment extends PaymentTestSuiteNoDB {
                        amount,
                        currency,
                        false,
+                       emptyIdsWithAmounts,
                        emptyProperties,
                        null,
                        callContext,
@@ -561,6 +573,7 @@ public class TestRetryableDirectPayment extends PaymentTestSuiteNoDB {
                        amount,
                        currency,
                        false,
+                       emptyIdsWithAmounts,
                        emptyProperties,
                        null,
                        callContext,

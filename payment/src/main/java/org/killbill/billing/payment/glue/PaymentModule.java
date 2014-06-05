@@ -42,8 +42,6 @@ import org.killbill.billing.payment.bus.PaymentTagHandler;
 import org.killbill.billing.payment.core.DirectPaymentProcessor;
 import org.killbill.billing.payment.core.PaymentGatewayProcessor;
 import org.killbill.billing.payment.core.PaymentMethodProcessor;
-import org.killbill.billing.payment.core.PaymentProcessor;
-import org.killbill.billing.payment.core.RefundProcessor;
 import org.killbill.billing.payment.core.RetryableDirectPaymentProcessor;
 import org.killbill.billing.payment.core.sm.RetryableDirectPaymentAutomatonRunner;
 import org.killbill.billing.payment.dao.DefaultPaymentDao;
@@ -81,7 +79,6 @@ public class PaymentModule extends AbstractModule {
     public static final String STATE_MACHINE_RETRY = "RetryStateMachine";
     public static final String STATE_MACHINE_PAYMENT = "PaymentStateMachine";
 
-
     protected ConfigSource configSource;
 
     public PaymentModule(final ConfigSource configSource) {
@@ -112,9 +109,6 @@ public class PaymentModule extends AbstractModule {
         bind(RetryServiceScheduler.class).annotatedWith(Names.named(RETRYABLE_NAMED)).to(DefaultRetryServiceScheduler.class);
 
     }
-
-
-
 
     protected void installStateMachines() {
 
@@ -158,11 +152,9 @@ public class PaymentModule extends AbstractModule {
             }
         });
         bind(ExecutorService.class).annotatedWith(Names.named(PLUGIN_EXECUTOR_NAMED)).toInstance(pluginExecutorService);
-        bind(PaymentProcessor.class).asEagerSingleton();
         bind(DirectPaymentProcessor.class).asEagerSingleton();
         bind(RetryableDirectPaymentProcessor.class).asEagerSingleton();
         bind(PaymentGatewayProcessor.class).asEagerSingleton();
-        bind(RefundProcessor.class).asEagerSingleton();
         bind(PaymentMethodProcessor.class).asEagerSingleton();
     }
 

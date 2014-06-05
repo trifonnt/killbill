@@ -17,6 +17,7 @@
 package org.killbill.billing.payment.core.sm;
 
 import java.math.BigDecimal;
+import java.util.Map;
 import java.util.UUID;
 
 import javax.annotation.Nullable;
@@ -30,23 +31,29 @@ import org.killbill.billing.payment.api.PluginProperty;
 import org.killbill.billing.payment.api.TransactionType;
 import org.killbill.billing.util.callcontext.CallContext;
 
+import com.google.common.collect.ImmutableMap;
+
 public class RetryableDirectPaymentStateContext extends DirectPaymentStateContext {
 
     private boolean isApiPayment;
     private DateTime retryDate;
     private String pluginName;
     private DirectPayment result;
+    private Map<UUID, BigDecimal> idsWithAmounts;
 
-    public RetryableDirectPaymentStateContext(@Nullable String pluginName, boolean isApiPayment, @Nullable final UUID directPaymentId, @Nullable final String directPaymentTransactionExternalKey, final TransactionType transactionType, final Account account, @Nullable final UUID paymentMethodId, final BigDecimal amount, final Currency currency, final boolean isExternalPayment, final Iterable<PluginProperty> properties, final InternalCallContext internalCallContext, final CallContext callContext) {
+    public RetryableDirectPaymentStateContext(@Nullable String pluginName, boolean isApiPayment, @Nullable final UUID directPaymentId, final String directPaymentExternalKey, @Nullable final String directPaymentTransactionExternalKey, final TransactionType transactionType, final Account account, @Nullable final UUID paymentMethodId,
+                                              final BigDecimal amount, final Currency currency, final boolean isExternalPayment, final Map<UUID, BigDecimal> idsWithAmounts, final Iterable<PluginProperty> properties, final InternalCallContext internalCallContext, final CallContext callContext) {
         super(directPaymentId, directPaymentTransactionExternalKey, transactionType, account, paymentMethodId, amount, currency, true, isExternalPayment, properties, internalCallContext, callContext);
         this.pluginName = pluginName;
         this.isApiPayment = isApiPayment;
+        this.idsWithAmounts = idsWithAmounts;
     }
 
     public RetryableDirectPaymentStateContext(@Nullable String pluginName, boolean isApiPayment, @Nullable final UUID directPaymentId, @Nullable final String directPaymentExternalKey, @Nullable final String directPaymentTransactionExternalKey, final TransactionType transactionType, final Account account, @Nullable final UUID paymentMethodId, final BigDecimal amount, final Currency currency, final boolean isExternalPayment, final Iterable<PluginProperty> properties, final InternalCallContext internalCallContext, final CallContext callContext) {
         super(directPaymentId, directPaymentExternalKey, directPaymentTransactionExternalKey, transactionType, account, paymentMethodId, amount, currency, true, isExternalPayment, properties, internalCallContext, callContext);
         this.pluginName = pluginName;
         this.isApiPayment = isApiPayment;
+        this.idsWithAmounts = ImmutableMap.<UUID, BigDecimal>of();
     }
 
     public DateTime getRetryDate() {
@@ -79,5 +86,13 @@ public class RetryableDirectPaymentStateContext extends DirectPaymentStateContex
 
     public void setAmount(final BigDecimal adjustedAmount) {
         this.amount = adjustedAmount;
+    }
+
+    public Map<UUID, BigDecimal> getIdsWithAmounts() {
+        return idsWithAmounts;
+    }
+
+    public void setIdsWithAmounts(final Map<UUID, BigDecimal> idsWithAmounts) {
+        this.idsWithAmounts = idsWithAmounts;
     }
 }

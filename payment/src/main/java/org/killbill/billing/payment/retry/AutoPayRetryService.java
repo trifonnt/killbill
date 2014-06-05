@@ -23,7 +23,6 @@ import java.util.UUID;
 import org.joda.time.DateTime;
 import org.killbill.billing.callcontext.InternalCallContext;
 import org.killbill.billing.payment.api.PluginProperty;
-import org.killbill.billing.payment.core.PaymentProcessor;
 import org.killbill.billing.util.callcontext.InternalCallContextFactory;
 import org.killbill.billing.util.config.PaymentConfig;
 import org.killbill.notificationq.api.NotificationQueueService;
@@ -34,15 +33,11 @@ public class AutoPayRetryService extends BaseRetryService implements RetryServic
 
     public static final String QUEUE_NAME = "autopayoff";
 
-    private final PaymentProcessor paymentProcessor;
-
     @Inject
     public AutoPayRetryService(final NotificationQueueService notificationQueueService,
                                final PaymentConfig config,
-                               final PaymentProcessor paymentProcessor,
                                final InternalCallContextFactory internalCallContextFactory) {
         super(notificationQueueService, internalCallContextFactory);
-        this.paymentProcessor = paymentProcessor;
     }
 
     @Override
@@ -52,7 +47,8 @@ public class AutoPayRetryService extends BaseRetryService implements RetryServic
 
     @Override
     public void retry(final UUID paymentId, final Iterable<PluginProperty> properties, final InternalCallContext context) {
-        paymentProcessor.retryAutoPayOff(paymentId, properties, context);
+        // STEPH
+        //paymentProcessor.retryAutoPayOff(paymentId, properties, context);
     }
 
     @Override

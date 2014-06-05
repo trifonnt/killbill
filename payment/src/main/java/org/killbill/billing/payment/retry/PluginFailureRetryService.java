@@ -21,7 +21,6 @@ import java.util.UUID;
 import org.joda.time.DateTime;
 import org.killbill.billing.callcontext.InternalCallContext;
 import org.killbill.billing.payment.api.PluginProperty;
-import org.killbill.billing.payment.core.PaymentProcessor;
 import org.killbill.billing.util.callcontext.InternalCallContextFactory;
 import org.killbill.billing.util.config.PaymentConfig;
 import org.killbill.billing.util.entity.dao.EntitySqlDao;
@@ -39,19 +38,16 @@ public class PluginFailureRetryService extends BaseRetryService implements Retry
 
     public static final String QUEUE_NAME = "plugin-failure";
 
-    private final PaymentProcessor paymentProcessor;
-
     @Inject
     public PluginFailureRetryService(final NotificationQueueService notificationQueueService,
-                                     final PaymentProcessor paymentProcessor,
                                      final InternalCallContextFactory internalCallContextFactory) {
         super(notificationQueueService, internalCallContextFactory);
-        this.paymentProcessor = paymentProcessor;
     }
 
     @Override
     public void retry(final UUID paymentId, final Iterable<PluginProperty> properties, final InternalCallContext context) {
-        paymentProcessor.retryPluginFailure(paymentId, properties, context);
+        // STEPH
+        //paymentProcessor.retryPluginFailure(paymentId, properties, context);
     }
 
     @Override

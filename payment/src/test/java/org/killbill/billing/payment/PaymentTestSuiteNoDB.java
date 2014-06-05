@@ -27,7 +27,6 @@ import org.killbill.billing.osgi.api.OSGIServiceRegistration;
 import org.killbill.billing.payment.api.PaymentApi;
 import org.killbill.billing.payment.api.svcs.RetryableDirectPaymentApi;
 import org.killbill.billing.payment.core.PaymentMethodProcessor;
-import org.killbill.billing.payment.core.PaymentProcessor;
 import org.killbill.billing.payment.core.sm.RetryableDirectPaymentAutomatonRunner;
 import org.killbill.billing.payment.dao.PaymentDao;
 import org.killbill.billing.payment.glue.TestPaymentModuleNoDB;
@@ -51,8 +50,6 @@ public abstract class PaymentTestSuiteNoDB extends GuicyKillbillTestSuiteNoDB {
 
     @Inject
     protected PaymentConfig paymentConfig;
-    @Inject
-    protected PaymentProcessor paymentProcessor;
     @Inject
     protected PaymentMethodProcessor paymentMethodProcessor;
     @Inject

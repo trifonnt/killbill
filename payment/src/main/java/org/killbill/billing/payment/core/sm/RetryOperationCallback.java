@@ -17,7 +17,9 @@
 package org.killbill.billing.payment.core.sm;
 
 import java.math.BigDecimal;
+import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 
 import javax.annotation.Nullable;
 
@@ -107,11 +109,12 @@ public abstract class RetryOperationCallback extends PluginOperation implements 
 
                 final RetryableDirectPaymentStateContext retryableDirectPaymentStateContext = (RetryableDirectPaymentStateContext) directPaymentStateContext;
                 final DefaultPluginRetryContext retryContext = new DefaultPluginRetryContext(directPaymentStateContext.account,
-                                                                                             directPaymentStateContext.getDirectPaymentExternalKey(),
+                                                                                             directPaymentStateContext.directPaymentExternalKey,
                                                                                              directPaymentStateContext.directPaymentTransactionExternalKey,
                                                                                              directPaymentStateContext.transactionType,
                                                                                              directPaymentStateContext.amount,
                                                                                              directPaymentStateContext.currency,
+                                                                                             retryableDirectPaymentStateContext.getIdsWithAmounts(),
                                                                                              directPaymentStateContext.properties,
                                                                                              retryableDirectPaymentStateContext.isApiPayment(),
                                                                                              directPaymentStateContext.callContext);
@@ -163,8 +166,9 @@ public abstract class RetryOperationCallback extends PluginOperation implements 
         private final Currency currency;
         private final boolean isApiPayment;
         private final Iterable<PluginProperty> properties;
+        private final Map<UUID, BigDecimal> idsWithAmounts;
 
-        public DefaultPluginRetryContext(final Account account, final String paymentExternalKey, final String transactionExternalKey, final TransactionType transactionType, final BigDecimal amount, final Currency currency, final Iterable<PluginProperty> properties, final boolean isApiPayment, final CallContext callContext) {
+        public DefaultPluginRetryContext(final Account account, final String paymentExternalKey, final String transactionExternalKey, final TransactionType transactionType, final BigDecimal amount, final Currency currency, final Map<UUID, BigDecimal> idsWithAmounts, final Iterable<PluginProperty> properties, final boolean isApiPayment, final CallContext callContext) {
             super(callContext.getTenantId(), callContext.getUserName(), callContext.getCallOrigin(), callContext.getUserType(), callContext.getReasonCode(), callContext.getComments(), callContext.getUserToken(), callContext.getCreatedDate(), callContext.getUpdatedDate());
             this.account = account;
             this.paymentExternalKey = paymentExternalKey;
@@ -172,6 +176,7 @@ public abstract class RetryOperationCallback extends PluginOperation implements 
             this.transactionType = transactionType;
             this.amount = amount;
             this.currency = currency;
+            this.idsWithAmounts = idsWithAmounts;
             this.properties = properties;
             this.isApiPayment = isApiPayment;
         }
@@ -199,6 +204,11 @@ public abstract class RetryOperationCallback extends PluginOperation implements 
         @Override
         public BigDecimal getAmount() {
             return amount;
+        }
+
+        @Override
+        public Map<UUID, BigDecimal> getIdsWithAmount() {
+            return idsWithAmounts;
         }
 
         @Override

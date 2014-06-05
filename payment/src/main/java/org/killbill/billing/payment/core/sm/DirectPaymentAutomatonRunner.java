@@ -45,7 +45,6 @@ import org.killbill.billing.payment.api.PaymentApiException;
 import org.killbill.billing.payment.api.PluginProperty;
 import org.killbill.billing.payment.api.TransactionType;
 import org.killbill.billing.payment.dao.DirectPaymentModelDao;
-import org.killbill.billing.payment.dao.DirectPaymentTransactionModelDao;
 import org.killbill.billing.payment.dao.PaymentDao;
 import org.killbill.billing.payment.dispatcher.PluginDispatcher;
 import org.killbill.billing.payment.glue.PaymentModule;
@@ -91,7 +90,7 @@ public class DirectPaymentAutomatonRunner {
 
     public UUID run(final TransactionType transactionType, final Account account,
                     @Nullable final UUID directPaymentId, final String directPaymentTransactionExternalKey,
-                    final boolean shouldLockAccount,  final boolean isExternalPayment, final Iterable<PluginProperty> properties,
+                    final boolean shouldLockAccount, final boolean isExternalPayment, final Iterable<PluginProperty> properties,
                     final CallContext callContext, final InternalCallContext internalCallContext) throws PaymentApiException {
         return run(transactionType, account, null, directPaymentId, null, directPaymentTransactionExternalKey, null, null, shouldLockAccount, isExternalPayment, properties, callContext, internalCallContext);
     }

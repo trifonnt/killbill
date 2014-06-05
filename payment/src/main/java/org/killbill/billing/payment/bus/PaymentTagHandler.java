@@ -18,24 +18,21 @@ package org.killbill.billing.payment.bus;
 
 import java.util.UUID;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import org.killbill.billing.ObjectType;
 import org.killbill.billing.account.api.Account;
 import org.killbill.billing.account.api.AccountApiException;
 import org.killbill.billing.account.api.AccountInternalApi;
-import org.killbill.billing.callcontext.DefaultCallContext;
 import org.killbill.billing.callcontext.InternalCallContext;
-import org.killbill.clock.Clock;
 import org.killbill.billing.events.ControlTagDeletionInternalEvent;
 import org.killbill.billing.payment.api.PaymentApiException;
-import org.killbill.billing.payment.core.PaymentProcessor;
-import org.killbill.billing.util.callcontext.CallContext;
+import org.killbill.billing.payment.core.DirectPaymentProcessor;
 import org.killbill.billing.util.callcontext.CallOrigin;
 import org.killbill.billing.util.callcontext.InternalCallContextFactory;
 import org.killbill.billing.util.callcontext.UserType;
 import org.killbill.billing.util.tag.ControlTagType;
+import org.killbill.clock.Clock;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.google.common.eventbus.Subscribe;
 import com.google.inject.Inject;
@@ -46,13 +43,13 @@ public class PaymentTagHandler {
 
     private final Clock clock;
     private final AccountInternalApi accountApi;
-    private final PaymentProcessor paymentProcessor;
+    private final DirectPaymentProcessor paymentProcessor;
     private final InternalCallContextFactory internalCallContextFactory;
 
     @Inject
     public PaymentTagHandler(final Clock clock,
                              final AccountInternalApi accountApi,
-                             final PaymentProcessor paymentProcessor,
+                             final DirectPaymentProcessor paymentProcessor,
                              final InternalCallContextFactory internalCallContextFactory) {
         this.clock = clock;
         this.accountApi = accountApi;

@@ -18,6 +18,7 @@ package org.killbill.billing.payment.core.sm;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 
@@ -62,6 +63,7 @@ import org.killbill.commons.locker.GlobalLocker;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Function;
 import com.google.common.collect.Collections2;
+import com.google.common.collect.ImmutableMap;
 
 import static org.killbill.billing.payment.glue.PaymentModule.PLUGIN_EXECUTOR_NAMED;
 import static org.killbill.billing.payment.glue.PaymentModule.RETRYABLE_NAMED;
@@ -96,10 +98,11 @@ public class RetryableDirectPaymentAutomatonRunner extends DirectPaymentAutomato
     public DirectPayment run(final boolean isApiPayment, final TransactionType transactionType, final Account account, @Nullable final UUID paymentMethodId,
                              @Nullable final UUID directPaymentId, @Nullable final String directPaymentExternalKey, final String directPaymentTransactionExternalKey,
                              @Nullable final BigDecimal amount, @Nullable final Currency currency, final boolean isExternalPayment,
+                             final Map<UUID, BigDecimal> idsWithAmount,
                              final Iterable<PluginProperty> properties,
                              @Nullable final String pluginName, final CallContext callContext, final InternalCallContext internalCallContext) throws PaymentApiException {
         return run(initialState, isApiPayment, transactionType, account, paymentMethodId, directPaymentId, directPaymentExternalKey, directPaymentTransactionExternalKey,
-                   amount, currency, isExternalPayment, properties, pluginName, callContext, internalCallContext);
+                   amount, currency, isExternalPayment, idsWithAmount, properties, pluginName, callContext, internalCallContext);
     }
 
     public DirectPayment run(final boolean isApiPayment, final TransactionType transactionType, final Account account,
@@ -108,7 +111,7 @@ public class RetryableDirectPaymentAutomatonRunner extends DirectPaymentAutomato
                              final Iterable<PluginProperty> properties,
                              @Nullable final String pluginName, final CallContext callContext, final InternalCallContext internalCallContext) throws PaymentApiException {
         return run(initialState, isApiPayment, transactionType, account, null, directPaymentId, null, directPaymentTransactionExternalKey,
-                   amount, currency, isExternalPayment, properties, pluginName, callContext, internalCallContext);
+                   amount, currency, isExternalPayment, ImmutableMap.<UUID, BigDecimal>of(), properties, pluginName, callContext, internalCallContext);
     }
 
     public DirectPayment run(final boolean isApiPayment, final TransactionType transactionType, final Account account,
@@ -117,12 +120,13 @@ public class RetryableDirectPaymentAutomatonRunner extends DirectPaymentAutomato
                              final Iterable<PluginProperty> properties,
                              @Nullable final String pluginName, final CallContext callContext, final InternalCallContext internalCallContext) throws PaymentApiException {
         return run(initialState, isApiPayment, transactionType, account, null, directPaymentId, null, directPaymentTransactionExternalKey,
-                   null, null, isExternalPayment, properties, pluginName, callContext, internalCallContext);
+                   null, null, isExternalPayment, ImmutableMap.<UUID, BigDecimal>of(), properties, pluginName, callContext, internalCallContext);
     }
 
     public DirectPayment run(final State state, final boolean isApiPayment, final TransactionType transactionType, final Account account, @Nullable final UUID paymentMethodId,
                     @Nullable final UUID directPaymentId, @Nullable final String directPaymentExternalKey, final String directPaymentTransactionExternalKey,
                     @Nullable final BigDecimal amount, @Nullable final Currency currency, final boolean isExternalPayment,
+                    final Map<UUID, BigDecimal> idsWithAmount,
                     final Iterable<PluginProperty> properties, @Nullable final String pluginName,
                     final CallContext callContext, final InternalCallContext internalCallContext) throws PaymentApiException {
 
@@ -134,7 +138,8 @@ public class RetryableDirectPaymentAutomatonRunner extends DirectPaymentAutomato
         final RetryableDirectPaymentStateContext directPaymentStateContext = createContext(isApiPayment, transactionType, account, paymentMethodId,
                                                                                            directPaymentId, directPaymentExternalKey,
                                                                                            directPaymentTransactionExternalKey,
-                                                                                           amount, currency, isExternalPayment, properties, pluginName, callContext, internalCallContext);
+                                                                                           amount, currency, isExternalPayment, idsWithAmount,
+                                                                                           properties, pluginName, callContext, internalCallContext);
         try {
 
             final OperationCallback callback = createOperationCallback(transactionType, directPaymentStateContext);
@@ -193,9 +198,10 @@ public class RetryableDirectPaymentAutomatonRunner extends DirectPaymentAutomato
     RetryableDirectPaymentStateContext createContext(final boolean isApiPayment, final TransactionType transactionType, final Account account, @Nullable final UUID paymentMethodId,
                                                      @Nullable final UUID directPaymentId, @Nullable final String directPaymentExternalKey, final String directPaymentTransactionExternalKey,
                                                      @Nullable final BigDecimal amount, @Nullable final Currency currency, final boolean isExternalPayment,
-                                                     final Iterable<PluginProperty> properties,
+                                                     final Map<UUID, BigDecimal> idsWithAmount, final Iterable<PluginProperty> properties,
                                                      final String pluginName, final CallContext callContext, final InternalCallContext internalCallContext) throws PaymentApiException {
-        return new RetryableDirectPaymentStateContext(pluginName, isApiPayment, directPaymentId, directPaymentExternalKey, directPaymentTransactionExternalKey, transactionType, account, paymentMethodId, amount, currency, isExternalPayment, properties, internalCallContext, callContext);
+        return new RetryableDirectPaymentStateContext(pluginName, isApiPayment, directPaymentId, directPaymentExternalKey, directPaymentTransactionExternalKey, transactionType, account,
+                                                      paymentMethodId, amount, currency, isExternalPayment, idsWithAmount, properties, internalCallContext, callContext);
     }
 
 

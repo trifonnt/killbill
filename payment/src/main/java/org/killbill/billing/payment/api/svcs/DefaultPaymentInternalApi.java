@@ -36,27 +36,30 @@ import org.killbill.billing.payment.api.PaymentInternalApi;
 import org.killbill.billing.payment.api.PaymentMethod;
 import org.killbill.billing.payment.api.PluginProperty;
 import org.killbill.billing.payment.api.TransactionType;
+import org.killbill.billing.payment.core.DirectPaymentProcessor;
 import org.killbill.billing.payment.core.PaymentMethodProcessor;
-import org.killbill.billing.payment.core.PaymentProcessor;
 import org.killbill.billing.payment.core.sm.RetryableDirectPaymentAutomatonRunner;
 import org.killbill.billing.payment.retry.InvoiceRetryPluginApi;
 import org.killbill.billing.util.callcontext.CallContext;
+import org.killbill.billing.util.callcontext.TenantContext;
 import org.killbill.billing.util.dao.NonEntityDao;
+
+import com.google.common.collect.ImmutableMap;
 
 public class DefaultPaymentInternalApi implements PaymentInternalApi {
 
-    private final PaymentProcessor paymentProcessor;
     private final PaymentMethodProcessor methodProcessor;
+    private final DirectPaymentProcessor directPaymentProcessor;
 
     private final RetryableDirectPaymentAutomatonRunner retryableDirectPaymentAutomatonRunner;
-private final NonEntityDao nonEntityDao;
+    private final NonEntityDao nonEntityDao;
 
     @Inject
-    public DefaultPaymentInternalApi(final PaymentProcessor paymentProcessor, final PaymentMethodProcessor methodProcessor, final RetryableDirectPaymentAutomatonRunner retryableDirectPaymentAutomatonRunner, final NonEntityDao nonEntityDao) {
+    public DefaultPaymentInternalApi(final DirectPaymentProcessor directPaymentProcessor, final PaymentMethodProcessor methodProcessor, final NonEntityDao nonEntityDao, final RetryableDirectPaymentAutomatonRunner retryableDirectPaymentAutomatonRunner) {
         this.retryableDirectPaymentAutomatonRunner = retryableDirectPaymentAutomatonRunner;
-        this.paymentProcessor = paymentProcessor;
         this.methodProcessor = methodProcessor;
         this.nonEntityDao = nonEntityDao;
+        this.directPaymentProcessor = directPaymentProcessor;
     }
 
     @Override
@@ -74,16 +77,18 @@ private final NonEntityDao nonEntityDao;
                                                          amount,
                                                          account.getCurrency(),
                                                          false,
+                                                         ImmutableMap.<UUID, BigDecimal>of(),
                                                          properties,
                                                          InvoiceRetryPluginApi.PLUGIN_NAME,
                                                          callContext,
                                                          internalContext);
     }
 
-
     @Override
-    public DirectPayment getPayment(final UUID paymentId, final Iterable<PluginProperty> properties, final InternalTenantContext context) throws PaymentApiException {
-        final DirectPayment payment = paymentProcessor.getPayment(paymentId, false, properties, context);
+    public DirectPayment getPayment(final UUID paymentId, final Iterable<PluginProperty> properties, final InternalTenantContext internalTenantContext) throws PaymentApiException {
+
+        final TenantContext tenantContext = internalTenantContext.toTenantContext(nonEntityDao.retrieveIdFromObject(internalTenantContext.getTenantRecordId(), ObjectType.TENANT));
+        final DirectPayment payment = directPaymentProcessor.getPayment(paymentId, false, properties, tenantContext, internalTenantContext);
         if (payment == null) {
             throw new PaymentApiException(ErrorCode.PAYMENT_NO_SUCH_PAYMENT, paymentId);
         }
@@ -97,7 +102,7 @@ private final NonEntityDao nonEntityDao;
 
     @Override
     public List<DirectPayment> getAccountPayments(final UUID accountId, final InternalTenantContext context) throws PaymentApiException {
-        return paymentProcessor.getAccountPayments(accountId, context);
+        return directPaymentProcessor.getAccountPayments(accountId, context);
     }
 
     @Override

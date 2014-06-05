@@ -27,7 +27,6 @@ import org.killbill.billing.osgi.api.OSGIServiceRegistration;
 import org.killbill.billing.payment.api.PaymentApi;
 import org.killbill.billing.payment.core.DirectPaymentProcessor;
 import org.killbill.billing.payment.core.PaymentMethodProcessor;
-import org.killbill.billing.payment.core.PaymentProcessor;
 import org.killbill.billing.payment.dao.PaymentDao;
 import org.killbill.billing.payment.glue.TestPaymentModuleWithEmbeddedDB;
 import org.killbill.billing.payment.plugin.api.PaymentPluginApi;
@@ -50,8 +49,6 @@ public abstract class PaymentTestSuiteWithEmbeddedDB extends GuicyKillbillTestSu
 
     @Inject
     protected PaymentConfig paymentConfig;
-    @Inject
-    protected PaymentProcessor paymentProcessor;
     @Inject
     protected PaymentMethodProcessor paymentMethodProcessor;
     @Inject
@@ -79,7 +76,8 @@ public abstract class PaymentTestSuiteWithEmbeddedDB extends GuicyKillbillTestSu
     protected KillbillConfigSource getConfigSource() throws IOException, URISyntaxException {
         return new TestKillbillConfigSource("/payment.properties",
                                             ImmutableMap.<String, String>of("org.killbill.payment.provider.default", MockPaymentProviderPlugin.PLUGIN_NAME,
-                                                                            "killbill.payment.engine.events.off", "false"));
+                                                                            "killbill.payment.engine.events.off", "false")
+        );
     }
 
     @BeforeClass(groups = "slow")

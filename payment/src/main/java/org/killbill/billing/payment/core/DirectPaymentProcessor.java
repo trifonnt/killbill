@@ -157,7 +157,10 @@ public class DirectPaymentProcessor extends ProcessorBase {
                                                                              callContext,
                                                                              internalCallContext);
 
-        return getPayment(nonNullDirectPaymentId, true, properties, callContext, internalCallContext);
+        final DirectPayment directPayment = getPayment(nonNullDirectPaymentId, true, properties, callContext, internalCallContext);
+        // STEPH shouldnt' that be part of the transaction that update the state? what about state machine above?
+        postPaymentEvent(account, directPayment, directPaymentTransactionExternalKey, internalCallContext);
+        return directPayment;
     }
 
     public DirectPayment createVoid(final Account account, final UUID directPaymentId, final String directPaymentTransactionExternalKey, final boolean shouldLockAccountAndDispatch,
@@ -254,6 +257,10 @@ public class DirectPaymentProcessor extends ProcessorBase {
         return toDirectPayment(paymentModelDao, transactionsForDirectPayment, pluginInfo);
     }
 
+    public void process_AUTO_PAY_OFF_removal(final Account account, final InternalCallContext context) throws PaymentApiException {
+        // STEPH TODO
+    }
+
     public Pagination<DirectPayment> getPayments(final Long offset, final Long limit, final Iterable<PluginProperty> properties,
                                                  final TenantContext tenantContext, final InternalTenantContext internalTenantContext) {
         return getEntityPaginationFromPlugins(getAvailablePlugins(),
@@ -338,7 +345,7 @@ public class DirectPaymentProcessor extends ProcessorBase {
                                   );
     }
 
-    private DirectPayment toDirectPayment(final UUID directPaymentId, @Nullable final PaymentInfoPlugin pluginInfo, final InternalTenantContext tenantContext) {
+    public DirectPayment toDirectPayment(final UUID directPaymentId, @Nullable final PaymentInfoPlugin pluginInfo, final InternalTenantContext tenantContext) {
         final DirectPaymentModelDao paymentModelDao = paymentDao.getDirectPayment(directPaymentId, tenantContext);
         if (paymentModelDao == null) {
             log.warn("Unable to find direct payment id " + directPaymentId);
@@ -380,19 +387,20 @@ public class DirectPaymentProcessor extends ProcessorBase {
                                         curDirectPaymentModelDao.getPaymentMethodId(), curDirectPaymentModelDao.getPaymentNumber(), curDirectPaymentModelDao.getExternalKey(), sortedTransactions);
     }
 
-    private void postPaymentEvent(final Account account, final DirectPayment directPayment, final UUID directPaymentTransactionId, final InternalCallContext context) {
-        final BusInternalEvent event = buildPaymentEvent(account, directPayment, directPaymentTransactionId, context);
+    private void postPaymentEvent(final Account account, final DirectPayment directPayment, final String transactionExternalKey, final InternalCallContext context) {
+        final BusInternalEvent event = buildPaymentEvent(account, directPayment, transactionExternalKey, context);
         postPaymentEvent(event, account.getId(), context);
     }
 
-    private BusInternalEvent buildPaymentEvent(final Account account, final DirectPayment directPayment, final UUID directPaymentTransactionId, final InternalCallContext context) {
+    private BusInternalEvent buildPaymentEvent(final Account account, final DirectPayment directPayment, final String transactionExternalKey, final InternalCallContext context) {
         final DirectPaymentTransaction directPaymentTransaction = Iterables.<DirectPaymentTransaction>tryFind(directPayment.getTransactions(),
                                                                                                               new Predicate<DirectPaymentTransaction>() {
                                                                                                                   @Override
                                                                                                                   public boolean apply(final DirectPaymentTransaction input) {
-                                                                                                                      return input.getId().equals(directPaymentTransactionId);
+                                                                                                                      return input.getExternalKey().equals(transactionExternalKey);
                                                                                                                   }
-                                                                                                              }).get();
+                                                                                                              }
+                                                                                                             ).get();
 
         switch (directPaymentTransaction.getPaymentStatus()) {
             case SUCCESS:

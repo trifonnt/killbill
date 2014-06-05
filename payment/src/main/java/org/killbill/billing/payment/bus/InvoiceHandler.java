@@ -24,12 +24,9 @@ import org.killbill.billing.account.api.AccountApiException;
 import org.killbill.billing.account.api.AccountInternalApi;
 import org.killbill.billing.callcontext.InternalCallContext;
 import org.killbill.billing.events.InvoiceCreationInternalEvent;
-import org.killbill.billing.payment.api.PaymentApi;
 import org.killbill.billing.payment.api.PaymentApiException;
 import org.killbill.billing.payment.api.PaymentInternalApi;
 import org.killbill.billing.payment.api.PluginProperty;
-import org.killbill.billing.payment.api.svcs.RetryableDirectPaymentApi;
-import org.killbill.billing.payment.core.PaymentProcessor;
 import org.killbill.billing.util.callcontext.CallOrigin;
 import org.killbill.billing.util.callcontext.InternalCallContextFactory;
 import org.killbill.billing.util.callcontext.UserType;
@@ -42,7 +39,6 @@ import com.google.inject.Inject;
 
 public class InvoiceHandler {
 
-    private final PaymentProcessor paymentProcessor;
     private final AccountInternalApi accountApi;
     private final InternalCallContextFactory internalCallContextFactory;
     private final PaymentInternalApi paymentApi;
@@ -51,11 +47,9 @@ public class InvoiceHandler {
 
     @Inject
     public InvoiceHandler(final AccountInternalApi accountApi,
-                          final PaymentProcessor paymentProcessor,
                           final PaymentInternalApi paymentApi,
                           final InternalCallContextFactory internalCallContextFactory) {
         this.accountApi = accountApi;
-        this.paymentProcessor = paymentProcessor;
         this.internalCallContextFactory = internalCallContextFactory;
         this.paymentApi = paymentApi;
     }
@@ -71,7 +65,7 @@ public class InvoiceHandler {
             final InternalCallContext internalContext = internalCallContextFactory.createInternalCallContext(event.getSearchKey2(), event.getSearchKey1(), "PaymentRequestProcessor", CallOrigin.INTERNAL, UserType.SYSTEM, event.getUserToken());
             account = accountApi.getAccountById(event.getAccountId(), internalContext);
 
-            paymentApi.createPayment(account, event.getInvoiceId(), null, ImmutableList.<PluginProperty>of(),  internalContext);
+            paymentApi.createPayment(account, event.getInvoiceId(), null, ImmutableList.<PluginProperty>of(), internalContext);
         } catch (final AccountApiException e) {
             log.error("Failed to process invoice payment", e);
         } catch (final PaymentApiException e) {

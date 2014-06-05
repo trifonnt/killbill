@@ -50,6 +50,7 @@ import org.killbill.commons.locker.GlobalLocker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.collect.ImmutableMap;
 import com.google.inject.name.Named;
 
 import static org.killbill.billing.payment.glue.PaymentModule.PLUGIN_EXECUTOR_NAMED;
@@ -86,6 +87,7 @@ public class RetryableDirectPaymentProcessor extends ProcessorBase {
                                                          amount,
                                                          currency,
                                                          isEternalPayment,
+                                                         ImmutableMap.<UUID, BigDecimal>of(),
                                                          properties,
                                                          null,
                                                          callContext, internalCallContext);
@@ -121,6 +123,7 @@ public class RetryableDirectPaymentProcessor extends ProcessorBase {
                                                          amount,
                                                          currency,
                                                          isEternalPayment,
+                                                         ImmutableMap.<UUID, BigDecimal>of(),
                                                          properties,
                                                          null,
                                                          callContext, internalCallContext);
@@ -166,6 +169,7 @@ public class RetryableDirectPaymentProcessor extends ProcessorBase {
                                                          amount,
                                                          currency,
                                                          isEternalPayment,
+                                                         ImmutableMap.<UUID, BigDecimal>of(),
                                                          properties,
                                                          null,
                                                          callContext, internalCallContext);
@@ -197,6 +201,7 @@ public class RetryableDirectPaymentProcessor extends ProcessorBase {
                                                       transaction.getAmount(),
                                                       transaction.getCurrency(),
                                                       isExternalPayment,
+                                                      ImmutableMap.<UUID, BigDecimal>of(),
                                                       properties,
                                                       null,
                                                       callContext,
