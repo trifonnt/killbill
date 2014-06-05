@@ -18,32 +18,68 @@
 
 package org.killbill.billing.payment.api.svcs;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
 
+import javax.annotation.Nullable;
 import javax.inject.Inject;
 
 import org.killbill.billing.ErrorCode;
+import org.killbill.billing.ObjectType;
 import org.killbill.billing.account.api.Account;
+import org.killbill.billing.callcontext.InternalCallContext;
 import org.killbill.billing.callcontext.InternalTenantContext;
 import org.killbill.billing.payment.api.DirectPayment;
 import org.killbill.billing.payment.api.PaymentApiException;
 import org.killbill.billing.payment.api.PaymentInternalApi;
 import org.killbill.billing.payment.api.PaymentMethod;
 import org.killbill.billing.payment.api.PluginProperty;
+import org.killbill.billing.payment.api.TransactionType;
 import org.killbill.billing.payment.core.PaymentMethodProcessor;
 import org.killbill.billing.payment.core.PaymentProcessor;
+import org.killbill.billing.payment.core.sm.RetryableDirectPaymentAutomatonRunner;
+import org.killbill.billing.payment.retry.InvoiceRetryPluginApi;
+import org.killbill.billing.util.callcontext.CallContext;
+import org.killbill.billing.util.dao.NonEntityDao;
 
 public class DefaultPaymentInternalApi implements PaymentInternalApi {
 
     private final PaymentProcessor paymentProcessor;
     private final PaymentMethodProcessor methodProcessor;
 
+    private final RetryableDirectPaymentAutomatonRunner retryableDirectPaymentAutomatonRunner;
+private final NonEntityDao nonEntityDao;
+
     @Inject
-    public DefaultPaymentInternalApi(final PaymentProcessor paymentProcessor, final PaymentMethodProcessor methodProcessor) {
+    public DefaultPaymentInternalApi(final PaymentProcessor paymentProcessor, final PaymentMethodProcessor methodProcessor, final RetryableDirectPaymentAutomatonRunner retryableDirectPaymentAutomatonRunner, final NonEntityDao nonEntityDao) {
+        this.retryableDirectPaymentAutomatonRunner = retryableDirectPaymentAutomatonRunner;
         this.paymentProcessor = paymentProcessor;
         this.methodProcessor = methodProcessor;
+        this.nonEntityDao = nonEntityDao;
     }
+
+    @Override
+    public DirectPayment createPayment(final Account account, final UUID invoiceId,
+                                       @Nullable final BigDecimal amount, final Iterable<PluginProperty> properties, final InternalCallContext internalContext) throws PaymentApiException {
+
+        final CallContext callContext = internalContext.toCallContext(nonEntityDao.retrieveIdFromObject(internalContext.getTenantRecordId(), ObjectType.TENANT));
+        return retryableDirectPaymentAutomatonRunner.run(true,
+                                                         TransactionType.PURCHASE,
+                                                         account,
+                                                         account.getPaymentMethodId(),
+                                                         null,
+                                                         invoiceId.toString(),
+                                                         UUID.randomUUID().toString(),
+                                                         amount,
+                                                         account.getCurrency(),
+                                                         false,
+                                                         properties,
+                                                         InvoiceRetryPluginApi.PLUGIN_NAME,
+                                                         callContext,
+                                                         internalContext);
+    }
+
 
     @Override
     public DirectPayment getPayment(final UUID paymentId, final Iterable<PluginProperty> properties, final InternalTenantContext context) throws PaymentApiException {

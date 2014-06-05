@@ -19,8 +19,6 @@
 package org.killbill.billing.payment.api;
 
 import java.math.BigDecimal;
-import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -30,13 +28,10 @@ import java.util.UUID;
 
 import javax.annotation.Nullable;
 
-import org.joda.time.DateTime;
 import org.killbill.billing.ErrorCode;
 import org.killbill.billing.account.api.Account;
 import org.killbill.billing.callcontext.InternalCallContext;
 import org.killbill.billing.catalog.api.Currency;
-import org.killbill.billing.invoice.api.Invoice;
-import org.killbill.billing.invoice.api.InvoiceApiException;
 import org.killbill.billing.invoice.api.InvoiceInternalApi;
 import org.killbill.billing.osgi.api.OSGIServiceDescriptor;
 import org.killbill.billing.osgi.api.OSGIServiceRegistration;
@@ -45,32 +40,22 @@ import org.killbill.billing.payment.core.PaymentMethodProcessor;
 import org.killbill.billing.payment.core.PaymentProcessor;
 import org.killbill.billing.payment.core.RefundProcessor;
 import org.killbill.billing.payment.core.sm.RetryableDirectPaymentAutomatonRunner;
-import org.killbill.billing.payment.dao.DirectPaymentModelDao;
-import org.killbill.billing.payment.dao.DirectPaymentTransactionModelDao;
 import org.killbill.billing.payment.dao.PaymentDao;
-import org.killbill.billing.payment.retry.DefaultRetryPluginResult;
+import org.killbill.billing.payment.retry.InvoiceRetryPluginApi;
 import org.killbill.billing.retry.plugin.api.RetryPluginApi;
-import org.killbill.billing.retry.plugin.api.RetryPluginApiException;
-import org.killbill.billing.retry.plugin.api.UnknownEntryException;
 import org.killbill.billing.util.callcontext.CallContext;
 import org.killbill.billing.util.callcontext.InternalCallContextFactory;
 import org.killbill.billing.util.callcontext.TenantContext;
 import org.killbill.billing.util.config.PaymentConfig;
 import org.killbill.billing.util.entity.Pagination;
 import org.killbill.clock.Clock;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-import com.google.common.base.Predicate;
-import com.google.common.collect.Collections2;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Iterables;
 import com.google.inject.Inject;
 
 public class DefaultPaymentApi implements PaymentApi {
 
-    private final static String INVOICE_PLUGIN_NAME = "__INVOICE_RETRY_PLUGIN__";
 
     private final PaymentMethodProcessor methodProcessor;
     private final PaymentProcessor paymentProcessor;
@@ -112,7 +97,7 @@ public class DefaultPaymentApi implements PaymentApi {
 
             @Override
             public String getRegistrationName() {
-                return INVOICE_PLUGIN_NAME;
+                return InvoiceRetryPluginApi.PLUGIN_NAME;
             }
         };
         retryPluginRegistry.registerService(desc, new InvoiceRetryPluginApi(paymentConfig, invoiceApi, paymentDao, internalCallContextFactory, clock));
@@ -135,7 +120,7 @@ public class DefaultPaymentApi implements PaymentApi {
                                                          account.getCurrency(),
                                                          false,
                                                          properties,
-                                                         INVOICE_PLUGIN_NAME,
+                                                         InvoiceRetryPluginApi.PLUGIN_NAME,
                                                          context,
                                                          internalContext);
     }
@@ -154,7 +139,7 @@ public class DefaultPaymentApi implements PaymentApi {
                                                          account.getCurrency(),
                                                          true,
                                                          ImmutableList.<PluginProperty>of(),
-                                                         INVOICE_PLUGIN_NAME,
+                                                         InvoiceRetryPluginApi.PLUGIN_NAME,
                                                          context,
                                                          internalContext);
     }
@@ -175,39 +160,41 @@ public class DefaultPaymentApi implements PaymentApi {
 
     @Override
     public DirectPayment retryPayment(final Account account, final UUID paymentId, final Iterable<PluginProperty> properties, final CallContext context) throws PaymentApiException {
+        // STEPH to be implemented...
+        /*
         final InternalCallContext internalCallContext = internalCallContextFactory.createInternalCallContext(account.getId(), context);
         paymentProcessor.retryPaymentFromApi(paymentId, properties, context, internalCallContext);
         return getPayment(paymentId, false, properties, context);
+        */
+        return null;
     }
 
     @Override
-    public Pagination<DirectPayment> getPayments(final Long offset, final Long limit, final Iterable<PluginProperty> properties, final TenantContext context) {
-        return paymentProcessor.getPayments(offset, limit, properties, context, internalCallContextFactory.createInternalTenantContext(context));
+    public Pagination<DirectPayment> getPayments(final Long offset, final Long limit, final Iterable<PluginProperty> properties, final TenantContext tenantContext) {
+        return directPaymentProcessor.getPayments(offset, limit, properties, tenantContext, internalCallContextFactory.createInternalTenantContext(tenantContext));
     }
 
     @Override
     public Pagination<DirectPayment> getPayments(final Long offset, final Long limit, final String pluginName, final Iterable<PluginProperty> properties, final TenantContext tenantContext) throws PaymentApiException {
-        return paymentProcessor.getPayments(offset, limit, pluginName, properties, tenantContext, internalCallContextFactory.createInternalTenantContext(tenantContext));
+        return directPaymentProcessor.getPayments(offset, limit, pluginName, properties, tenantContext, internalCallContextFactory.createInternalTenantContext(tenantContext));
     }
 
     @Override
-    public DirectPayment getPayment(final UUID paymentId, final boolean withPluginInfo, final Iterable<PluginProperty> properties, final TenantContext context) throws PaymentApiException {
-        final DirectPayment payment = paymentProcessor.getPayment(paymentId, withPluginInfo, properties, context, internalCallContextFactory.createInternalTenantContext(context));
-        if (payment == null) {
-            throw new PaymentApiException(ErrorCode.PAYMENT_NO_SUCH_PAYMENT, paymentId);
-        }
-        return payment;
+    public DirectPayment getPayment(final UUID paymentId, final boolean withPluginInfo, final Iterable<PluginProperty> properties, final TenantContext tenantContext) throws PaymentApiException {
+        return directPaymentProcessor.getPayment(paymentId, withPluginInfo, properties, tenantContext, internalCallContextFactory.createInternalTenantContext(tenantContext));
     }
 
     @Override
     public Pagination<DirectPayment> searchPayments(final String searchKey, final Long offset, final Long limit, final Iterable<PluginProperty> properties, final TenantContext context) {
-        return paymentProcessor.searchPayments(searchKey, offset, limit, properties, context, internalCallContextFactory.createInternalTenantContext(context));
+        return directPaymentProcessor.searchPayments(searchKey, offset, limit, properties, context, internalCallContextFactory.createInternalTenantContext(context));
     }
 
     @Override
     public Pagination<DirectPayment> searchPayments(final String searchKey, final Long offset, final Long limit, final String pluginName, final Iterable<PluginProperty> properties, final TenantContext context) throws PaymentApiException {
-        return paymentProcessor.searchPayments(searchKey, offset, limit, pluginName, properties, context, internalCallContextFactory.createInternalTenantContext(context));
+        return directPaymentProcessor.searchPayments(searchKey, offset, limit, pluginName, properties, context, internalCallContextFactory.createInternalTenantContext(context));
     }
+
+    // STEPH Implement using directPaymentProcessor
 
     @Override
     public Pagination<DirectPayment> getRefunds(final Long offset, final Long limit, final Iterable<PluginProperty> properties, final TenantContext context) {
@@ -375,162 +362,4 @@ public class DefaultPaymentApi implements PaymentApi {
         return paymentMethods;
     }
 
-    private final static class InvoiceRetryPluginApi implements RetryPluginApi {
-
-        private final PaymentConfig paymentConfig;
-        private final InvoiceInternalApi invoiceApi;
-        private final PaymentDao paymentDao;
-        private final InternalCallContextFactory internalCallContextFactory;
-        private final Clock clock;
-
-        private final Logger logger = LoggerFactory.getLogger(InvoiceRetryPluginApi.class);
-
-        private InvoiceRetryPluginApi(final PaymentConfig paymentConfig, final InvoiceInternalApi invoiceApi, final PaymentDao paymentDao,
-                                      final InternalCallContextFactory internalCallContextFactory, final Clock clock) {
-            this.paymentConfig = paymentConfig;
-            this.invoiceApi = invoiceApi;
-            this.paymentDao = paymentDao;
-            this.internalCallContextFactory = internalCallContextFactory;
-            this.clock = clock;
-        }
-
-        @Override
-        public RetryPluginResult getPluginResult(RetryPluginContext retryPluginContext) throws RetryPluginApiException {
-            final InternalCallContext internalContext = internalCallContextFactory.createInternalCallContext(retryPluginContext);
-            final UUID invoiceId = UUID.fromString(retryPluginContext.getPaymentExternalKey());
-
-            try {
-                final Invoice invoice = rebalanceAndGetInvoice(invoiceId, internalContext);
-                final BigDecimal requestedAmount = validateAndComputePaymentAmount(invoice, retryPluginContext.getAmount(), retryPluginContext.isApiPayment());
-                final boolean isAborted = requestedAmount.compareTo(BigDecimal.ZERO) == 0;
-                return new DefaultRetryPluginResult(isAborted, requestedAmount);
-            } catch (InvoiceApiException e) {
-                throw new UnknownEntryException();
-            }
-        }
-
-        @Override
-        public DateTime getNextRetryDate(RetryPluginContext retryPluginContext)
-                throws RetryPluginApiException {
-            final InternalCallContext internalContext = internalCallContextFactory.createInternalCallContext(retryPluginContext);
-            return computeNextRetryDate(retryPluginContext.getPaymentExternalKey(), internalContext);
-        }
-
-        private DateTime computeNextRetryDate(final String paymentExternalKey, final InternalCallContext internalContext) {
-            final List<DirectPaymentTransactionModelDao> purchasedTransactions = getPurchasedTransactions(paymentExternalKey, internalContext);
-            if (purchasedTransactions.size() == 0) {
-                return null;
-            }
-            final DirectPaymentTransactionModelDao lastTransaction = purchasedTransactions.get(purchasedTransactions.size() - 1);
-            switch(lastTransaction.getPaymentStatus()) {
-                case PAYMENT_FAILURE:
-                    return getNextRetryDateForPaymentFailure(purchasedTransactions);
-
-                case UNKNOWN:
-                case PLUGIN_FAILURE:
-                    return getNextRetryDateForPluginFailure(purchasedTransactions);
-
-                default:
-                    return null;
-            }
-        }
-
-
-        private DateTime getNextRetryDateForPaymentFailure(final List<DirectPaymentTransactionModelDao> purchasedTransactions) {
-
-            DateTime result = null;
-            final List<Integer> retryDays = paymentConfig.getPaymentRetryDays();
-            final int retryCount = getNumberAttemptsInState(purchasedTransactions, PaymentStatus.PAYMENT_FAILURE);
-            if (retryCount < retryDays.size()) {
-                int retryInDays = 0;
-                final DateTime nextRetryDate = clock.getUTCNow();
-                try {
-                    retryInDays = retryDays.get(retryCount);
-                    result = nextRetryDate.plusDays(retryInDays);
-                } catch (NumberFormatException ex) {
-                    logger.error("Could not get retry day for retry count {}", retryCount);
-                }
-            }
-            return result;
-        }
-
-        private DateTime getNextRetryDateForPluginFailure(final List<DirectPaymentTransactionModelDao> purchasedTransactions) {
-
-            final int retryAttempt = getNumberAttemptsInState(purchasedTransactions, PaymentStatus.PAYMENT_FAILURE);
-            if (retryAttempt > paymentConfig.getPluginFailureRetryMaxAttempts()) {
-                return null;
-            }
-            int nbSec = paymentConfig.getPluginFailureRetryStart();
-            int remainingAttempts = retryAttempt;
-            while (--remainingAttempts > 0) {
-                nbSec = nbSec * paymentConfig.getPluginFailureRetryMultiplier();
-            }
-            return clock.getUTCNow().plusSeconds(nbSec);
-        }
-
-
-        private int getNumberAttemptsInState(final Collection<DirectPaymentTransactionModelDao> allTransactions, final PaymentStatus... statuses) {
-            if (allTransactions == null || allTransactions.size() == 0) {
-                return 0;
-            }
-            return Collections2.filter(allTransactions, new Predicate<DirectPaymentTransactionModelDao>() {
-                @Override
-                public boolean apply(final DirectPaymentTransactionModelDao input) {
-                    for (final PaymentStatus cur : statuses) {
-                        if (input.getPaymentStatus() == cur) {
-                            return true;
-                        }
-                    }
-                    return false;
-                }
-            }).size();
-        }
-
-        private List<DirectPaymentTransactionModelDao> getPurchasedTransactions(final String paymentExternalKey, final InternalCallContext internalContext) {
-            final DirectPaymentModelDao payment = paymentDao.getDirectPaymentByExternalKey(paymentExternalKey, internalContext);
-            if (payment == null) {
-                return Collections.emptyList();
-            }
-            final List<DirectPaymentTransactionModelDao> transactions =  paymentDao.getDirectTransactionsForDirectPayment(payment.getId(), internalContext);
-            if (transactions == null || transactions.size() == 0) {
-                return Collections.emptyList();
-            }
-            return ImmutableList.copyOf(Iterables.filter(transactions, new Predicate<DirectPaymentTransactionModelDao>() {
-                @Override
-                public boolean apply(final DirectPaymentTransactionModelDao input) {
-                    return input.getTransactionType() == TransactionType.PURCHASE;
-                }
-            }));
-        }
-
-
-        private Invoice rebalanceAndGetInvoice(final UUID invoiceId, final InternalCallContext context) throws InvoiceApiException {
-            final Invoice invoicePriorRebalancing = invoiceApi.getInvoiceById(invoiceId, context);
-            invoiceApi.consumeExistingCBAOnAccountWithUnpaidInvoices(invoicePriorRebalancing.getAccountId(), context);
-            final Invoice invoice = invoiceApi.getInvoiceById(invoiceId, context);
-            return invoice;
-        }
-
-        private BigDecimal validateAndComputePaymentAmount(final Invoice invoice, @Nullable final BigDecimal inputAmount, final boolean isApiPayment) {
-
-            if (invoice.getBalance().compareTo(BigDecimal.ZERO) <= 0) {
-                logger.info("Invoice " + invoice.getId() + " has already been paid");
-                return BigDecimal.ZERO;
-            }
-            if (isApiPayment &&
-                inputAmount != null &&
-                invoice.getBalance().compareTo(inputAmount) < 0) {
-                logger.info("Invoice " + invoice.getId() +
-                                              " has a balance of " + invoice.getBalance().floatValue() +
-                                               " less than retry payment amount of " + inputAmount.floatValue());
-                return BigDecimal.ZERO;
-            }
-            if (inputAmount == null) {
-                return invoice.getBalance();
-            } else {
-                return invoice.getBalance().compareTo(inputAmount) < 0 ? invoice.getBalance() : inputAmount;
-            }
-        }
-
-    }
 }

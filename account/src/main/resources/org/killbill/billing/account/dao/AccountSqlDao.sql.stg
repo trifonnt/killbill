@@ -31,7 +31,7 @@ tableFields(prefix) ::= <<
 >>
 
 tableValues() ::= <<
-  :transactionExternalKey
+  :externalKey
 , :email
 , :name
 , :firstNameLength
@@ -83,7 +83,7 @@ updatePaymentMethod() ::= <<
 getAccountByKey() ::= <<
     select <allTableFields()>
     from accounts
-    where external_key = :transactionExternalKey <AND_CHECK_TENANT()>;
+    where external_key = :externalKey <AND_CHECK_TENANT()>;
 >>
 
 searchQuery(prefix) ::= <<
@@ -97,6 +97,6 @@ searchQuery(prefix) ::= <<
 getIdFromKey() ::= <<
     SELECT id
     FROM accounts
-    WHERE external_key = :transactionExternalKey <AND_CHECK_TENANT()>;
+    WHERE external_key = :externalKey <AND_CHECK_TENANT()>;
 >>
 

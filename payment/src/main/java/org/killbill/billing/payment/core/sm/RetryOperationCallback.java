@@ -143,10 +143,9 @@ public abstract class RetryOperationCallback extends PluginOperation implements 
                     } else {
                         ((RetryableDirectPaymentStateContext) directPaymentStateContext).setRetryDate(retryDate);
                         throw new OperationException(e, OperationResult.FAILURE);
-
                     }
                 } catch (Exception e) {
-                    // STEPH_RETRY this will abort the retry logic, is that really what we want?
+                    // STEPH Any other exception we abort the retry logic
                     throw new OperationException(e, OperationResult.EXCEPTION);
                 }
                 return OperationResult.SUCCESS;

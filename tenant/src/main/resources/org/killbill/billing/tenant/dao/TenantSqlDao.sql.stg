@@ -13,7 +13,7 @@ tableFields(prefix) ::= <<
 >>
 
 tableValues() ::= <<
-  :transactionExternalKey
+  :externalKey
 , :apiKey
 , :createdDate
 , :createdBy
