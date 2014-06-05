@@ -18,33 +18,25 @@ package org.killbill.billing.payment.retry;
 
 import java.math.BigDecimal;
 
-import org.joda.time.DateTime;
 import org.killbill.billing.retry.plugin.api.RetryPluginApi.RetryPluginResult;
 
 public class DefaultRetryPluginResult implements RetryPluginResult {
 
     private final boolean isAborted;
-    private final DateTime nextRetryDate;
     private final BigDecimal adjustedRetryAmount;
 
-    public DefaultRetryPluginResult(final boolean isAborted, final DateTime nextRetryDate, final BigDecimal adjustedRetryAmount) {
+    public DefaultRetryPluginResult(final boolean isAborted, final BigDecimal adjustedRetryAmount) {
         this.isAborted = isAborted;
-        this.nextRetryDate = nextRetryDate;
         this.adjustedRetryAmount = adjustedRetryAmount;
     }
 
     public DefaultRetryPluginResult(final boolean isAborted) {
-        this(isAborted, null, null);
+        this(isAborted, null);
     }
 
     @Override
     public boolean isAborted() {
         return isAborted;
-    }
-
-    @Override
-    public DateTime getNextRetryDate() {
-        return nextRetryDate;
     }
 
     @Override

@@ -20,6 +20,7 @@ import org.joda.time.DateTime;
 import org.killbill.billing.payment.retry.DefaultRetryPluginResult;
 import org.killbill.billing.retry.plugin.api.RetryPluginApi;
 import org.killbill.billing.retry.plugin.api.RetryPluginApiException;
+import org.killbill.billing.retry.plugin.api.UnknownEntryException;
 
 public class MockRetryProviderPlugin implements RetryPluginApi {
 
@@ -39,7 +40,12 @@ public class MockRetryProviderPlugin implements RetryPluginApi {
     }
 
     @Override
-    public RetryPluginResult getRetryResult(final RetryPluginContext retryPluginContext) throws RetryPluginApiException {
-        return new DefaultRetryPluginResult(isAborted, nextRetryDate, null);
+    public RetryPluginResult getPluginResult(final RetryPluginContext retryPluginContext) throws RetryPluginApiException, UnknownEntryException {
+        return new DefaultRetryPluginResult(isAborted, null);
+    }
+
+    @Override
+    public DateTime getNextRetryDate(final RetryPluginContext retryPluginContext) throws RetryPluginApiException, UnknownEntryException {
+        return null;
     }
 }

@@ -56,11 +56,7 @@ import static org.killbill.billing.payment.glue.PaymentModule.PLUGIN_EXECUTOR_NA
 
 public class RetryableDirectPaymentProcessor extends ProcessorBase {
 
-    private final TagInternalApi tagApi;
     private final RetryableDirectPaymentAutomatonRunner retryableDirectPaymentAutomatonRunner;
-    private final DirectPaymentProcessor directPaymentProcessor;
-
-    private static final Logger log = LoggerFactory.getLogger(RetryableDirectPaymentProcessor.class);
 
     @Inject
     public RetryableDirectPaymentProcessor(final OSGIServiceRegistration<PaymentPluginApi> pluginRegistry,
@@ -72,21 +68,98 @@ public class RetryableDirectPaymentProcessor extends ProcessorBase {
                                            final PersistentBus eventBus,
                                            final GlobalLocker locker,
                                            @Named(PLUGIN_EXECUTOR_NAMED) final ExecutorService executor,
-                                           final TagInternalApi tagApi,
-                                           final DirectPaymentProcessor directPaymentProcessor,
                                            final RetryableDirectPaymentAutomatonRunner retryableDirectPaymentAutomatonRunner) {
         super(pluginRegistry, accountInternalApi, eventBus, paymentDao, nonEntityDao, tagUserApi, locker, executor, invoiceApi);
 
-        this.tagApi = tagApi;
-        this.directPaymentProcessor = directPaymentProcessor;
         this.retryableDirectPaymentAutomatonRunner = retryableDirectPaymentAutomatonRunner;
     }
 
-    public DirectPayment createAuthorization(final Account account, final UUID paymentMethodId, @Nullable final UUID directPaymentId, final BigDecimal amount, final Currency currency, final String paymentExternalKey, final String transactionExternalKey, final boolean isEternalPayment, final Iterable<PluginProperty> properties, final CallContext callContext, final InternalCallContext internalCallContext) throws PaymentApiException {
+    public DirectPayment createAuthorization(final Account account, final UUID paymentMethodId, @Nullable final UUID directPaymentId, final BigDecimal amount, final Currency currency, final String paymentExternalKey, final String transactionExternalKey,
+                                             final boolean isEternalPayment, final Iterable<PluginProperty> properties, final CallContext callContext, final InternalCallContext internalCallContext) throws PaymentApiException {
         return retryableDirectPaymentAutomatonRunner.run(true,
                                                          TransactionType.AUTHORIZE,
                                                          account,
                                                          paymentMethodId,
+                                                         directPaymentId,
+                                                         paymentExternalKey,
+                                                         transactionExternalKey,
+                                                         amount,
+                                                         currency,
+                                                         isEternalPayment,
+                                                         properties,
+                                                         null,
+                                                         callContext, internalCallContext);
+    }
+
+    public DirectPayment createCapture(final Account account, final UUID directPaymentId, final BigDecimal amount, final Currency currency,
+                                       final String transactionExternalKey,
+                                       final boolean isEternalPayment, final Iterable<PluginProperty> properties,
+                                       final CallContext callContext, final InternalCallContext internalCallContext) throws PaymentApiException {
+        return retryableDirectPaymentAutomatonRunner.run(true,
+                                                         TransactionType.CAPTURE,
+                                                         account,
+                                                         directPaymentId,
+                                                         transactionExternalKey,
+                                                         amount,
+                                                         currency,
+                                                         isEternalPayment,
+                                                         properties,
+                                                         null,
+                                                         callContext, internalCallContext);
+    }
+
+    public DirectPayment createPurchase(final Account account, final UUID paymentMethodId, final UUID directPaymentId, final BigDecimal amount, final Currency currency,
+                                        final String paymentExternalKey, final String transactionExternalKey, final boolean isEternalPayment, final Iterable<PluginProperty> properties,
+                                        final CallContext callContext, final InternalCallContext internalCallContext) throws PaymentApiException {
+        return retryableDirectPaymentAutomatonRunner.run(true,
+                                                         TransactionType.PURCHASE,
+                                                         account,
+                                                         paymentMethodId,
+                                                         directPaymentId,
+                                                         paymentExternalKey,
+                                                         transactionExternalKey,
+                                                         amount,
+                                                         currency,
+                                                         isEternalPayment,
+                                                         properties,
+                                                         null,
+                                                         callContext, internalCallContext);
+    }
+
+    public DirectPayment createVoid(final Account account, final UUID directPaymentId, final String transactionExternalKey, final boolean isEternalPayment,
+                                    final Iterable<PluginProperty> properties, final CallContext callContext, final InternalCallContext internalCallContext) throws PaymentApiException {
+        return retryableDirectPaymentAutomatonRunner.run(true,
+                                                         TransactionType.VOID,
+                                                         account,
+                                                         directPaymentId,
+                                                         transactionExternalKey,
+                                                         isEternalPayment,
+                                                         properties,
+                                                         null,
+                                                         callContext, internalCallContext);
+    }
+
+    public DirectPayment createRefund(final Account account, final UUID directPaymentId, final BigDecimal amount, final Currency currency, final String transactionExternalKey,
+                                      final boolean isEternalPayment, final Iterable<PluginProperty> properties, final CallContext callContext, final InternalCallContext internalCallContext) throws PaymentApiException {
+        return retryableDirectPaymentAutomatonRunner.run(true,
+                                                         TransactionType.REFUND,
+                                                         account,
+                                                         directPaymentId,
+                                                         transactionExternalKey,
+                                                         amount,
+                                                         currency,
+                                                         isEternalPayment,
+                                                         properties,
+                                                         null,
+                                                         callContext, internalCallContext);
+    }
+
+    public DirectPayment createCredit(final Account account, final UUID directPaymentId, final BigDecimal amount, final Currency currency, final String paymentExternalKey,
+                                      final String transactionExternalKey, final boolean isEternalPayment, final Iterable<PluginProperty> properties, final CallContext callContext, final InternalCallContext internalCallContext) throws PaymentApiException {
+        return retryableDirectPaymentAutomatonRunner.run(true,
+                                                         TransactionType.CREDIT,
+                                                         account,
+                                                         null,
                                                          directPaymentId,
                                                          paymentExternalKey,
                                                          transactionExternalKey,
@@ -113,35 +186,21 @@ public class RetryableDirectPaymentProcessor extends ProcessorBase {
             final CallContext callContext = internalCallContext.toCallContext(tenantId);
 
             final State state = retryableDirectPaymentAutomatonRunner.fetchState(attempt.getStateName());
-            switch (transaction.getTransactionType()) {
-                case AUTHORIZE:
-                    retryableDirectPaymentAutomatonRunner.run(state,
-                                                              false,
-                                                              TransactionType.AUTHORIZE,
-                                                              account,
-                                                              payment.getPaymentMethodId(),
-                                                              payment.getId(),
-                                                              payment.getExternalKey(),
-                                                              transactionExternalKey,
-                                                              transaction.getAmount(),
-                                                              transaction.getCurrency(),
-                                                              isExternalPayment,
-                                                              properties,
-                                                              null,
-                                                              callContext,
-                                                              internalCallContext);
-                    break;
-                case CAPTURE:
-                    break;
-                case PURCHASE:
-                    break;
-                case CREDIT:
-                    break;
-                case VOID:
-                    break;
-                default:
-                    throw new IllegalStateException("Unexpected transactionType " + transaction.getTransactionType());
-            }
+            retryableDirectPaymentAutomatonRunner.run(state,
+                                                      false,
+                                                      transaction.getTransactionType(),
+                                                      account,
+                                                      payment.getPaymentMethodId(),
+                                                      payment.getId(),
+                                                      payment.getExternalKey(),
+                                                      transactionExternalKey,
+                                                      transaction.getAmount(),
+                                                      transaction.getCurrency(),
+                                                      isExternalPayment,
+                                                      properties,
+                                                      null,
+                                                      callContext,
+                                                      internalCallContext);
 
         } catch (AccountApiException e) {
             e.printStackTrace();
@@ -150,4 +209,5 @@ public class RetryableDirectPaymentProcessor extends ProcessorBase {
         }
 
     }
+
 }

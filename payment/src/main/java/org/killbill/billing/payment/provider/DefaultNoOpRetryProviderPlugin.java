@@ -20,7 +20,7 @@ import org.joda.time.DateTime;
 import org.killbill.billing.payment.retry.DefaultRetryPluginResult;
 import org.killbill.billing.retry.plugin.api.RetryPluginApi;
 import org.killbill.billing.retry.plugin.api.RetryPluginApiException;
-import org.killbill.billing.util.callcontext.CallContext;
+import org.killbill.billing.retry.plugin.api.UnknownEntryException;
 
 public class DefaultNoOpRetryProviderPlugin implements RetryPluginApi {
 
@@ -29,13 +29,14 @@ public class DefaultNoOpRetryProviderPlugin implements RetryPluginApi {
     private DateTime nextRetryDate;
 
     @Override
-    public RetryPluginResult getRetryResult(final RetryPluginContext retryPluginContext) throws RetryPluginApiException {
-        if (retryPluginApiException != null) {
-            throw retryPluginApiException;
-        }
-        return new DefaultRetryPluginResult(isRetryAborted, nextRetryDate, null);
+    public RetryPluginResult getPluginResult(final RetryPluginContext retryPluginContext) throws RetryPluginApiException {
+        return new DefaultRetryPluginResult(isRetryAborted, null);
     }
 
+    @Override
+    public DateTime getNextRetryDate(final RetryPluginContext retryPluginContext) throws RetryPluginApiException {
+        return nextRetryDate;
+    }
 
     public DefaultNoOpRetryProviderPlugin setRetryPluginApiException(final RetryPluginApiException retryPluginApiException) {
         this.retryPluginApiException = retryPluginApiException;

@@ -47,11 +47,11 @@ import org.killbill.billing.payment.core.RefundProcessor;
 import org.killbill.billing.payment.core.sm.RetryableDirectPaymentAutomatonRunner;
 import org.killbill.billing.payment.dao.DirectPaymentModelDao;
 import org.killbill.billing.payment.dao.DirectPaymentTransactionModelDao;
-import org.killbill.billing.payment.dao.PaymentAttemptModelDao;
 import org.killbill.billing.payment.dao.PaymentDao;
 import org.killbill.billing.payment.retry.DefaultRetryPluginResult;
 import org.killbill.billing.retry.plugin.api.RetryPluginApi;
 import org.killbill.billing.retry.plugin.api.RetryPluginApiException;
+import org.killbill.billing.retry.plugin.api.UnknownEntryException;
 import org.killbill.billing.util.callcontext.CallContext;
 import org.killbill.billing.util.callcontext.InternalCallContextFactory;
 import org.killbill.billing.util.callcontext.TenantContext;
@@ -124,7 +124,6 @@ public class DefaultPaymentApi implements PaymentApi {
                                        @Nullable final BigDecimal amount, final Iterable<PluginProperty> properties, final CallContext context) throws PaymentApiException {
 
         final InternalCallContext internalContext = internalCallContextFactory.createInternalCallContext(account.getId(), context);
-
         return retryableDirectPaymentAutomatonRunner.run(true,
                                                          TransactionType.PURCHASE,
                                                          account,
@@ -143,20 +142,35 @@ public class DefaultPaymentApi implements PaymentApi {
 
     @Override
     public DirectPayment createExternalPayment(final Account account, final UUID invoiceId, final BigDecimal amount, final CallContext context) throws PaymentApiException {
-        return paymentProcessor.createPayment(account, invoiceId, amount,
-                                              true, true, ImmutableList.<PluginProperty>of(), context, internalCallContextFactory.createInternalCallContext(account.getId(), context)
-                                             );
+        final InternalCallContext internalContext = internalCallContextFactory.createInternalCallContext(account.getId(), context);
+        return retryableDirectPaymentAutomatonRunner.run(true,
+                                                         TransactionType.PURCHASE,
+                                                         account,
+                                                         account.getPaymentMethodId(),
+                                                         null,
+                                                         invoiceId.toString(),
+                                                         UUID.randomUUID().toString(),
+                                                         amount,
+                                                         account.getCurrency(),
+                                                         true,
+                                                         ImmutableList.<PluginProperty>of(),
+                                                         INVOICE_PLUGIN_NAME,
+                                                         context,
+                                                         internalContext);
     }
 
     @Override
     public void notifyPendingPaymentOfStateChanged(final Account account, final UUID paymentId, final boolean isSuccess, final CallContext context) throws PaymentApiException {
+    // STEPH should that even be part of this API?
+/*
         paymentProcessor.notifyPendingPaymentOfStateChanged(account, paymentId, isSuccess,
                                                             internalCallContextFactory.createInternalCallContext(account.getId(), context));
+                                                            */
     }
 
     @Override
     public void notifyPaymentOfChargeback(final Account account, final UUID paymentId, final BigDecimal amount, final Currency currency, final CallContext callContext) throws PaymentApiException {
-        // TODO Implement when merging with DirectPaymentApi
+        // STEPH TODO Implement when merging with DirectPaymentApi
     }
 
     @Override
@@ -380,27 +394,26 @@ public class DefaultPaymentApi implements PaymentApi {
             this.clock = clock;
         }
 
-
         @Override
-        public RetryPluginResult getRetryResult(final RetryPluginContext retryPluginContext) throws RetryPluginApiException {
-
+        public RetryPluginResult getPluginResult(RetryPluginContext retryPluginContext) throws RetryPluginApiException {
             final InternalCallContext internalContext = internalCallContextFactory.createInternalCallContext(retryPluginContext);
             final UUID invoiceId = UUID.fromString(retryPluginContext.getPaymentExternalKey());
 
-            final BigDecimal requestedAmount;
-            final DateTime nextRetryDate;
             try {
                 final Invoice invoice = rebalanceAndGetInvoice(invoiceId, internalContext);
-                if (invoice == null || invoice.isMigrationInvoice()) {
-                    logger.error("Received invoice for payment that is a migration invoice - don't know how to handle those yet: {}", invoice);
-                    return new DefaultRetryPluginResult(true);
-                }
-                requestedAmount = validateAndComputePaymentAmount(invoice, retryPluginContext.getAmount(), retryPluginContext.isApiPayment());
-                nextRetryDate = computeNextRetryDate(retryPluginContext.getPaymentExternalKey(), internalContext);
+                final BigDecimal requestedAmount = validateAndComputePaymentAmount(invoice, retryPluginContext.getAmount(), retryPluginContext.isApiPayment());
+                final boolean isAborted = requestedAmount.compareTo(BigDecimal.ZERO) == 0;
+                return new DefaultRetryPluginResult(isAborted, requestedAmount);
             } catch (InvoiceApiException e) {
-                return new DefaultRetryPluginResult(true);
+                throw new UnknownEntryException();
             }
-            return new DefaultRetryPluginResult(false, nextRetryDate, requestedAmount);
+        }
+
+        @Override
+        public DateTime getNextRetryDate(RetryPluginContext retryPluginContext)
+                throws RetryPluginApiException {
+            final InternalCallContext internalContext = internalCallContextFactory.createInternalCallContext(retryPluginContext);
+            return computeNextRetryDate(retryPluginContext.getPaymentExternalKey(), internalContext);
         }
 
         private DateTime computeNextRetryDate(final String paymentExternalKey, final InternalCallContext internalContext) {
@@ -498,20 +511,25 @@ public class DefaultPaymentApi implements PaymentApi {
             return invoice;
         }
 
-        private BigDecimal validateAndComputePaymentAmount(final Invoice invoice, @Nullable final BigDecimal inputAmount, final boolean isInstantPayment)
-                throws RetryPluginApiException {
+        private BigDecimal validateAndComputePaymentAmount(final Invoice invoice, @Nullable final BigDecimal inputAmount, final boolean isApiPayment) {
 
             if (invoice.getBalance().compareTo(BigDecimal.ZERO) <= 0) {
-                throw new RetryPluginApiException("Invoice " + invoice.getId() + " has already been paid");
+                logger.info("Invoice " + invoice.getId() + " has already been paid");
+                return BigDecimal.ZERO;
             }
-            if (isInstantPayment &&
+            if (isApiPayment &&
                 inputAmount != null &&
                 invoice.getBalance().compareTo(inputAmount) < 0) {
-                throw new RetryPluginApiException("Invoice " + invoice.getId() +
+                logger.info("Invoice " + invoice.getId() +
                                               " has a balance of " + invoice.getBalance().floatValue() +
                                                " less than retry payment amount of " + inputAmount.floatValue());
+                return BigDecimal.ZERO;
             }
-            return inputAmount != null ? inputAmount : invoice.getBalance();
+            if (inputAmount == null) {
+                return invoice.getBalance();
+            } else {
+                return invoice.getBalance().compareTo(inputAmount) < 0 ? invoice.getBalance() : inputAmount;
+            }
         }
 
     }

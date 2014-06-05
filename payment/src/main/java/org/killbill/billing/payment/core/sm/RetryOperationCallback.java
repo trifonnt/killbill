@@ -21,6 +21,7 @@ import java.util.Set;
 
 import javax.annotation.Nullable;
 
+import org.joda.time.DateTime;
 import org.killbill.automaton.Operation.OperationCallback;
 import org.killbill.automaton.OperationException;
 import org.killbill.automaton.OperationResult;
@@ -63,7 +64,7 @@ public abstract class RetryOperationCallback extends PluginOperation implements 
         if (pluginName != null) {
             final RetryPluginApi plugin = retryPluginRegistry.getServiceForName(pluginName);
             try {
-                final RetryPluginResult result = plugin.getRetryResult(retryContext);
+                final RetryPluginResult result = plugin.getPluginResult(retryContext);
                 return result;
             } catch (UnknownEntryException e) {
                 return new DefaultRetryPluginResult(true);
@@ -74,14 +75,28 @@ public abstract class RetryOperationCallback extends PluginOperation implements 
         for (String cur : allServices) {
             final RetryPluginApi plugin = retryPluginRegistry.getServiceForName(cur);
             try {
-                final RetryPluginResult result = plugin.getRetryResult(retryContext);
-                if (!result.isAborted()) {
-                    return result;
-                }
+                return plugin.getPluginResult(retryContext);
             } catch (UnknownEntryException ignore) {
             }
         }
         return new DefaultRetryPluginResult(true);
+    }
+
+    private DateTime getNextRetryDate(@Nullable final String pluginName, final RetryPluginContext retryContext) {
+        try {
+            if (pluginName != null) {
+                final RetryPluginApi plugin = retryPluginRegistry.getServiceForName(pluginName);
+                return plugin.getNextRetryDate(retryContext);
+            }
+
+            final Set<String> allServices = retryPluginRegistry.getAllServices();
+            for (String cur : allServices) {
+                final RetryPluginApi plugin = retryPluginRegistry.getServiceForName(cur);
+                return plugin.getNextRetryDate(retryContext);
+            }
+        } catch (RetryPluginApiException ignore) {
+        }
+        return null;
     }
 
     @Override
@@ -122,11 +137,13 @@ public abstract class RetryOperationCallback extends PluginOperation implements 
                     final DirectPayment result = doPluginOperation();
                     ((RetryableDirectPaymentStateContext) directPaymentStateContext).setResult(result);
                 } catch (PaymentApiException e) {
-                    if (pluginResult.getNextRetryDate() == null) {
+                    final DateTime retryDate = getNextRetryDate(retryableDirectPaymentStateContext.getPluginName(), retryContext);
+                    if (retryDate == null) {
                         throw new OperationException(e, OperationResult.EXCEPTION);
                     } else {
-                        ((RetryableDirectPaymentStateContext) directPaymentStateContext).setRetryDate(pluginResult.getNextRetryDate());
+                        ((RetryableDirectPaymentStateContext) directPaymentStateContext).setRetryDate(retryDate);
                         throw new OperationException(e, OperationResult.FAILURE);
+
                     }
                 } catch (Exception e) {
                     // STEPH_RETRY this will abort the retry logic, is that really what we want?

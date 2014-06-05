@@ -134,6 +134,7 @@ public class TestDirectPaymentAutomatonDAOHelper extends PaymentTestSuiteWithEmb
                                                                   amount,
                                                                   currency,
                                                                   false,
+                                                                  false,
                                                                   ImmutableList.<PluginProperty>of(),
                                                                   internalCallContext,
                                                                   callContext);

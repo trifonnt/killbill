@@ -20,14 +20,19 @@ import org.joda.time.DateTime;
 import org.killbill.billing.payment.retry.DefaultRetryPluginResult;
 import org.killbill.billing.retry.plugin.api.RetryPluginApi;
 import org.killbill.billing.retry.plugin.api.RetryPluginApiException;
+import org.killbill.billing.retry.plugin.api.UnknownEntryException;
 
 public class DefaultRetryProviderPlugin implements RetryPluginApi {
 
     public static final String PLUGIN_NAME = "__DEFAULT_RETRY__";
 
     @Override
-    public RetryPluginResult getRetryResult(final RetryPluginContext retryPluginContext) throws RetryPluginApiException {
-        return new DefaultRetryPluginResult(false, null, null);
+    public RetryPluginResult getPluginResult(final RetryPluginContext retryPluginContext) throws RetryPluginApiException, UnknownEntryException {
+        return new DefaultRetryPluginResult(false, null);
     }
 
+    @Override
+    public DateTime getNextRetryDate(final RetryPluginContext retryPluginContext) throws RetryPluginApiException, UnknownEntryException {
+        return null;
+    }
 }

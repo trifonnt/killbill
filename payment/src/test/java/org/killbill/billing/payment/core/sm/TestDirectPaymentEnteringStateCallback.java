@@ -64,6 +64,7 @@ public class TestDirectPaymentEnteringStateCallback extends PaymentTestSuiteWith
                                                                   new BigDecimal("192.3920111"),
                                                                   Currency.BRL,
                                                                   false,
+                                                                  false,
                                                                   ImmutableList.<PluginProperty>of(),
                                                                   internalCallContext,
                                                                   callContext);
