@@ -41,7 +41,6 @@ import org.killbill.billing.account.api.AccountUserApi;
 import org.killbill.billing.api.TestApiListener;
 import org.killbill.billing.api.TestApiListener.NextEvent;
 import org.killbill.billing.beatrix.BeatrixTestSuiteWithEmbeddedDB;
-import org.killbill.billing.beatrix.osgi.SetupBundleWithAssertion;
 import org.killbill.billing.beatrix.util.AccountChecker;
 import org.killbill.billing.beatrix.util.InvoiceChecker;
 import org.killbill.billing.beatrix.util.PaymentChecker;
@@ -224,9 +223,6 @@ public class TestIntegrationBase extends BeatrixTestSuiteWithEmbeddedDB {
     public void beforeClass() throws Exception {
         final Injector g = Guice.createInjector(Stage.PRODUCTION, new BeatrixIntegrationModule(configSource));
         g.injectMembers(this);
-
-        final SetupBundleWithAssertion setupTest = new SetupBundleWithAssertion("whatever", osgiConfig, "whatever");
-        setupTest.cleanBundleInstallDir();
     }
 
     @BeforeMethod(groups = "slow")

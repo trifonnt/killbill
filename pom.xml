@@ -41,11 +41,9 @@
         <module>usage</module>
         <module>util</module>
         <module>jaxrs</module>
-        <module>server</module>
         <module>tenant</module>
-        <module>osgi</module>
-        <module>osgi-bundles</module>
         <module>currency</module>
+        <module>profiles</module>
     </modules>
     <scm>
         <connection>scm:git:git://github.com/killbill/killbill.git</connection>
