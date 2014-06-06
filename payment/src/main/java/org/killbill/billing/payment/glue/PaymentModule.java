@@ -48,24 +48,22 @@ import org.killbill.billing.payment.retry.FailedPaymentRetryService;
 import org.killbill.billing.payment.retry.FailedPaymentRetryService.FailedPaymentRetryServiceScheduler;
 import org.killbill.billing.payment.retry.PluginFailureRetryService;
 import org.killbill.billing.payment.retry.PluginFailureRetryService.PluginFailureRetryServiceScheduler;
+import org.killbill.billing.platform.api.KillbillConfigSource;
 import org.killbill.billing.util.config.PaymentConfig;
-import org.skife.config.ConfigSource;
+import org.killbill.billing.util.glue.KillBillModule;
 import org.skife.config.ConfigurationObjectFactory;
 
-import com.google.inject.AbstractModule;
 import com.google.inject.TypeLiteral;
 import com.google.inject.name.Names;
 
-public class PaymentModule extends AbstractModule {
+public class PaymentModule extends KillBillModule {
 
     private static final String PLUGIN_THREAD_PREFIX = "Plugin-th-";
 
     public static final String PLUGIN_EXECUTOR_NAMED = "PluginExecutor";
 
-    protected ConfigSource configSource;
-
-    public PaymentModule(final ConfigSource configSource) {
-        this.configSource = configSource;
+    public PaymentModule(final KillbillConfigSource configSource) {
+        super(configSource);
     }
 
     protected void installPaymentDao() {
@@ -104,7 +102,7 @@ public class PaymentModule extends AbstractModule {
 
     @Override
     protected void configure() {
-        final ConfigurationObjectFactory factory = new ConfigurationObjectFactory(configSource);
+        final ConfigurationObjectFactory factory = new ConfigurationObjectFactory(skifeConfigSource);
         final PaymentConfig paymentConfig = factory.build(PaymentConfig.class);
 
         bind(PaymentConfig.class).toInstance(paymentConfig);

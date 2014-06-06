@@ -17,18 +17,14 @@
 
 package org.killbill.billing.payment;
 
-import java.io.File;
-import java.nio.file.Files;
-
 import org.killbill.automaton.DefaultStateMachineConfig;
 import org.killbill.automaton.dot.DefaultStateMachineConfigDOTGenerator;
-import org.killbill.billing.util.UtilTestSuiteNoDB;
 import org.killbill.xmlloader.XMLLoader;
 import org.testng.annotations.Test;
 
 import com.google.common.io.Resources;
 
-public class TestDefaultStateMachineConfigDOTGenerator extends UtilTestSuiteNoDB {
+public class TestDefaultStateMachineConfigDOTGenerator extends PaymentTestSuiteNoDB {
 
     @Test(groups = "fast")
     public void testStateMachine() throws Exception {
