@@ -1,7 +1,9 @@
 /*
  * Copyright 2010-2011 Ning, Inc.
+ * Copyright 2014 Groupon, Inc
+ * Copyright 2014 The Billing Project, LLC
  *
- * Ning licenses this file to you under the Apache License, version 2.0
+ * The Billing Project licenses this file to you under the Apache License, version 2.0
  * (the "License"); you may not use this file except in compliance with the
  * License.  You may obtain a copy of the License at:
  *
@@ -16,26 +18,25 @@
 
 package org.killbill.billing.mock.glue;
 
-import org.skife.config.ConfigSource;
-import org.skife.config.ConfigurationObjectFactory;
-
+import org.killbill.billing.platform.api.KillbillConfigSource;
+import org.killbill.billing.util.glue.NotificationQueueModule;
 import org.killbill.notificationq.MockNotificationQueueService;
 import org.killbill.notificationq.api.NotificationQueueConfig;
 import org.killbill.notificationq.api.NotificationQueueService;
-import org.killbill.billing.util.glue.NotificationQueueModule;
+import org.skife.config.ConfigurationObjectFactory;
 
 import com.google.common.collect.ImmutableMap;
 
 public class MockNotificationQueueModule extends NotificationQueueModule {
 
-    public MockNotificationQueueModule(final ConfigSource configSource) {
+    public MockNotificationQueueModule(final KillbillConfigSource configSource) {
         super(configSource);
     }
 
     @Override
     protected void configureNotificationQueueConfig() {
-        final NotificationQueueConfig config = new ConfigurationObjectFactory(configSource).buildWithReplacements(NotificationQueueConfig.class,
-                                                                                                                  ImmutableMap.<String, String>of("instanceName", "main"));
+        final NotificationQueueConfig config = new ConfigurationObjectFactory(skifeConfigSource).buildWithReplacements(NotificationQueueConfig.class,
+                                                                                                                       ImmutableMap.<String, String>of("instanceName", "main"));
         bind(NotificationQueueConfig.class).toInstance(config);
     }
 
@@ -44,5 +45,4 @@ public class MockNotificationQueueModule extends NotificationQueueModule {
         bind(NotificationQueueService.class).to(MockNotificationQueueService.class).asEagerSingleton();
         configureNotificationQueueConfig();
     }
-
 }

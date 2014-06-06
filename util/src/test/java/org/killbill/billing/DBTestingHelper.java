@@ -1,7 +1,9 @@
 /*
  * Copyright 2010-2013 Ning, Inc.
+ * Copyright 2014 Groupon, Inc
+ * Copyright 2014 The Billing Project, LLC
  *
- * Ning licenses this file to you under the Apache License, version 2.0
+ * The Billing Project licenses this file to you under the Apache License, version 2.0
  * (the "License"); you may not use this file except in compliance with the
  * License.  You may obtain a copy of the License at:
  *
@@ -18,16 +20,18 @@ package org.killbill.billing;
 
 import java.io.IOException;
 
-import org.skife.jdbi.v2.IDBI;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
+import org.killbill.billing.util.dao.AuditLogModelDaoMapper;
+import org.killbill.billing.util.dao.RecordIdIdMappingsMapper;
+import org.killbill.billing.util.io.IOUtils;
 import org.killbill.commons.embeddeddb.EmbeddedDB;
 import org.killbill.commons.embeddeddb.h2.H2EmbeddedDB;
 import org.killbill.commons.embeddeddb.mysql.MySQLEmbeddedDB;
 import org.killbill.commons.embeddeddb.mysql.MySQLStandaloneDB;
-import org.killbill.billing.dbi.DBIProvider;
-import org.killbill.billing.util.io.IOUtils;
+import org.killbill.commons.jdbi.guice.DBIProvider;
+import org.skife.jdbi.v2.DBI;
+import org.skife.jdbi.v2.IDBI;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.google.common.io.Resources;
 
@@ -59,7 +63,10 @@ public class DBTestingHelper {
     }
 
     public static synchronized IDBI getDBI() throws IOException {
-        return new DBIProvider(get().getDataSource()).get();
+        final DBI dbi = (DBI) new DBIProvider(get().getDataSource()).get();
+        dbi.registerMapper(new AuditLogModelDaoMapper());
+        dbi.registerMapper(new RecordIdIdMappingsMapper());
+        return dbi;
     }
 
     public static synchronized void start() throws IOException {
