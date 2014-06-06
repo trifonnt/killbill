@@ -41,8 +41,6 @@ import org.killbill.billing.account.api.AccountUserApi;
 import org.killbill.billing.api.TestApiListener;
 import org.killbill.billing.api.TestApiListener.NextEvent;
 import org.killbill.billing.beatrix.BeatrixTestSuiteWithEmbeddedDB;
-import org.killbill.billing.beatrix.glue.BeatrixModule;
-import org.killbill.billing.beatrix.lifecycle.Lifecycle;
 import org.killbill.billing.beatrix.osgi.SetupBundleWithAssertion;
 import org.killbill.billing.beatrix.util.AccountChecker;
 import org.killbill.billing.beatrix.util.InvoiceChecker;
@@ -67,7 +65,11 @@ import org.killbill.billing.invoice.api.InvoicePaymentApi;
 import org.killbill.billing.invoice.api.InvoiceService;
 import org.killbill.billing.invoice.api.InvoiceUserApi;
 import org.killbill.billing.junction.BlockingInternalApi;
+import org.killbill.billing.lifecycle.api.BusService;
+import org.killbill.billing.lifecycle.api.Lifecycle;
 import org.killbill.billing.mock.MockAccountBuilder;
+import org.killbill.billing.osgi.api.ExternalBus;
+import org.killbill.billing.osgi.config.OSGIConfig;
 import org.killbill.billing.overdue.OverdueUserApi;
 import org.killbill.billing.overdue.wrapper.OverdueWrapperFactory;
 import org.killbill.billing.payment.api.Payment;
@@ -88,15 +90,12 @@ import org.killbill.billing.util.api.TagApiException;
 import org.killbill.billing.util.api.TagDefinitionApiException;
 import org.killbill.billing.util.api.TagUserApi;
 import org.killbill.billing.util.cache.CacheControllerDispatcher;
-import org.killbill.billing.util.config.OSGIConfig;
-import org.killbill.billing.util.svcsapi.bus.BusService;
 import org.killbill.billing.util.tag.ControlTagType;
 import org.killbill.billing.util.tag.Tag;
 import org.killbill.bus.api.PersistentBus;
 import org.skife.jdbi.v2.IDBI;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.testng.Assert;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
@@ -187,7 +186,7 @@ public class TestIntegrationBase extends BeatrixTestSuiteWithEmbeddedDB {
     protected AccountChecker accountChecker;
 
     @Inject
-    @Named(BeatrixModule.EXTERNAL_BUS)
+    @Named(ExternalBus.EXTERNAL_BUS)
     protected PersistentBus externalBus;
 
     @Inject
