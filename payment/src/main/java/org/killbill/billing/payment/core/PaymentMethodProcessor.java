@@ -268,14 +268,21 @@ public class PaymentMethodProcessor extends ProcessorBase {
         return null;
     }
 
-    public ExternalPaymentProviderPlugin getExternalPaymentProviderPlugin(final Account account, final Iterable<PluginProperty> properties, final CallContext callContext, final InternalCallContext context) throws PaymentApiException {
+    public UUID createOrGetExternalPaymentMethod(final Account account, final Iterable<PluginProperty> properties, final CallContext callContext, final InternalCallContext context) throws PaymentApiException {
         // Check if this account has already used the external payment plugin
         // If not, it's the first time - add a payment method for it
-        if (getExternalPaymentMethod(account, properties, callContext, context) == null) {
-            final DefaultNoOpPaymentMethodPlugin props = new DefaultNoOpPaymentMethodPlugin(UUID.randomUUID().toString(), false, properties);
-            addPaymentMethod(ExternalPaymentProviderPlugin.PLUGIN_NAME, account, false, props, properties, callContext, context);
+        PaymentMethod externalPaymentMethod = getExternalPaymentMethod(account, properties, callContext, context);
+        if (externalPaymentMethod != null) {
+            return externalPaymentMethod.getId();
         }
+        final DefaultNoOpPaymentMethodPlugin props = new DefaultNoOpPaymentMethodPlugin(UUID.randomUUID().toString(), false, properties);
+        return addPaymentMethod(ExternalPaymentProviderPlugin.PLUGIN_NAME, account, false, props, properties, callContext, context);
+    }
 
+    public ExternalPaymentProviderPlugin createPaymentMethodAndGetExternalPaymentProviderPlugin(final Account account, final Iterable<PluginProperty> properties, final CallContext callContext, final InternalCallContext internalContext) throws PaymentApiException {
+        // Check if this account has already used the external payment plugin
+        // If not, it's the first time - add a payment method for it
+        createOrGetExternalPaymentMethod(account, properties, callContext, internalContext);
         return (ExternalPaymentProviderPlugin) getPaymentPluginApi(ExternalPaymentProviderPlugin.PLUGIN_NAME);
     }
 

@@ -36,7 +36,7 @@ import org.killbill.billing.payment.api.DirectPayment;
 import org.killbill.billing.payment.api.PaymentApiException;
 import org.killbill.billing.payment.api.PluginProperty;
 import org.killbill.billing.payment.api.TransactionType;
-import org.killbill.billing.payment.core.sm.RetryableDirectPaymentAutomatonRunner;
+import org.killbill.billing.payment.core.sm.PluginControlledDirectPaymentAutomatonRunner;
 import org.killbill.billing.payment.dao.DirectPaymentModelDao;
 import org.killbill.billing.payment.dao.DirectPaymentTransactionModelDao;
 import org.killbill.billing.payment.dao.PaymentAttemptModelDao;
@@ -47,37 +47,34 @@ import org.killbill.billing.util.callcontext.CallContext;
 import org.killbill.billing.util.dao.NonEntityDao;
 import org.killbill.bus.api.PersistentBus;
 import org.killbill.commons.locker.GlobalLocker;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-import com.google.common.collect.ImmutableMap;
 import com.google.inject.name.Named;
 
 import static org.killbill.billing.payment.glue.PaymentModule.PLUGIN_EXECUTOR_NAMED;
 
-public class RetryableDirectPaymentProcessor extends ProcessorBase {
+public class PluginControlledPaymentProcessor extends ProcessorBase {
 
-    private final RetryableDirectPaymentAutomatonRunner retryableDirectPaymentAutomatonRunner;
+    private final PluginControlledDirectPaymentAutomatonRunner pluginControlledDirectPaymentAutomatonRunner;
 
     @Inject
-    public RetryableDirectPaymentProcessor(final OSGIServiceRegistration<PaymentPluginApi> pluginRegistry,
-                                           final AccountInternalApi accountInternalApi,
-                                           final InvoiceInternalApi invoiceApi,
-                                           final TagInternalApi tagUserApi,
-                                           final PaymentDao paymentDao,
-                                           final NonEntityDao nonEntityDao,
-                                           final PersistentBus eventBus,
-                                           final GlobalLocker locker,
-                                           @Named(PLUGIN_EXECUTOR_NAMED) final ExecutorService executor,
-                                           final RetryableDirectPaymentAutomatonRunner retryableDirectPaymentAutomatonRunner) {
+    public PluginControlledPaymentProcessor(final OSGIServiceRegistration<PaymentPluginApi> pluginRegistry,
+                                            final AccountInternalApi accountInternalApi,
+                                            final InvoiceInternalApi invoiceApi,
+                                            final TagInternalApi tagUserApi,
+                                            final PaymentDao paymentDao,
+                                            final NonEntityDao nonEntityDao,
+                                            final PersistentBus eventBus,
+                                            final GlobalLocker locker,
+                                            @Named(PLUGIN_EXECUTOR_NAMED) final ExecutorService executor,
+                                            final PluginControlledDirectPaymentAutomatonRunner pluginControlledDirectPaymentAutomatonRunner) {
         super(pluginRegistry, accountInternalApi, eventBus, paymentDao, nonEntityDao, tagUserApi, locker, executor, invoiceApi);
 
-        this.retryableDirectPaymentAutomatonRunner = retryableDirectPaymentAutomatonRunner;
+        this.pluginControlledDirectPaymentAutomatonRunner = pluginControlledDirectPaymentAutomatonRunner;
     }
 
     public DirectPayment createAuthorization(final Account account, final UUID paymentMethodId, @Nullable final UUID directPaymentId, final BigDecimal amount, final Currency currency, final String paymentExternalKey, final String transactionExternalKey,
                                              final boolean isEternalPayment, final Iterable<PluginProperty> properties, final CallContext callContext, final InternalCallContext internalCallContext) throws PaymentApiException {
-        return retryableDirectPaymentAutomatonRunner.run(true,
+        return pluginControlledDirectPaymentAutomatonRunner.run(true,
                                                          TransactionType.AUTHORIZE,
                                                          account,
                                                          paymentMethodId,
@@ -87,7 +84,6 @@ public class RetryableDirectPaymentProcessor extends ProcessorBase {
                                                          amount,
                                                          currency,
                                                          isEternalPayment,
-                                                         ImmutableMap.<UUID, BigDecimal>of(),
                                                          properties,
                                                          null,
                                                          callContext, internalCallContext);
@@ -97,7 +93,7 @@ public class RetryableDirectPaymentProcessor extends ProcessorBase {
                                        final String transactionExternalKey,
                                        final boolean isEternalPayment, final Iterable<PluginProperty> properties,
                                        final CallContext callContext, final InternalCallContext internalCallContext) throws PaymentApiException {
-        return retryableDirectPaymentAutomatonRunner.run(true,
+        return pluginControlledDirectPaymentAutomatonRunner.run(true,
                                                          TransactionType.CAPTURE,
                                                          account,
                                                          directPaymentId,
@@ -113,7 +109,7 @@ public class RetryableDirectPaymentProcessor extends ProcessorBase {
     public DirectPayment createPurchase(final Account account, final UUID paymentMethodId, final UUID directPaymentId, final BigDecimal amount, final Currency currency,
                                         final String paymentExternalKey, final String transactionExternalKey, final boolean isEternalPayment, final Iterable<PluginProperty> properties,
                                         final CallContext callContext, final InternalCallContext internalCallContext) throws PaymentApiException {
-        return retryableDirectPaymentAutomatonRunner.run(true,
+        return pluginControlledDirectPaymentAutomatonRunner.run(true,
                                                          TransactionType.PURCHASE,
                                                          account,
                                                          paymentMethodId,
@@ -123,7 +119,6 @@ public class RetryableDirectPaymentProcessor extends ProcessorBase {
                                                          amount,
                                                          currency,
                                                          isEternalPayment,
-                                                         ImmutableMap.<UUID, BigDecimal>of(),
                                                          properties,
                                                          null,
                                                          callContext, internalCallContext);
@@ -131,7 +126,7 @@ public class RetryableDirectPaymentProcessor extends ProcessorBase {
 
     public DirectPayment createVoid(final Account account, final UUID directPaymentId, final String transactionExternalKey, final boolean isEternalPayment,
                                     final Iterable<PluginProperty> properties, final CallContext callContext, final InternalCallContext internalCallContext) throws PaymentApiException {
-        return retryableDirectPaymentAutomatonRunner.run(true,
+        return pluginControlledDirectPaymentAutomatonRunner.run(true,
                                                          TransactionType.VOID,
                                                          account,
                                                          directPaymentId,
@@ -144,7 +139,7 @@ public class RetryableDirectPaymentProcessor extends ProcessorBase {
 
     public DirectPayment createRefund(final Account account, final UUID directPaymentId, final BigDecimal amount, final Currency currency, final String transactionExternalKey,
                                       final boolean isEternalPayment, final Iterable<PluginProperty> properties, final CallContext callContext, final InternalCallContext internalCallContext) throws PaymentApiException {
-        return retryableDirectPaymentAutomatonRunner.run(true,
+        return pluginControlledDirectPaymentAutomatonRunner.run(true,
                                                          TransactionType.REFUND,
                                                          account,
                                                          directPaymentId,
@@ -157,19 +152,19 @@ public class RetryableDirectPaymentProcessor extends ProcessorBase {
                                                          callContext, internalCallContext);
     }
 
-    public DirectPayment createCredit(final Account account, final UUID directPaymentId, final BigDecimal amount, final Currency currency, final String paymentExternalKey,
+    public DirectPayment createCredit(final Account account, final UUID paymentMethodId, final UUID directPaymentId, final BigDecimal amount, final Currency currency, final String paymentExternalKey,
                                       final String transactionExternalKey, final boolean isEternalPayment, final Iterable<PluginProperty> properties, final CallContext callContext, final InternalCallContext internalCallContext) throws PaymentApiException {
-        return retryableDirectPaymentAutomatonRunner.run(true,
+
+        return pluginControlledDirectPaymentAutomatonRunner.run(true,
                                                          TransactionType.CREDIT,
                                                          account,
-                                                         null,
+                                                         paymentMethodId,
                                                          directPaymentId,
                                                          paymentExternalKey,
                                                          transactionExternalKey,
                                                          amount,
                                                          currency,
                                                          isEternalPayment,
-                                                         ImmutableMap.<UUID, BigDecimal>of(),
                                                          properties,
                                                          null,
                                                          callContext, internalCallContext);
@@ -189,8 +184,8 @@ public class RetryableDirectPaymentProcessor extends ProcessorBase {
             final UUID tenantId = nonEntityDao.retrieveIdFromObject(internalCallContext.getTenantRecordId(), ObjectType.TENANT);
             final CallContext callContext = internalCallContext.toCallContext(tenantId);
 
-            final State state = retryableDirectPaymentAutomatonRunner.fetchState(attempt.getStateName());
-            retryableDirectPaymentAutomatonRunner.run(state,
+            final State state = pluginControlledDirectPaymentAutomatonRunner.fetchState(attempt.getStateName());
+            pluginControlledDirectPaymentAutomatonRunner.run(state,
                                                       false,
                                                       transaction.getTransactionType(),
                                                       account,
@@ -201,7 +196,6 @@ public class RetryableDirectPaymentProcessor extends ProcessorBase {
                                                       transaction.getAmount(),
                                                       transaction.getCurrency(),
                                                       isExternalPayment,
-                                                      ImmutableMap.<UUID, BigDecimal>of(),
                                                       properties,
                                                       null,
                                                       callContext,

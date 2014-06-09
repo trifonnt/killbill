@@ -16,23 +16,28 @@
 
 package org.killbill.billing.payment.provider;
 
-import org.joda.time.DateTime;
-import org.killbill.billing.payment.retry.DefaultRetryPluginResult;
-import org.killbill.billing.retry.plugin.api.RetryPluginApi;
-import org.killbill.billing.retry.plugin.api.RetryPluginApiException;
+import org.killbill.billing.payment.retry.DefaultFailureCallResult;
+import org.killbill.billing.payment.retry.DefaultPriorPaymentControlResult;
+import org.killbill.billing.retry.plugin.api.PaymentControlApiException;
+import org.killbill.billing.retry.plugin.api.PaymentControlPluginApi;
 import org.killbill.billing.retry.plugin.api.UnknownEntryException;
 
-public class DefaultRetryProviderPlugin implements RetryPluginApi {
+public class DefaultPaymentControlProviderPlugin implements PaymentControlPluginApi {
 
     public static final String PLUGIN_NAME = "__DEFAULT_RETRY__";
 
     @Override
-    public RetryPluginResult getPluginResult(final RetryPluginContext retryPluginContext) throws RetryPluginApiException, UnknownEntryException {
-        return new DefaultRetryPluginResult(false, null);
+    public PriorPaymentControlResult priorCall(final PaymentControlContext paymentControlContext) throws PaymentControlApiException, UnknownEntryException {
+        return new DefaultPriorPaymentControlResult(false, null);
     }
 
     @Override
-    public DateTime getNextRetryDate(final RetryPluginContext retryPluginContext) throws RetryPluginApiException, UnknownEntryException {
-        return null;
+    public void onCompletionCall(final PaymentControlContext paymentControlContext) {
+
+    }
+
+    @Override
+    public FailureCallResult onFailureCall(final PaymentControlContext paymentControlContext) {
+        return new DefaultFailureCallResult(null);
     }
 }

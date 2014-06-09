@@ -23,16 +23,15 @@ import org.killbill.automaton.State.EnteringStateCallback;
 import org.killbill.automaton.State.LeavingStateCallback;
 import org.killbill.billing.payment.dao.PaymentAttemptModelDao;
 import org.killbill.billing.payment.retry.BaseRetryService.RetryServiceScheduler;
-import org.killbill.billing.payment.retry.RetryService;
 
 public class RetryEnteringStateCallback implements EnteringStateCallback {
 
-    private RetryableDirectPaymentAutomatonRunner retryableDirectPaymentAutomatonRunner;
+    private PluginControlledDirectPaymentAutomatonRunner retryableDirectPaymentAutomatonRunner;
     private final RetryableDirectPaymentStateContext directPaymentStateContext;
     private final RetryServiceScheduler retryServiceScheduler;
 
 
-    public RetryEnteringStateCallback(final RetryableDirectPaymentAutomatonRunner retryableDirectPaymentAutomatonRunner, final RetryableDirectPaymentStateContext directPaymentStateContext, final RetryServiceScheduler retryServiceScheduler) {
+    public RetryEnteringStateCallback(final PluginControlledDirectPaymentAutomatonRunner retryableDirectPaymentAutomatonRunner, final RetryableDirectPaymentStateContext directPaymentStateContext, final RetryServiceScheduler retryServiceScheduler) {
         this.retryableDirectPaymentAutomatonRunner = retryableDirectPaymentAutomatonRunner;
         this.directPaymentStateContext = directPaymentStateContext;
         this.retryServiceScheduler = retryServiceScheduler;

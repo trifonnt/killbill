@@ -41,7 +41,7 @@ import org.killbill.billing.payment.dispatcher.PluginDispatcher;
 import org.killbill.billing.payment.glue.PaymentModule;
 import org.killbill.billing.payment.plugin.api.PaymentPluginApi;
 import org.killbill.billing.payment.retry.BaseRetryService.RetryServiceScheduler;
-import org.killbill.billing.retry.plugin.api.RetryPluginApi;
+import org.killbill.billing.retry.plugin.api.PaymentControlPluginApi;
 import org.killbill.billing.tag.TagInternalApi;
 import org.killbill.billing.util.callcontext.CallContext;
 import org.killbill.billing.util.config.PaymentConfig;
@@ -51,20 +51,20 @@ import org.killbill.commons.locker.GlobalLocker;
 import static org.killbill.billing.payment.glue.PaymentModule.PLUGIN_EXECUTOR_NAMED;
 import static org.killbill.billing.payment.glue.PaymentModule.RETRYABLE_NAMED;
 
-public class MockRetryableDirectPaymentAutomatonRunner extends RetryableDirectPaymentAutomatonRunner {
+public class MockRetryableDirectPaymentAutomatonRunner extends PluginControlledDirectPaymentAutomatonRunner {
 
     private OperationCallback operationCallback;
     private RetryableDirectPaymentStateContext context;
 
     @Inject
-    public MockRetryableDirectPaymentAutomatonRunner(@Named(PaymentModule.STATE_MACHINE_PAYMENT) final StateMachineConfig stateMachineConfig, @Named(PaymentModule.STATE_MACHINE_RETRY) final StateMachineConfig retryStateMachine, final PaymentDao paymentDao, final GlobalLocker locker, final OSGIServiceRegistration<PaymentPluginApi> pluginRegistry, final OSGIServiceRegistration<RetryPluginApi> retryPluginRegistry, final Clock clock, final TagInternalApi tagApi, final DirectPaymentProcessor directPaymentProcessor, @Named(RETRYABLE_NAMED) final RetryServiceScheduler retryServiceScheduler, final PaymentConfig paymentConfig, @com.google.inject.name.Named(PLUGIN_EXECUTOR_NAMED) final ExecutorService executor) {
+    public MockRetryableDirectPaymentAutomatonRunner(@Named(PaymentModule.STATE_MACHINE_PAYMENT) final StateMachineConfig stateMachineConfig, @Named(PaymentModule.STATE_MACHINE_RETRY) final StateMachineConfig retryStateMachine, final PaymentDao paymentDao, final GlobalLocker locker, final OSGIServiceRegistration<PaymentPluginApi> pluginRegistry, final OSGIServiceRegistration<PaymentControlPluginApi> retryPluginRegistry, final Clock clock, final TagInternalApi tagApi, final DirectPaymentProcessor directPaymentProcessor, @Named(RETRYABLE_NAMED) final RetryServiceScheduler retryServiceScheduler, final PaymentConfig paymentConfig, @com.google.inject.name.Named(PLUGIN_EXECUTOR_NAMED) final ExecutorService executor) {
         super(stateMachineConfig, retryStateMachine, paymentDao, locker, pluginRegistry, retryPluginRegistry, clock, tagApi, directPaymentProcessor, retryServiceScheduler, paymentConfig, executor);
     }
 
     @Override
     OperationCallback createOperationCallback(final TransactionType transactionType, final RetryableDirectPaymentStateContext directPaymentStateContext) {
         if (operationCallback == null) {
-        return super.createOperationCallback(transactionType, directPaymentStateContext);
+            return super.createOperationCallback(transactionType, directPaymentStateContext);
         } else {
             return operationCallback;
         }
@@ -74,11 +74,11 @@ public class MockRetryableDirectPaymentAutomatonRunner extends RetryableDirectPa
     RetryableDirectPaymentStateContext createContext(final boolean isApiPayment, final TransactionType transactionType, final Account account, @Nullable final UUID paymentMethodId,
                                                      @Nullable final UUID directPaymentId, @Nullable final String directPaymentExternalKey, final String directPaymentTransactionExternalKey,
                                                      @Nullable final BigDecimal amount, @Nullable final Currency currency, final boolean isExternalPayment,
-                                                     final Map<UUID, BigDecimal> idsWithAmount, final Iterable<PluginProperty> properties,
+                                                     final Iterable<PluginProperty> properties,
                                                      final String pluginName, final CallContext callContext, final InternalCallContext internalCallContext) throws PaymentApiException {
         if (context == null) {
             return super.createContext(isApiPayment, transactionType, account, paymentMethodId, directPaymentId, directPaymentExternalKey, directPaymentTransactionExternalKey,
-                                       amount, currency, false, idsWithAmount, properties, pluginName, callContext, internalCallContext);
+                                       amount, currency, false,  properties, pluginName, callContext, internalCallContext);
         } else {
             return context;
         }
@@ -98,7 +98,7 @@ public class MockRetryableDirectPaymentAutomatonRunner extends RetryableDirectPa
         return paymentPluginDispatcher;
     }
 
-    public OSGIServiceRegistration<RetryPluginApi> getRetryPluginRegistry() {
-        return retryPluginRegistry;
+    public OSGIServiceRegistration<PaymentControlPluginApi> getRetryPluginRegistry() {
+        return paymentControlPluginRegistry;
     }
 }

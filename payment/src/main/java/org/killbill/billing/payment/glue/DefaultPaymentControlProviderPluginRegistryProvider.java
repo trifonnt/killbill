@@ -18,32 +18,28 @@ package org.killbill.billing.payment.glue;
 
 import org.killbill.billing.osgi.api.OSGIServiceDescriptor;
 import org.killbill.billing.osgi.api.OSGIServiceRegistration;
-import org.killbill.billing.payment.plugin.api.PaymentPluginApi;
-import org.killbill.billing.payment.provider.DefaultPaymentProviderPluginRegistry;
-import org.killbill.billing.payment.provider.DefaultRetryProviderPlugin;
-import org.killbill.billing.payment.provider.DefaultRetryProviderPluginRegistry;
-import org.killbill.billing.payment.provider.ExternalPaymentProviderPlugin;
-import org.killbill.billing.retry.plugin.api.RetryPluginApi;
+import org.killbill.billing.payment.provider.DefaultPaymentControlProviderPlugin;
+import org.killbill.billing.payment.provider.DefaultPaymentControlProviderPluginRegistry;
+import org.killbill.billing.retry.plugin.api.PaymentControlPluginApi;
 import org.killbill.billing.util.config.PaymentConfig;
 
 import com.google.inject.Inject;
 import com.google.inject.Provider;
 
-public class DefaultRetryProviderPluginRegistryProvider implements Provider<OSGIServiceRegistration<RetryPluginApi>> {
-
+public class DefaultPaymentControlProviderPluginRegistryProvider implements Provider<OSGIServiceRegistration<PaymentControlPluginApi>> {
 
     private final PaymentConfig paymentConfig;
-    private final DefaultRetryProviderPlugin externalRetryProviderPlugin;
+    private final DefaultPaymentControlProviderPlugin externalRetryProviderPlugin;
 
     @Inject
-    public DefaultRetryProviderPluginRegistryProvider(final PaymentConfig paymentConfig, final DefaultRetryProviderPlugin externalRetryProviderPlugin) {
+    public DefaultPaymentControlProviderPluginRegistryProvider(final PaymentConfig paymentConfig, final DefaultPaymentControlProviderPlugin externalRetryProviderPlugin) {
         this.paymentConfig = paymentConfig;
         this.externalRetryProviderPlugin = externalRetryProviderPlugin;
     }
 
     @Override
-    public OSGIServiceRegistration<RetryPluginApi> get() {
-        final DefaultRetryProviderPluginRegistry pluginRegistry = new DefaultRetryProviderPluginRegistry(paymentConfig);
+    public OSGIServiceRegistration<PaymentControlPluginApi> get() {
+        final DefaultPaymentControlProviderPluginRegistry pluginRegistry = new DefaultPaymentControlProviderPluginRegistry(paymentConfig);
 
         // Make the external payment provider plugin available by default
         final OSGIServiceDescriptor desc = new OSGIServiceDescriptor() {
@@ -51,9 +47,10 @@ public class DefaultRetryProviderPluginRegistryProvider implements Provider<OSGI
             public String getPluginSymbolicName() {
                 return null;
             }
+
             @Override
             public String getRegistrationName() {
-                return DefaultRetryProviderPlugin.PLUGIN_NAME;
+                return DefaultPaymentControlProviderPlugin.PLUGIN_NAME;
             }
         };
         pluginRegistry.registerService(desc, externalRetryProviderPlugin);

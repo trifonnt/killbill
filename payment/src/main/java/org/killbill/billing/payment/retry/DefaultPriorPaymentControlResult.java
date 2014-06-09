@@ -18,19 +18,19 @@ package org.killbill.billing.payment.retry;
 
 import java.math.BigDecimal;
 
-import org.killbill.billing.retry.plugin.api.RetryPluginApi.RetryPluginResult;
+import org.killbill.billing.retry.plugin.api.PaymentControlPluginApi.PriorPaymentControlResult;
 
-public class DefaultRetryPluginResult implements RetryPluginResult {
+public class DefaultPriorPaymentControlResult implements PriorPaymentControlResult {
 
     private final boolean isAborted;
     private final BigDecimal adjustedRetryAmount;
 
-    public DefaultRetryPluginResult(final boolean isAborted, final BigDecimal adjustedRetryAmount) {
+    public DefaultPriorPaymentControlResult(final boolean isAborted, final BigDecimal adjustedRetryAmount) {
         this.isAborted = isAborted;
         this.adjustedRetryAmount = adjustedRetryAmount;
     }
 
-    public DefaultRetryPluginResult(final boolean isAborted) {
+    public DefaultPriorPaymentControlResult(final boolean isAborted) {
         this(isAborted, null);
     }
 

@@ -51,7 +51,7 @@ import org.killbill.billing.payment.dao.PaymentDao;
 import org.killbill.billing.payment.glue.PaymentModule;
 import org.killbill.billing.payment.plugin.api.PaymentPluginApi;
 import org.killbill.billing.payment.retry.BaseRetryService.RetryServiceScheduler;
-import org.killbill.billing.retry.plugin.api.RetryPluginApi;
+import org.killbill.billing.retry.plugin.api.PaymentControlPluginApi;
 import org.killbill.billing.tag.TagInternalApi;
 import org.killbill.billing.util.callcontext.CallContext;
 import org.killbill.billing.util.config.PaymentConfig;
@@ -63,12 +63,11 @@ import org.killbill.commons.locker.GlobalLocker;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Function;
 import com.google.common.collect.Collections2;
-import com.google.common.collect.ImmutableMap;
 
 import static org.killbill.billing.payment.glue.PaymentModule.PLUGIN_EXECUTOR_NAMED;
 import static org.killbill.billing.payment.glue.PaymentModule.RETRYABLE_NAMED;
 
-public class RetryableDirectPaymentAutomatonRunner extends DirectPaymentAutomatonRunner {
+public class PluginControlledDirectPaymentAutomatonRunner extends DirectPaymentAutomatonRunner {
 
     private final TagInternalApi tagApi;
 
@@ -79,16 +78,16 @@ public class RetryableDirectPaymentAutomatonRunner extends DirectPaymentAutomato
     private final Operation retryOperation;
     private final RetryServiceScheduler retryServiceScheduler;
 
-    protected final OSGIServiceRegistration<RetryPluginApi> retryPluginRegistry;
+    protected final OSGIServiceRegistration<PaymentControlPluginApi> paymentControlPluginRegistry;
 
     @Inject
-    public RetryableDirectPaymentAutomatonRunner(@Named(PaymentModule.STATE_MACHINE_PAYMENT) final StateMachineConfig stateMachineConfig, @Named(PaymentModule.STATE_MACHINE_RETRY) final StateMachineConfig retryStateMachine, final PaymentDao paymentDao, final GlobalLocker locker, final OSGIServiceRegistration<PaymentPluginApi> pluginRegistry,
-                                                 final OSGIServiceRegistration<RetryPluginApi> retryPluginRegistry, final Clock clock, final TagInternalApi tagApi, final DirectPaymentProcessor directPaymentProcessor, @Named(RETRYABLE_NAMED) final RetryServiceScheduler retryServiceScheduler, final PaymentConfig paymentConfig,
-                                                 @com.google.inject.name.Named(PLUGIN_EXECUTOR_NAMED) final ExecutorService executor) {
+    public PluginControlledDirectPaymentAutomatonRunner(@Named(PaymentModule.STATE_MACHINE_PAYMENT) final StateMachineConfig stateMachineConfig, @Named(PaymentModule.STATE_MACHINE_RETRY) final StateMachineConfig retryStateMachine, final PaymentDao paymentDao, final GlobalLocker locker, final OSGIServiceRegistration<PaymentPluginApi> pluginRegistry,
+                                                        final OSGIServiceRegistration<PaymentControlPluginApi> retryPluginRegistry, final Clock clock, final TagInternalApi tagApi, final DirectPaymentProcessor directPaymentProcessor, @Named(RETRYABLE_NAMED) final RetryServiceScheduler retryServiceScheduler, final PaymentConfig paymentConfig,
+                                                        @com.google.inject.name.Named(PLUGIN_EXECUTOR_NAMED) final ExecutorService executor) {
         super(stateMachineConfig, paymentConfig, paymentDao, locker, pluginRegistry, clock, executor);
         this.tagApi = tagApi;
         this.directPaymentProcessor = directPaymentProcessor;
-        this.retryPluginRegistry = retryPluginRegistry;
+        this.paymentControlPluginRegistry = retryPluginRegistry;
         this.retryServiceScheduler = retryServiceScheduler;
         this.retryStateMachine = retryStateMachine.getStateMachines()[0];
         this.initialState = fetchInitialState();
@@ -98,11 +97,10 @@ public class RetryableDirectPaymentAutomatonRunner extends DirectPaymentAutomato
     public DirectPayment run(final boolean isApiPayment, final TransactionType transactionType, final Account account, @Nullable final UUID paymentMethodId,
                              @Nullable final UUID directPaymentId, @Nullable final String directPaymentExternalKey, final String directPaymentTransactionExternalKey,
                              @Nullable final BigDecimal amount, @Nullable final Currency currency, final boolean isExternalPayment,
-                             final Map<UUID, BigDecimal> idsWithAmount,
                              final Iterable<PluginProperty> properties,
                              @Nullable final String pluginName, final CallContext callContext, final InternalCallContext internalCallContext) throws PaymentApiException {
         return run(initialState, isApiPayment, transactionType, account, paymentMethodId, directPaymentId, directPaymentExternalKey, directPaymentTransactionExternalKey,
-                   amount, currency, isExternalPayment, idsWithAmount, properties, pluginName, callContext, internalCallContext);
+                   amount, currency, isExternalPayment, properties, pluginName, callContext, internalCallContext);
     }
 
     public DirectPayment run(final boolean isApiPayment, final TransactionType transactionType, final Account account,
@@ -111,7 +109,7 @@ public class RetryableDirectPaymentAutomatonRunner extends DirectPaymentAutomato
                              final Iterable<PluginProperty> properties,
                              @Nullable final String pluginName, final CallContext callContext, final InternalCallContext internalCallContext) throws PaymentApiException {
         return run(initialState, isApiPayment, transactionType, account, null, directPaymentId, null, directPaymentTransactionExternalKey,
-                   amount, currency, isExternalPayment, ImmutableMap.<UUID, BigDecimal>of(), properties, pluginName, callContext, internalCallContext);
+                   amount, currency, isExternalPayment, properties, pluginName, callContext, internalCallContext);
     }
 
     public DirectPayment run(final boolean isApiPayment, final TransactionType transactionType, final Account account,
@@ -120,15 +118,14 @@ public class RetryableDirectPaymentAutomatonRunner extends DirectPaymentAutomato
                              final Iterable<PluginProperty> properties,
                              @Nullable final String pluginName, final CallContext callContext, final InternalCallContext internalCallContext) throws PaymentApiException {
         return run(initialState, isApiPayment, transactionType, account, null, directPaymentId, null, directPaymentTransactionExternalKey,
-                   null, null, isExternalPayment, ImmutableMap.<UUID, BigDecimal>of(), properties, pluginName, callContext, internalCallContext);
+                   null, null, isExternalPayment, properties, pluginName, callContext, internalCallContext);
     }
 
     public DirectPayment run(final State state, final boolean isApiPayment, final TransactionType transactionType, final Account account, @Nullable final UUID paymentMethodId,
-                    @Nullable final UUID directPaymentId, @Nullable final String directPaymentExternalKey, final String directPaymentTransactionExternalKey,
-                    @Nullable final BigDecimal amount, @Nullable final Currency currency, final boolean isExternalPayment,
-                    final Map<UUID, BigDecimal> idsWithAmount,
-                    final Iterable<PluginProperty> properties, @Nullable final String pluginName,
-                    final CallContext callContext, final InternalCallContext internalCallContext) throws PaymentApiException {
+                             @Nullable final UUID directPaymentId, @Nullable final String directPaymentExternalKey, final String directPaymentTransactionExternalKey,
+                             @Nullable final BigDecimal amount, @Nullable final Currency currency, final boolean isExternalPayment,
+                             final Iterable<PluginProperty> properties, @Nullable final String pluginName,
+                             final CallContext callContext, final InternalCallContext internalCallContext) throws PaymentApiException {
 
         if (isAccountAutoPayOff(account.getId(), internalCallContext)) {
             // STEPH_RETRY fix error code
@@ -138,7 +135,7 @@ public class RetryableDirectPaymentAutomatonRunner extends DirectPaymentAutomato
         final RetryableDirectPaymentStateContext directPaymentStateContext = createContext(isApiPayment, transactionType, account, paymentMethodId,
                                                                                            directPaymentId, directPaymentExternalKey,
                                                                                            directPaymentTransactionExternalKey,
-                                                                                           amount, currency, isExternalPayment, idsWithAmount,
+                                                                                           amount, currency, isExternalPayment,
                                                                                            properties, pluginName, callContext, internalCallContext);
         try {
 
@@ -198,31 +195,30 @@ public class RetryableDirectPaymentAutomatonRunner extends DirectPaymentAutomato
     RetryableDirectPaymentStateContext createContext(final boolean isApiPayment, final TransactionType transactionType, final Account account, @Nullable final UUID paymentMethodId,
                                                      @Nullable final UUID directPaymentId, @Nullable final String directPaymentExternalKey, final String directPaymentTransactionExternalKey,
                                                      @Nullable final BigDecimal amount, @Nullable final Currency currency, final boolean isExternalPayment,
-                                                     final Map<UUID, BigDecimal> idsWithAmount, final Iterable<PluginProperty> properties,
+                                                     final Iterable<PluginProperty> properties,
                                                      final String pluginName, final CallContext callContext, final InternalCallContext internalCallContext) throws PaymentApiException {
         return new RetryableDirectPaymentStateContext(pluginName, isApiPayment, directPaymentId, directPaymentExternalKey, directPaymentTransactionExternalKey, transactionType, account,
-                                                      paymentMethodId, amount, currency, isExternalPayment, idsWithAmount, properties, internalCallContext, callContext);
+                                                      paymentMethodId, amount, currency, isExternalPayment, properties, internalCallContext, callContext);
     }
-
 
     @VisibleForTesting
     OperationCallback createOperationCallback(final TransactionType transactionType, final RetryableDirectPaymentStateContext directPaymentStateContext) {
         final OperationCallback callback;
         switch (transactionType) {
             case AUTHORIZE:
-                callback = new RetryAuthorizeOperationCallback(locker, paymentPluginDispatcher, directPaymentStateContext, directPaymentProcessor, retryPluginRegistry);
+                callback = new RetryAuthorizeOperationCallback(locker, paymentPluginDispatcher, directPaymentStateContext, directPaymentProcessor, paymentControlPluginRegistry);
                 break;
             case CAPTURE:
-                callback = new RetryCaptureOperationCallback(locker, paymentPluginDispatcher, directPaymentStateContext, directPaymentProcessor, retryPluginRegistry);
+                callback = new RetryCaptureOperationCallback(locker, paymentPluginDispatcher, directPaymentStateContext, directPaymentProcessor, paymentControlPluginRegistry);
                 break;
             case PURCHASE:
-                callback = new RetryPurchaseOperationCallback(locker, paymentPluginDispatcher, directPaymentStateContext, directPaymentProcessor, retryPluginRegistry);
+                callback = new RetryPurchaseOperationCallback(locker, paymentPluginDispatcher, directPaymentStateContext, directPaymentProcessor, paymentControlPluginRegistry);
                 break;
             case VOID:
-                callback = new RetryVoidOperationCallback(locker, paymentPluginDispatcher, directPaymentStateContext, directPaymentProcessor, retryPluginRegistry);
+                callback = new RetryVoidOperationCallback(locker, paymentPluginDispatcher, directPaymentStateContext, directPaymentProcessor, paymentControlPluginRegistry);
                 break;
             case CREDIT:
-                callback = new RetryCreditOperationCallback(locker, paymentPluginDispatcher, directPaymentStateContext, directPaymentProcessor, retryPluginRegistry);
+                callback = new RetryCreditOperationCallback(locker, paymentPluginDispatcher, directPaymentStateContext, directPaymentProcessor, paymentControlPluginRegistry);
                 break;
             default:
                 throw new IllegalStateException("Unsupported transaction type " + transactionType);

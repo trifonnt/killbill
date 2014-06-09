@@ -275,8 +275,14 @@
             <finalState>CAPTURE_INIT</finalState>
         </linkStateMachine>
         <linkStateMachine>
+            <initialStateMachine>PURCHASE</initialStateMachine>
+            <initialState>PURCHASE_SUCCESS</initialState>
+            <finalStateMachine>PURCHASE</finalStateMachine>
+            <finalState>PURCHASE_INIT</finalState>
+        </linkStateMachine>
+        <linkStateMachine>
             <initialStateMachine>REFUND</initialStateMachine>
-            <initialState>REFUND_SUCCESS</initialState>
+            <initialState>REFUND_FAILED</initialState>
             <finalStateMachine>REFUND</finalStateMachine>
             <finalState>REFUND_INIT</finalState>
         </linkStateMachine>

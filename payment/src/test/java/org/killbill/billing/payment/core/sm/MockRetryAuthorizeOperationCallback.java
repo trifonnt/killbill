@@ -30,7 +30,7 @@ import org.killbill.billing.payment.dao.DirectPaymentModelDao;
 import org.killbill.billing.payment.dao.DirectPaymentTransactionModelDao;
 import org.killbill.billing.payment.dao.PaymentDao;
 import org.killbill.billing.payment.dispatcher.PluginDispatcher;
-import org.killbill.billing.retry.plugin.api.RetryPluginApi;
+import org.killbill.billing.retry.plugin.api.PaymentControlPluginApi;
 import org.killbill.clock.Clock;
 import org.killbill.commons.locker.GlobalLocker;
 
@@ -42,7 +42,7 @@ public class MockRetryAuthorizeOperationCallback extends RetryAuthorizeOperation
     private Exception exception;
     private OperationResult result;
 
-    public MockRetryAuthorizeOperationCallback(final GlobalLocker locker, final PluginDispatcher<OperationResult> paymentPluginDispatcher, final RetryableDirectPaymentStateContext directPaymentStateContext, final DirectPaymentProcessor directPaymentProcessor, final OSGIServiceRegistration<RetryPluginApi> retryPluginRegistry, final PaymentDao paymentDao, final Clock clock) {
+    public MockRetryAuthorizeOperationCallback(final GlobalLocker locker, final PluginDispatcher<OperationResult> paymentPluginDispatcher, final RetryableDirectPaymentStateContext directPaymentStateContext, final DirectPaymentProcessor directPaymentProcessor, final OSGIServiceRegistration<PaymentControlPluginApi> retryPluginRegistry, final PaymentDao paymentDao, final Clock clock) {
         super(locker, paymentPluginDispatcher, directPaymentStateContext, directPaymentProcessor, retryPluginRegistry);
         this.paymentDao = paymentDao;
         this.clock = clock;
@@ -57,23 +57,23 @@ public class MockRetryAuthorizeOperationCallback extends RetryAuthorizeOperation
                 throw new RuntimeException(exception);
             }
         }
-            final DirectPaymentModelDao payment = new DirectPaymentModelDao(clock.getUTCNow(),
-                                                                            clock.getUTCNow(),
-                                                                            directPaymentStateContext.account.getId(),
-                                                                            directPaymentStateContext.paymentMethodId,
-                                                                            directPaymentStateContext.directPaymentExternalKey);
+        final DirectPaymentModelDao payment = new DirectPaymentModelDao(clock.getUTCNow(),
+                                                                        clock.getUTCNow(),
+                                                                        directPaymentStateContext.account.getId(),
+                                                                        directPaymentStateContext.paymentMethodId,
+                                                                        directPaymentStateContext.directPaymentExternalKey);
 
-            final DirectPaymentTransactionModelDao transaction = new DirectPaymentTransactionModelDao(clock.getUTCNow(),
-                                                                                                      clock.getUTCNow(),
-                                                                                                      directPaymentStateContext.directPaymentTransactionExternalKey,
-                                                                                                      directPaymentStateContext.directPaymentId,
-                                                                                                      directPaymentStateContext.transactionType,
-                                                                                                      clock.getUTCNow(),
-                                                                                                      PaymentStatus.SUCCESS,
-                                                                                                      directPaymentStateContext.amount,
-                                                                                                      directPaymentStateContext.currency,
-                                                                                                      "",
-                                                                                                      "");
+        final DirectPaymentTransactionModelDao transaction = new DirectPaymentTransactionModelDao(clock.getUTCNow(),
+                                                                                                  clock.getUTCNow(),
+                                                                                                  directPaymentStateContext.directPaymentTransactionExternalKey,
+                                                                                                  directPaymentStateContext.directPaymentId,
+                                                                                                  directPaymentStateContext.transactionType,
+                                                                                                  clock.getUTCNow(),
+                                                                                                  PaymentStatus.SUCCESS,
+                                                                                                  directPaymentStateContext.amount,
+                                                                                                  directPaymentStateContext.currency,
+                                                                                                  "",
+                                                                                                  "");
         final DirectPaymentModelDao paymentModelDao = paymentDao.insertDirectPaymentWithFirstTransaction(payment, transaction, directPaymentStateContext.internalCallContext);
         return new DefaultDirectPayment(paymentModelDao.getId(), paymentModelDao.getCreatedDate(), paymentModelDao.getUpdatedDate(), paymentModelDao.getAccountId(),
                                         paymentModelDao.getPaymentMethodId(), paymentModelDao.getPaymentNumber(), paymentModelDao.getExternalKey(), Collections.<DirectPaymentTransaction>emptyList());

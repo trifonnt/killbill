@@ -39,7 +39,7 @@ import org.killbill.billing.payment.api.PaymentStatus;
 import org.killbill.billing.payment.api.PluginProperty;
 import org.killbill.billing.payment.api.TransactionType;
 import org.killbill.billing.payment.core.DirectPaymentProcessor;
-import org.killbill.billing.payment.core.RetryableDirectPaymentProcessor;
+import org.killbill.billing.payment.core.PluginControlledPaymentProcessor;
 import org.killbill.billing.payment.dao.DirectPaymentModelDao;
 import org.killbill.billing.payment.dao.DirectPaymentTransactionModelDao;
 import org.killbill.billing.payment.dao.MockPaymentDao;
@@ -47,9 +47,9 @@ import org.killbill.billing.payment.dao.PaymentAttemptModelDao;
 import org.killbill.billing.payment.dao.PaymentDao;
 import org.killbill.billing.payment.glue.PaymentModule;
 import org.killbill.billing.payment.plugin.api.PaymentPluginApi;
-import org.killbill.billing.payment.provider.MockRetryProviderPlugin;
+import org.killbill.billing.payment.provider.MockPaymentControlProviderPlugin;
 import org.killbill.billing.payment.retry.BaseRetryService.RetryServiceScheduler;
-import org.killbill.billing.retry.plugin.api.RetryPluginApi;
+import org.killbill.billing.retry.plugin.api.PaymentControlPluginApi;
 import org.killbill.billing.tag.TagInternalApi;
 import org.killbill.billing.util.dao.NonEntityDao;
 import org.killbill.billing.util.globallocker.LockerType;
@@ -87,7 +87,7 @@ public class TestRetryableDirectPayment extends PaymentTestSuiteNoDB {
     @Inject
     private OSGIServiceRegistration<PaymentPluginApi> pluginRegistry;
     @Inject
-    private OSGIServiceRegistration<RetryPluginApi> retryPluginRegistry;
+    private OSGIServiceRegistration<PaymentControlPluginApi> retryPluginRegistry;
     @Inject
     private TagInternalApi tagApi;
     @Inject
@@ -108,13 +108,12 @@ public class TestRetryableDirectPayment extends PaymentTestSuiteNoDB {
     private final BigDecimal amount = BigDecimal.ONE;
     private final Currency currency = Currency.EUR;
     private final ImmutableList<PluginProperty> emptyProperties = ImmutableList.<PluginProperty>of();
-    private final Map<UUID, BigDecimal> emptyIdsWithAmounts = ImmutableMap.<UUID, BigDecimal>of();
-    private final MockRetryProviderPlugin mockRetryProviderPlugin = new MockRetryProviderPlugin();
+    private final MockPaymentControlProviderPlugin mockRetryProviderPlugin = new MockPaymentControlProviderPlugin();
 
     private MockRetryableDirectPaymentAutomatonRunner runner;
     private RetryableDirectPaymentStateContext directPaymentStateContext;
     private MockRetryAuthorizeOperationCallback mockRetryAuthorizeOperationCallback;
-    private RetryableDirectPaymentProcessor processor;
+    private PluginControlledPaymentProcessor processor;
 
     @BeforeClass(groups = "slow")
     public void beforeClass() throws Exception {
@@ -131,7 +130,7 @@ public class TestRetryableDirectPayment extends PaymentTestSuiteNoDB {
 
             @Override
             public String getRegistrationName() {
-                return MockRetryProviderPlugin.PLUGIN_NAME;
+                return MockPaymentControlProviderPlugin.PLUGIN_NAME;
             }
         }, mockRetryProviderPlugin);
 
@@ -150,7 +149,7 @@ public class TestRetryableDirectPayment extends PaymentTestSuiteNoDB {
                 executor);
 
         directPaymentStateContext =
-                new RetryableDirectPaymentStateContext(MockRetryProviderPlugin.PLUGIN_NAME,
+                new RetryableDirectPaymentStateContext(MockPaymentControlProviderPlugin.PLUGIN_NAME,
                                                        true,
                                                        null,
                                                        directPaymentExternalKey,
@@ -174,7 +173,7 @@ public class TestRetryableDirectPayment extends PaymentTestSuiteNoDB {
                                                         paymentDao,
                                                         clock);
 
-        processor = new RetryableDirectPaymentProcessor(pluginRegistry,
+        processor = new PluginControlledPaymentProcessor(pluginRegistry,
                                                         accountInternalApi,
                                                         null,
                                                         tagApi,
@@ -218,7 +217,6 @@ public class TestRetryableDirectPayment extends PaymentTestSuiteNoDB {
                    amount,
                    currency,
                    false,
-                   emptyIdsWithAmounts,
                    emptyProperties,
                    null,
                    callContext,
@@ -254,7 +252,6 @@ public class TestRetryableDirectPayment extends PaymentTestSuiteNoDB {
                    amount,
                    currency,
                    false,
-                   emptyIdsWithAmounts,
                    emptyProperties,
                    null,
                    callContext,
@@ -290,7 +287,6 @@ public class TestRetryableDirectPayment extends PaymentTestSuiteNoDB {
                    amount,
                    currency,
                    false,
-                   emptyIdsWithAmounts,
                    emptyProperties,
                    null,
                    callContext, internalCallContext);
@@ -326,7 +322,6 @@ public class TestRetryableDirectPayment extends PaymentTestSuiteNoDB {
                        amount,
                        currency,
                        false,
-                       emptyIdsWithAmounts,
                        emptyProperties,
                        null,
                        callContext, internalCallContext);
@@ -366,7 +361,6 @@ public class TestRetryableDirectPayment extends PaymentTestSuiteNoDB {
                        amount,
                        currency,
                        false,
-                       emptyIdsWithAmounts,
                        emptyProperties,
                        null,
                        callContext, internalCallContext);
@@ -405,7 +399,6 @@ public class TestRetryableDirectPayment extends PaymentTestSuiteNoDB {
                        amount,
                        currency,
                        false,
-                       emptyIdsWithAmounts,
                        emptyProperties,
                        null,
                        callContext, internalCallContext);
@@ -444,7 +437,6 @@ public class TestRetryableDirectPayment extends PaymentTestSuiteNoDB {
                        amount,
                        currency,
                        false,
-                       emptyIdsWithAmounts,
                        emptyProperties,
                        null,
                        callContext, internalCallContext);
@@ -486,7 +478,6 @@ public class TestRetryableDirectPayment extends PaymentTestSuiteNoDB {
                    amount,
                    currency,
                    false,
-                   emptyIdsWithAmounts,
                    emptyProperties,
                    null,
                    callContext,
@@ -528,7 +519,6 @@ public class TestRetryableDirectPayment extends PaymentTestSuiteNoDB {
                        amount,
                        currency,
                        false,
-                       emptyIdsWithAmounts,
                        emptyProperties,
                        null,
                        callContext,
@@ -573,7 +563,6 @@ public class TestRetryableDirectPayment extends PaymentTestSuiteNoDB {
                        amount,
                        currency,
                        false,
-                       emptyIdsWithAmounts,
                        emptyProperties,
                        null,
                        callContext,
@@ -639,7 +628,8 @@ public class TestRetryableDirectPayment extends PaymentTestSuiteNoDB {
         paymentDao.insertDirectPaymentWithFirstTransaction(new DirectPaymentModelDao(directPaymentId, utcNow, utcNow, account.getId(), paymentMethodId, -1, directPaymentExternalKey, null, null),
                                                            new DirectPaymentTransactionModelDao(directTransactionId, directPaymentTransactionExternalKey, utcNow, utcNow, directPaymentId, TransactionType.AUTHORIZE, utcNow,
                                                                                                 PaymentStatus.PAYMENT_FAILURE, amount, currency, "bla", "foo", null, null),
-                                                           internalCallContext);
+                                                           internalCallContext
+                                                          );
 
         processor.retryPaymentTransaction(directPaymentTransactionExternalKey, emptyProperties, internalCallContext);
 
@@ -675,7 +665,8 @@ public class TestRetryableDirectPayment extends PaymentTestSuiteNoDB {
             paymentDao.insertDirectPaymentWithFirstTransaction(new DirectPaymentModelDao(directPaymentId, utcNow, utcNow, account.getId(), paymentMethodId, -1, directPaymentExternalKey, null, null),
                                                                new DirectPaymentTransactionModelDao(directTransactionId, directPaymentTransactionExternalKey, utcNow, utcNow, directPaymentId, TransactionType.AUTHORIZE, utcNow,
                                                                                                     PaymentStatus.PAYMENT_FAILURE, amount, currency, "bla", "foo", null, null),
-                                                               internalCallContext);
+                                                               internalCallContext
+                                                              );
 
             processor.retryPaymentTransaction(directPaymentTransactionExternalKey, emptyProperties, internalCallContext);
 

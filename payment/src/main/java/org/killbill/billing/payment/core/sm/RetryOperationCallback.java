@@ -18,7 +18,6 @@ package org.killbill.billing.payment.core.sm;
 
 import java.math.BigDecimal;
 import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
 
 import javax.annotation.Nullable;
@@ -32,101 +31,108 @@ import org.killbill.billing.callcontext.DefaultCallContext;
 import org.killbill.billing.catalog.api.Currency;
 import org.killbill.billing.osgi.api.OSGIServiceRegistration;
 import org.killbill.billing.payment.api.DirectPayment;
+import org.killbill.billing.payment.api.DirectPaymentTransaction;
 import org.killbill.billing.payment.api.PaymentApiException;
 import org.killbill.billing.payment.api.PluginProperty;
 import org.killbill.billing.payment.api.TransactionType;
 import org.killbill.billing.payment.core.DirectPaymentProcessor;
 import org.killbill.billing.payment.core.ProcessorBase.WithAccountLockCallback;
 import org.killbill.billing.payment.dispatcher.PluginDispatcher;
-import org.killbill.billing.payment.retry.DefaultRetryPluginResult;
-import org.killbill.billing.retry.plugin.api.RetryPluginApi;
-import org.killbill.billing.retry.plugin.api.RetryPluginApi.RetryPluginContext;
-import org.killbill.billing.retry.plugin.api.RetryPluginApi.RetryPluginResult;
-import org.killbill.billing.retry.plugin.api.RetryPluginApiException;
+import org.killbill.billing.payment.retry.DefaultPriorPaymentControlResult;
+import org.killbill.billing.retry.plugin.api.PaymentControlApiException;
+import org.killbill.billing.retry.plugin.api.PaymentControlPluginApi;
+import org.killbill.billing.retry.plugin.api.PaymentControlPluginApi.FailureCallResult;
+import org.killbill.billing.retry.plugin.api.PaymentControlPluginApi.PaymentControlContext;
+import org.killbill.billing.retry.plugin.api.PaymentControlPluginApi.PriorPaymentControlResult;
 import org.killbill.billing.retry.plugin.api.UnknownEntryException;
 import org.killbill.billing.util.callcontext.CallContext;
 import org.killbill.commons.locker.GlobalLocker;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.google.common.base.Predicate;
+import com.google.common.collect.Iterables;
 
 public abstract class RetryOperationCallback extends PluginOperation implements OperationCallback {
 
     protected final DirectPaymentProcessor directPaymentProcessor;
-    private final OSGIServiceRegistration<RetryPluginApi> retryPluginRegistry;
+    private final OSGIServiceRegistration<PaymentControlPluginApi> paymentControlPluginRegistry;
 
-    protected RetryOperationCallback(final GlobalLocker locker, final PluginDispatcher<OperationResult> paymentPluginDispatcher, final RetryableDirectPaymentStateContext directPaymentStateContext, final DirectPaymentProcessor directPaymentProcessor, final OSGIServiceRegistration<RetryPluginApi> retryPluginRegistry) {
+    private final Logger logger = LoggerFactory.getLogger(RetryOperationCallback.class);
+
+    protected RetryOperationCallback(final GlobalLocker locker, final PluginDispatcher<OperationResult> paymentPluginDispatcher, final RetryableDirectPaymentStateContext directPaymentStateContext, final DirectPaymentProcessor directPaymentProcessor, final OSGIServiceRegistration<PaymentControlPluginApi> retryPluginRegistry) {
         super(locker, paymentPluginDispatcher, directPaymentStateContext);
         this.directPaymentProcessor = directPaymentProcessor;
-        this.retryPluginRegistry = retryPluginRegistry;
+        this.paymentControlPluginRegistry = retryPluginRegistry;
     }
 
-    //
-    // STEPH issue because externalKey namespace across plugin is not unique
-    //
-    private RetryPluginResult getPluginResult(@Nullable final String pluginName, final RetryPluginContext retryContext) throws RetryPluginApiException {
+    private PriorPaymentControlResult getPluginResult(final String pluginName, final PaymentControlContext paymentControlContext) throws PaymentControlApiException {
 
-        if (pluginName != null) {
-            final RetryPluginApi plugin = retryPluginRegistry.getServiceForName(pluginName);
-            try {
-                final RetryPluginResult result = plugin.getPluginResult(retryContext);
-                return result;
-            } catch (UnknownEntryException e) {
-                return new DefaultRetryPluginResult(true);
-            }
-        }
-
-        final Set<String> allServices = retryPluginRegistry.getAllServices();
-        for (String cur : allServices) {
-            final RetryPluginApi plugin = retryPluginRegistry.getServiceForName(cur);
-            try {
-                return plugin.getPluginResult(retryContext);
-            } catch (UnknownEntryException ignore) {
-            }
-        }
-        return new DefaultRetryPluginResult(true);
-    }
-
-    private DateTime getNextRetryDate(@Nullable final String pluginName, final RetryPluginContext retryContext) {
+        final PaymentControlPluginApi plugin = paymentControlPluginRegistry.getServiceForName(pluginName);
         try {
-            if (pluginName != null) {
-                final RetryPluginApi plugin = retryPluginRegistry.getServiceForName(pluginName);
-                return plugin.getNextRetryDate(retryContext);
-            }
-
-            final Set<String> allServices = retryPluginRegistry.getAllServices();
-            for (String cur : allServices) {
-                final RetryPluginApi plugin = retryPluginRegistry.getServiceForName(cur);
-                return plugin.getNextRetryDate(retryContext);
-            }
-        } catch (RetryPluginApiException ignore) {
+            final PriorPaymentControlResult result = plugin.priorCall(paymentControlContext);
+            return result;
+        } catch (UnknownEntryException e) {
+            return new DefaultPriorPaymentControlResult(true);
         }
-        return null;
+    }
+
+    private DateTime getNextRetryDate(final String pluginName, final PaymentControlContext paymentControlContext) {
+        try {
+            final PaymentControlPluginApi plugin = paymentControlPluginRegistry.getServiceForName(pluginName);
+            final FailureCallResult result = plugin.onFailureCall(paymentControlContext);
+            return result.getNextRetryDate();
+        } catch (PaymentControlApiException e) {
+            logger.warn("Plugin " + pluginName + " failed to return next retryDate for payment " + paymentControlContext.getPaymentExternalKey(), e);
+            return null;
+        }
+    }
+
+    private void onCompletion(final String pluginName, final PaymentControlContext paymentControlContext) {
+        final PaymentControlPluginApi plugin = paymentControlPluginRegistry.getServiceForName(pluginName);
+        try {
+            plugin.onCompletionCall(paymentControlContext);
+        } catch (PaymentControlApiException e) {
+            logger.warn("Plugin " + pluginName + " failed to complete onCompletion call for " + paymentControlContext.getPaymentExternalKey(), e);
+        }
     }
 
     @Override
     public OperationResult doOperationCallback() throws OperationException {
+
         return dispatchWithTimeout(new WithAccountLockCallback<OperationResult>() {
+
+            private DirectPaymentTransaction getTransaction(final DirectPayment payment, final String transactionExternalKey) {
+                return Iterables.tryFind(payment.getTransactions(), new Predicate<DirectPaymentTransaction>() {
+                    @Override
+                    public boolean apply(final DirectPaymentTransaction input) {
+                        return input.getExternalKey().equals(transactionExternalKey);
+                    }
+                }).get();
+            }
+
             @Override
             public OperationResult doOperation() throws OperationException {
 
                 final RetryableDirectPaymentStateContext retryableDirectPaymentStateContext = (RetryableDirectPaymentStateContext) directPaymentStateContext;
-                final DefaultPluginRetryContext retryContext = new DefaultPluginRetryContext(directPaymentStateContext.account,
-                                                                                             directPaymentStateContext.directPaymentExternalKey,
-                                                                                             directPaymentStateContext.directPaymentTransactionExternalKey,
-                                                                                             directPaymentStateContext.transactionType,
-                                                                                             directPaymentStateContext.amount,
-                                                                                             directPaymentStateContext.currency,
-                                                                                             retryableDirectPaymentStateContext.getIdsWithAmounts(),
-                                                                                             directPaymentStateContext.properties,
-                                                                                             retryableDirectPaymentStateContext.isApiPayment(),
-                                                                                             directPaymentStateContext.callContext);
+                final PaymentControlContext paymentControlContext = new DefaultPaymentControlContext(directPaymentStateContext.account,
+                                                                                                     directPaymentStateContext.directPaymentExternalKey,
+                                                                                                     directPaymentStateContext.directPaymentTransactionExternalKey,
+                                                                                                     directPaymentStateContext.transactionType,
+                                                                                                     directPaymentStateContext.amount,
+                                                                                                     directPaymentStateContext.currency,
+                                                                                                     directPaymentStateContext.properties,
+                                                                                                     retryableDirectPaymentStateContext.isApiPayment(),
+                                                                                                     directPaymentStateContext.callContext);
 
                 // Note that we are using OperationResult.EXCEPTION result to transition to final ABORTED state -- see RetryStates.xml
-                final RetryPluginResult pluginResult;
+                final PriorPaymentControlResult pluginResult;
                 try {
-                    pluginResult = getPluginResult(retryableDirectPaymentStateContext.getPluginName(), retryContext);
+                    pluginResult = getPluginResult(retryableDirectPaymentStateContext.getPluginName(), paymentControlContext);
                     if (pluginResult.isAborted()) {
                         return OperationResult.EXCEPTION;
                     }
-                } catch (RetryPluginApiException e) {
+                } catch (PaymentControlApiException e) {
                     throw new OperationException(e, OperationResult.EXCEPTION);
                 }
 
@@ -138,9 +144,26 @@ public abstract class RetryOperationCallback extends PluginOperation implements 
                     }
 
                     final DirectPayment result = doPluginOperation();
+                    final DirectPaymentTransaction transaction = getTransaction(result, directPaymentStateContext.directPaymentTransactionExternalKey);
                     ((RetryableDirectPaymentStateContext) directPaymentStateContext).setResult(result);
+
+                    final PaymentControlContext updatedPaymentControlContext = new DefaultPaymentControlContext(directPaymentStateContext.account,
+                                                                                                                result.getId(),
+                                                                                                                directPaymentStateContext.directPaymentExternalKey,
+                                                                                                                directPaymentStateContext.directPaymentTransactionExternalKey,
+                                                                                                                directPaymentStateContext.transactionType,
+                                                                                                                transaction.getAmount(),
+                                                                                                                transaction.getCurrency(),
+                                                                                                                transaction.getProcessedAmount(),
+                                                                                                                transaction.getProcessedCurrency(),
+                                                                                                                directPaymentStateContext.properties,
+                                                                                                                retryableDirectPaymentStateContext.isApiPayment(),
+                                                                                                                directPaymentStateContext.callContext);
+
+                    onCompletion(retryableDirectPaymentStateContext.getPluginName(), updatedPaymentControlContext);
+
                 } catch (PaymentApiException e) {
-                    final DateTime retryDate = getNextRetryDate(retryableDirectPaymentStateContext.getPluginName(), retryContext);
+                    final DateTime retryDate = getNextRetryDate(retryableDirectPaymentStateContext.getPluginName(), paymentControlContext);
                     if (retryDate == null) {
                         throw new OperationException(e, OperationResult.EXCEPTION);
                     } else {
@@ -156,27 +179,37 @@ public abstract class RetryOperationCallback extends PluginOperation implements 
         });
     }
 
-    public class DefaultPluginRetryContext extends DefaultCallContext implements RetryPluginContext {
+    public class DefaultPaymentControlContext extends DefaultCallContext implements PaymentControlContext {
 
         private final Account account;
+        private final UUID paymentId;
         private final String paymentExternalKey;
         private final String transactionExternalKey;
         private final TransactionType transactionType;
         private final BigDecimal amount;
         private final Currency currency;
+        private final BigDecimal processedAmount;
+        private final Currency processedCurrency;
         private final boolean isApiPayment;
         private final Iterable<PluginProperty> properties;
-        private final Map<UUID, BigDecimal> idsWithAmounts;
 
-        public DefaultPluginRetryContext(final Account account, final String paymentExternalKey, final String transactionExternalKey, final TransactionType transactionType, final BigDecimal amount, final Currency currency, final Map<UUID, BigDecimal> idsWithAmounts, final Iterable<PluginProperty> properties, final boolean isApiPayment, final CallContext callContext) {
+        public DefaultPaymentControlContext(final Account account, final String paymentExternalKey, final String transactionExternalKey, final TransactionType transactionType, final BigDecimal amount, final Currency currency,
+                                            final Iterable<PluginProperty> properties, final boolean isApiPayment, final CallContext callContext) {
+            this(account, null, paymentExternalKey, transactionExternalKey, transactionType, amount, currency, null, null, properties, isApiPayment, callContext);
+        }
+
+        public DefaultPaymentControlContext(final Account account, @Nullable final UUID paymentId, final String paymentExternalKey, final String transactionExternalKey, final TransactionType transactionType,
+                                            final BigDecimal amount, final Currency currency, @Nullable final BigDecimal processedAmount, @Nullable final Currency processedCurrency, final Iterable<PluginProperty> properties, final boolean isApiPayment, final CallContext callContext) {
             super(callContext.getTenantId(), callContext.getUserName(), callContext.getCallOrigin(), callContext.getUserType(), callContext.getReasonCode(), callContext.getComments(), callContext.getUserToken(), callContext.getCreatedDate(), callContext.getUpdatedDate());
             this.account = account;
+            this.paymentId = paymentId;
             this.paymentExternalKey = paymentExternalKey;
             this.transactionExternalKey = transactionExternalKey;
             this.transactionType = transactionType;
             this.amount = amount;
             this.currency = currency;
-            this.idsWithAmounts = idsWithAmounts;
+            this.processedAmount = processedAmount;
+            this.processedCurrency = processedCurrency;
             this.properties = properties;
             this.isApiPayment = isApiPayment;
         }
@@ -207,13 +240,23 @@ public abstract class RetryOperationCallback extends PluginOperation implements 
         }
 
         @Override
-        public Map<UUID, BigDecimal> getIdsWithAmount() {
-            return idsWithAmounts;
+        public Currency getCurrency() {
+            return currency;
         }
 
         @Override
-        public Currency getCurrency() {
-            return currency;
+        public UUID getPaymentId() {
+            return null;
+        }
+
+        @Override
+        public BigDecimal getProcessedAmount() {
+            return processedAmount;
+        }
+
+        @Override
+        public Currency getProcessedCurrency() {
+            return processedCurrency;
         }
 
         @Override

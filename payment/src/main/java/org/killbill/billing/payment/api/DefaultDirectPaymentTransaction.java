@@ -33,12 +33,14 @@ public class DefaultDirectPaymentTransaction extends EntityBase implements Direc
     private final PaymentStatus status;
     private final BigDecimal amount;
     private final Currency currency;
+    private final BigDecimal processedAmount;
+    private final Currency processedCurrency;
     private final String gatewayErrorCode;
     private final String gatewayErrorMsg;
     private final PaymentInfoPlugin infoPlugin;
 
     public DefaultDirectPaymentTransaction(final UUID id, final String externalKey, final DateTime createdDate, final DateTime updatedDate, final UUID directPaymentId, final TransactionType transactionType,
-                                           final DateTime effectiveDate, final PaymentStatus status, final BigDecimal amount, final Currency currency,
+                                           final DateTime effectiveDate, final PaymentStatus status, final BigDecimal amount, final Currency currency, final BigDecimal processedAmount, final Currency processedCurrency,
                                            final String gatewayErrorCode, final String gatewayErrorMsg, final PaymentInfoPlugin infoPlugin) {
         super(id, createdDate, updatedDate);
         this.externalKey = externalKey;
@@ -48,6 +50,8 @@ public class DefaultDirectPaymentTransaction extends EntityBase implements Direc
         this.status = status;
         this.amount = amount;
         this.currency = currency;
+        this.processedAmount = processedAmount;
+        this.processedCurrency = processedCurrency;
         this.gatewayErrorCode = gatewayErrorCode;
         this.gatewayErrorMsg = gatewayErrorMsg;
         this.infoPlugin = infoPlugin;
@@ -81,6 +85,16 @@ public class DefaultDirectPaymentTransaction extends EntityBase implements Direc
     @Override
     public Currency getCurrency() {
         return currency;
+    }
+
+    @Override
+    public BigDecimal getProcessedAmount() {
+        return processedAmount;
+    }
+
+    @Override
+    public Currency getProcessedCurrency() {
+        return processedCurrency;
     }
 
     @Override

@@ -378,6 +378,7 @@ public class DirectPaymentProcessor extends ProcessorBase {
             public DirectPaymentTransaction apply(final DirectPaymentTransactionModelDao input) {
                 return new DefaultDirectPaymentTransaction(input.getId(), input.getTransactionExternalKey(), input.getCreatedDate(), input.getUpdatedDate(), input.getDirectPaymentId(),
                                                            input.getTransactionType(), input.getEffectiveDate(), input.getPaymentStatus(), input.getAmount(), input.getCurrency(),
+                                                           input.getProcessedAmount(), input.getProcessedCurrency(),
                                                            input.getGatewayErrorCode(), input.getGatewayErrorMsg(), pluginInfo);
             }
         });

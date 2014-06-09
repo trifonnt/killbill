@@ -24,12 +24,12 @@ import org.killbill.billing.payment.dao.PaymentAttemptModelDao;
 
 public class RetryLeavingStateCallback implements LeavingStateCallback {
 
-    private RetryableDirectPaymentAutomatonRunner retryableDirectPaymentAutomatonRunner;
+    private PluginControlledDirectPaymentAutomatonRunner retryableDirectPaymentAutomatonRunner;
     private final DirectPaymentStateContext stateContext;
     private final State initialState;
     private final TransactionType transactionType;
 
-    public RetryLeavingStateCallback(final RetryableDirectPaymentAutomatonRunner retryableDirectPaymentAutomatonRunner, final DirectPaymentStateContext stateContext, final State initialState, final TransactionType transactionType) {
+    public RetryLeavingStateCallback(final PluginControlledDirectPaymentAutomatonRunner retryableDirectPaymentAutomatonRunner, final DirectPaymentStateContext stateContext, final State initialState, final TransactionType transactionType) {
         this.retryableDirectPaymentAutomatonRunner = retryableDirectPaymentAutomatonRunner;
         this.initialState = initialState;
         this.stateContext = stateContext;

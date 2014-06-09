@@ -21,62 +21,117 @@ import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
 
+import javax.annotation.Nullable;
 import javax.inject.Inject;
 
 import org.killbill.billing.ErrorCode;
 import org.killbill.billing.account.api.Account;
+import org.killbill.billing.callcontext.InternalCallContext;
 import org.killbill.billing.catalog.api.Currency;
 import org.killbill.billing.payment.api.DirectPayment;
 import org.killbill.billing.payment.api.DirectPaymentApi;
 import org.killbill.billing.payment.api.PaymentApiException;
 import org.killbill.billing.payment.api.PluginProperty;
 import org.killbill.billing.payment.core.DirectPaymentProcessor;
+import org.killbill.billing.payment.core.PaymentMethodProcessor;
+import org.killbill.billing.payment.core.PluginControlledPaymentProcessor;
 import org.killbill.billing.util.callcontext.CallContext;
 import org.killbill.billing.util.callcontext.InternalCallContextFactory;
 import org.killbill.billing.util.callcontext.TenantContext;
 import org.killbill.billing.util.entity.Pagination;
+
+import com.google.common.base.Preconditions;
 
 public class DefaultDirectPaymentApi implements DirectPaymentApi {
 
     private static final boolean SHOULD_LOCK_ACCOUNT = true;
 
     private final DirectPaymentProcessor directPaymentProcessor;
+    private final PaymentMethodProcessor paymentMethodProcessor;
+    private final PluginControlledPaymentProcessor pluginControlledPaymentProcessor;
     private final InternalCallContextFactory internalCallContextFactory;
 
     @Inject
-    public DefaultDirectPaymentApi(final DirectPaymentProcessor directPaymentProcessor, final InternalCallContextFactory internalCallContextFactory) {
+    public DefaultDirectPaymentApi(final DirectPaymentProcessor directPaymentProcessor, final PaymentMethodProcessor paymentMethodProcessor, final PluginControlledPaymentProcessor pluginControlledPaymentProcessor, final InternalCallContextFactory internalCallContextFactory) {
         this.directPaymentProcessor = directPaymentProcessor;
+        this.paymentMethodProcessor = paymentMethodProcessor;
+        this.pluginControlledPaymentProcessor = pluginControlledPaymentProcessor;
         this.internalCallContextFactory = internalCallContextFactory;
     }
 
     @Override
-    public DirectPayment createAuthorization(final Account account, final UUID paymentMethodId, final UUID directPaymentId, final BigDecimal amount, final Currency currency, final String directPaymentExternalKey, final String directPaymentTransactionExternalKey, final Iterable<PluginProperty> properties, final CallContext callContext) throws PaymentApiException {
-        return directPaymentProcessor.createAuthorization(account, paymentMethodId, directPaymentId, amount, currency, directPaymentExternalKey, directPaymentTransactionExternalKey, SHOULD_LOCK_ACCOUNT, properties, callContext, internalCallContextFactory.createInternalCallContext(account.getId(), callContext));
+    public DirectPayment createAuthorization(final Account account, final UUID paymentMethodId, final UUID directPaymentId, final BigDecimal amount, final Currency currency, final String directPaymentExternalKey, final String directPaymentTransactionExternalKey,
+                                             final Iterable<PluginProperty> properties, final CallContext callContext) throws PaymentApiException {
+
+        final InternalCallContext internalCallContext = internalCallContextFactory.createInternalCallContext(account.getId(), callContext);
+        return directPaymentProcessor.createAuthorization(account, paymentMethodId, directPaymentId, amount, currency, directPaymentExternalKey, directPaymentTransactionExternalKey,
+                                                          SHOULD_LOCK_ACCOUNT, properties, callContext, internalCallContext);
     }
 
     @Override
-    public DirectPayment createCapture(final Account account, final UUID directPaymentId, final BigDecimal amount, final Currency currency, final String directPaymentTransactionExternalKey, final Iterable<PluginProperty> properties, final CallContext callContext) throws PaymentApiException {
-        return directPaymentProcessor.createCapture(account, directPaymentId, amount, currency, directPaymentTransactionExternalKey, SHOULD_LOCK_ACCOUNT, properties, callContext, internalCallContextFactory.createInternalCallContext(account.getId(), callContext));
+    public DirectPayment createCapture(final Account account, final UUID directPaymentId, final BigDecimal amount, final Currency currency, final String directPaymentTransactionExternalKey,
+                                       final Iterable<PluginProperty> properties, final CallContext callContext) throws PaymentApiException {
+        final InternalCallContext internalCallContext = internalCallContextFactory.createInternalCallContext(account.getId(), callContext);
+        return directPaymentProcessor.createCapture(account, directPaymentId, amount, currency, directPaymentTransactionExternalKey,
+                                                    SHOULD_LOCK_ACCOUNT, properties, callContext, internalCallContext);
     }
 
     @Override
-    public DirectPayment createPurchase(final Account account, final UUID paymentMethodId, final UUID directPaymentId, final BigDecimal amount, final Currency currency, final String directPaymentExternalKey, final String directPaymentTransactionExternalKey, final Iterable<PluginProperty> properties, final CallContext callContext) throws PaymentApiException {
-        return directPaymentProcessor.createPurchase(account, paymentMethodId, directPaymentId, amount, currency, directPaymentExternalKey, directPaymentTransactionExternalKey, SHOULD_LOCK_ACCOUNT, properties, callContext, internalCallContextFactory.createInternalCallContext(account.getId(), callContext));
+    public DirectPayment createPurchase(final Account account, final UUID paymentMethodId, final UUID directPaymentId, final BigDecimal amount, final Currency currency, final String directPaymentExternalKey, final String directPaymentTransactionExternalKey,
+                                        final Iterable<PluginProperty> properties, final CallContext callContext) throws PaymentApiException {
+        final InternalCallContext internalCallContext = internalCallContextFactory.createInternalCallContext(account.getId(), callContext);
+        return directPaymentProcessor.createPurchase(account, paymentMethodId, directPaymentId, amount, currency, directPaymentExternalKey, directPaymentTransactionExternalKey,
+                                                     SHOULD_LOCK_ACCOUNT, properties, callContext, internalCallContext);
     }
 
     @Override
-    public DirectPayment createVoid(final Account account, final UUID directPaymentId, final String directPaymentTransactionExternalKey, final Iterable<PluginProperty> properties, final CallContext callContext) throws PaymentApiException {
-        return directPaymentProcessor.createVoid(account, directPaymentId, directPaymentTransactionExternalKey, SHOULD_LOCK_ACCOUNT, properties, callContext, internalCallContextFactory.createInternalCallContext(account.getId(), callContext));
+    public DirectPayment createPurchaseWithPaymentControl(final Account account, @Nullable final UUID paymentMethodId, final UUID directPaymentId, final BigDecimal amount, final Currency currency, final String directPaymentExternalKey, final String directPaymentTransactionExternalKey,
+                                                          final Iterable<PluginProperty> properties, final PaymentOptions paymentOptions, final CallContext callContext) throws PaymentApiException {
+        final InternalCallContext internalCallContext = internalCallContextFactory.createInternalCallContext(account.getId(), callContext);
+
+        Preconditions.checkArgument(paymentMethodId != null || paymentOptions.isExternalPayment());
+        final UUID nonNulPaymentMethodId = (paymentMethodId != null) ?
+                                           paymentMethodId :
+                                           paymentMethodProcessor.createOrGetExternalPaymentMethod(account, properties, callContext, internalCallContext);
+        return pluginControlledPaymentProcessor.createPurchase(account, nonNulPaymentMethodId, directPaymentId, amount, currency, directPaymentExternalKey, directPaymentTransactionExternalKey,
+                                                              paymentOptions.isExternalPayment(), properties, callContext, internalCallContext);
+
     }
 
     @Override
-    public DirectPayment createRefund(final Account account, final UUID directPaymentId, final BigDecimal amount, final Currency currency, final String directPaymentTransactionExternalKey, final Iterable<PluginProperty> properties, final CallContext callContext) throws PaymentApiException {
-        return directPaymentProcessor.createRefund(account, directPaymentId, amount, currency, directPaymentTransactionExternalKey, SHOULD_LOCK_ACCOUNT, properties, callContext, internalCallContextFactory.createInternalCallContext(account.getId(), callContext));
+    public DirectPayment createVoid(final Account account, final UUID directPaymentId, final String directPaymentTransactionExternalKey, final Iterable<PluginProperty> properties,
+                                    final CallContext callContext) throws PaymentApiException {
+        final InternalCallContext internalCallContext = internalCallContextFactory.createInternalCallContext(account.getId(), callContext);
+        return directPaymentProcessor.createVoid(account, directPaymentId, directPaymentTransactionExternalKey,
+                                                 SHOULD_LOCK_ACCOUNT, properties, callContext, internalCallContext);
+
     }
 
     @Override
-    public DirectPayment createCredit(final Account account, final UUID paymentMethodId, final UUID directPaymentId, final BigDecimal amount, final Currency currency, final String directPaymentExternalKey, final String directPaymentTransactionExternalKey, final Iterable<PluginProperty> properties, final CallContext callContext) throws PaymentApiException {
-        return directPaymentProcessor.createCredit(account, paymentMethodId, directPaymentId, amount, currency, directPaymentExternalKey, directPaymentTransactionExternalKey, SHOULD_LOCK_ACCOUNT, properties, callContext, internalCallContextFactory.createInternalCallContext(account.getId(), callContext));
+    public DirectPayment createRefund(final Account account, final UUID directPaymentId, final BigDecimal amount, final Currency currency, final String directPaymentTransactionExternalKey, final Iterable<PluginProperty> properties,
+                                      final CallContext callContext) throws PaymentApiException {
+        final InternalCallContext internalCallContext = internalCallContextFactory.createInternalCallContext(account.getId(), callContext);
+        return directPaymentProcessor.createRefund(account, directPaymentId, amount, currency, directPaymentTransactionExternalKey,
+                                                   SHOULD_LOCK_ACCOUNT, properties, callContext, internalCallContext);
+    }
+
+    @Override
+    public DirectPayment createRefundWithPaymentControl(final Account account, final UUID directPaymentId, final BigDecimal amount, final Currency currency, final String directPaymentTransactionExternalKey, final Iterable<PluginProperty> properties,
+                                                        final PaymentOptions paymentOptions, final CallContext callContext) throws PaymentApiException {
+        final InternalCallContext internalCallContext = internalCallContextFactory.createInternalCallContext(account.getId(), callContext);
+        return pluginControlledPaymentProcessor.createRefund(account, directPaymentId, amount, currency, directPaymentTransactionExternalKey,
+                                                            paymentOptions.isExternalPayment(), properties, callContext, internalCallContext);
+
+    }
+
+    @Override
+    public DirectPayment createCredit(final Account account, final UUID paymentMethodId, final UUID directPaymentId, final BigDecimal amount, final Currency currency,
+                                      final String directPaymentExternalKey, final String directPaymentTransactionExternalKey,
+                                      final Iterable<PluginProperty> properties, final CallContext callContext) throws PaymentApiException {
+        final InternalCallContext internalCallContext = internalCallContextFactory.createInternalCallContext(account.getId(), callContext);
+        return directPaymentProcessor.createCredit(account, paymentMethodId, directPaymentId, amount, currency, directPaymentExternalKey, directPaymentTransactionExternalKey,
+                                                   SHOULD_LOCK_ACCOUNT, properties, callContext, internalCallContext);
+
     }
 
     @Override

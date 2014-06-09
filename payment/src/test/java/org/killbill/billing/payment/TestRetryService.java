@@ -74,7 +74,7 @@ public class TestRetryService extends PaymentTestSuiteNoDB {
     }
 
     private DirectPayment getPaymentForInvoice(final UUID invoiceId) throws PaymentApiException {
-        final List<DirectPayment> payments = paymentProcessor.getInvoicePayments(invoiceId, internalCallContext);
+        final List<DirectPayment> payments = null; // STEPH paymentProcessor.getInvoicePayments(invoiceId, internalCallContext);
         assertEquals(payments.size(), 1);
         final DirectPayment payment = payments.get(0);
         /* assertEquals(payment.getInvoiceId(), invoiceId); STEPH */
@@ -133,11 +133,14 @@ public class TestRetryService extends PaymentTestSuiteNoDB {
                                                             Currency.USD));
         setPaymentFailure(failureType);
         boolean failed = false;
+        /*
+        STEPH
         try {
             paymentProcessor.createPayment(account, invoice.getId(), amount, false, false, ImmutableList.<PluginProperty>of(), internalCallContext);
         } catch (final PaymentApiException e) {
             failed = true;
         }
+        */
         assertTrue(failed);
 
         for (int curFailure = 0; curFailure < maxTries; curFailure++) {

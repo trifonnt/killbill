@@ -41,12 +41,12 @@ import org.killbill.billing.osgi.api.OSGIServiceDescriptor;
 import org.killbill.billing.osgi.api.OSGIServiceRegistration;
 import org.killbill.billing.payment.core.DirectPaymentProcessor;
 import org.killbill.billing.payment.core.PaymentMethodProcessor;
-import org.killbill.billing.payment.core.sm.RetryableDirectPaymentAutomatonRunner;
+import org.killbill.billing.payment.core.sm.PluginControlledDirectPaymentAutomatonRunner;
 import org.killbill.billing.payment.dao.DirectPaymentModelDao;
 import org.killbill.billing.payment.dao.PaymentDao;
 import org.killbill.billing.payment.dao.PaymentModelDao;
-import org.killbill.billing.payment.retry.InvoiceRetryPluginApi;
-import org.killbill.billing.retry.plugin.api.RetryPluginApi;
+import org.killbill.billing.payment.retry.InvoicePaymentControlPluginApi;
+import org.killbill.billing.retry.plugin.api.PaymentControlPluginApi;
 import org.killbill.billing.util.callcontext.CallContext;
 import org.killbill.billing.util.callcontext.InternalCallContextFactory;
 import org.killbill.billing.util.callcontext.TenantContext;
@@ -66,7 +66,7 @@ public class DefaultPaymentApi implements PaymentApi {
     private final InternalCallContextFactory internalCallContextFactory;
     private final PaymentDao paymentDao;
 
-    private final RetryableDirectPaymentAutomatonRunner retryableDirectPaymentAutomatonRunner;
+    private final PluginControlledDirectPaymentAutomatonRunner pluginControlledDirectPaymentAutomatonRunner;
     private final DirectPaymentProcessor directPaymentProcessor;
     private final InvoiceInternalApi invoiceApi;
 
@@ -74,14 +74,14 @@ public class DefaultPaymentApi implements PaymentApi {
     public DefaultPaymentApi(final PaymentMethodProcessor methodProcessor,
                              final InvoiceInternalApi invoiceApi,
                              final Clock clock,
-                             final RetryableDirectPaymentAutomatonRunner retryableDirectPaymentAutomatonRunner,
+                             final PluginControlledDirectPaymentAutomatonRunner pluginControlledDirectPaymentAutomatonRunner,
                              final DirectPaymentProcessor directPaymentProcessor,
                              final InternalCallContextFactory internalCallContextFactory,
                              final PaymentConfig paymentConfig,
                              final PaymentDao paymentDao,
-                             final OSGIServiceRegistration<RetryPluginApi> retryPluginRegistry) {
+                             final OSGIServiceRegistration<PaymentControlPluginApi> paymentControlPluginRegistry) {
         this.methodProcessor = methodProcessor;
-        this.retryableDirectPaymentAutomatonRunner = retryableDirectPaymentAutomatonRunner;
+        this.pluginControlledDirectPaymentAutomatonRunner = pluginControlledDirectPaymentAutomatonRunner;
         this.directPaymentProcessor = directPaymentProcessor;
         this.internalCallContextFactory = internalCallContextFactory;
         this.paymentDao = paymentDao;
@@ -95,10 +95,10 @@ public class DefaultPaymentApi implements PaymentApi {
 
             @Override
             public String getRegistrationName() {
-                return InvoiceRetryPluginApi.PLUGIN_NAME;
+                return InvoicePaymentControlPluginApi.PLUGIN_NAME;
             }
         };
-        retryPluginRegistry.registerService(desc, new InvoiceRetryPluginApi(paymentConfig, invoiceApi, paymentDao, internalCallContextFactory, clock));
+        paymentControlPluginRegistry.registerService(desc, new InvoicePaymentControlPluginApi(paymentConfig, invoiceApi, paymentDao, internalCallContextFactory, clock));
 
     }
 
@@ -107,7 +107,7 @@ public class DefaultPaymentApi implements PaymentApi {
                                        @Nullable final BigDecimal amount, final Iterable<PluginProperty> properties, final CallContext context) throws PaymentApiException {
 
         final InternalCallContext internalContext = internalCallContextFactory.createInternalCallContext(account.getId(), context);
-        final DirectPayment directPayment = retryableDirectPaymentAutomatonRunner.run(true,
+        final DirectPayment directPayment = pluginControlledDirectPaymentAutomatonRunner.run(true,
                                                                                       TransactionType.PURCHASE,
                                                                                       account,
                                                                                       account.getPaymentMethodId(),
@@ -117,9 +117,8 @@ public class DefaultPaymentApi implements PaymentApi {
                                                                                       amount,
                                                                                       account.getCurrency(),
                                                                                       false,
-                                                                                      ImmutableMap.<UUID, BigDecimal>of(),
                                                                                       properties,
-                                                                                      InvoiceRetryPluginApi.PLUGIN_NAME,
+                                                                                      InvoicePaymentControlPluginApi.PLUGIN_NAME,
                                                                                       context,
                                                                                       internalContext);
 
@@ -130,7 +129,7 @@ public class DefaultPaymentApi implements PaymentApi {
     @Override
     public DirectPayment createExternalPayment(final Account account, final UUID invoiceId, final BigDecimal amount, final CallContext context) throws PaymentApiException {
         final InternalCallContext internalContext = internalCallContextFactory.createInternalCallContext(account.getId(), context);
-        final DirectPayment directPayment = retryableDirectPaymentAutomatonRunner.run(true,
+        final DirectPayment directPayment = pluginControlledDirectPaymentAutomatonRunner.run(true,
                                                                                       TransactionType.PURCHASE,
                                                                                       account,
                                                                                       account.getPaymentMethodId(),
@@ -140,9 +139,8 @@ public class DefaultPaymentApi implements PaymentApi {
                                                                                       amount,
                                                                                       account.getCurrency(),
                                                                                       true,
-                                                                                      ImmutableMap.<UUID, BigDecimal>of(),
                                                                                       ImmutableList.<PluginProperty>of(),
-                                                                                      InvoiceRetryPluginApi.PLUGIN_NAME,
+                                                                                      InvoicePaymentControlPluginApi.PLUGIN_NAME,
                                                                                       context,
                                                                                       internalContext);
 
@@ -215,7 +213,6 @@ public class DefaultPaymentApi implements PaymentApi {
         return directPaymentProcessor.searchPayments(searchKey, offset, limit, pluginName, properties, context, internalCallContextFactory.createInternalTenantContext(context));
     }
 
-
     //
     // STEPH how different those search are from the one above, and do we really need both APIs -- since we always return  DirectPayment anyway?
     //
@@ -274,7 +271,7 @@ public class DefaultPaymentApi implements PaymentApi {
         }
 
         final InternalCallContext internalContext = internalCallContextFactory.createInternalCallContext(account.getId(), context);
-        final DirectPayment directPayment = retryableDirectPaymentAutomatonRunner.run(true,
+        final DirectPayment directPayment = pluginControlledDirectPaymentAutomatonRunner.run(true,
                                                                                       TransactionType.PURCHASE,
                                                                                       account,
                                                                                       account.getPaymentMethodId(),
@@ -284,9 +281,8 @@ public class DefaultPaymentApi implements PaymentApi {
                                                                                       refundAmount,
                                                                                       account.getCurrency(),
                                                                                       true,
-                                                                                      ImmutableMap.<UUID, BigDecimal>of(),
                                                                                       ImmutableList.<PluginProperty>of(),
-                                                                                      InvoiceRetryPluginApi.PLUGIN_NAME,
+                                                                                      InvoicePaymentControlPluginApi.PLUGIN_NAME,
                                                                                       context,
                                                                                       internalContext);
 
@@ -310,7 +306,7 @@ public class DefaultPaymentApi implements PaymentApi {
 
         final InternalCallContext internalContext = internalCallContextFactory.createInternalCallContext(account.getId(), context);
         final String directPaymentTransactionExternalKey = UUID.randomUUID().toString();
-        final DirectPayment directPayment = retryableDirectPaymentAutomatonRunner.run(true,
+        final DirectPayment directPayment = pluginControlledDirectPaymentAutomatonRunner.run(true,
                                                                                       TransactionType.PURCHASE,
                                                                                       account,
                                                                                       account.getPaymentMethodId(),
@@ -320,9 +316,8 @@ public class DefaultPaymentApi implements PaymentApi {
                                                                                       refundAmount,
                                                                                       account.getCurrency(),
                                                                                       true,
-                                                                                      ImmutableMap.<UUID, BigDecimal>of(),
                                                                                       ImmutableList.<PluginProperty>of(),
-                                                                                      InvoiceRetryPluginApi.PLUGIN_NAME,
+                                                                                      InvoicePaymentControlPluginApi.PLUGIN_NAME,
                                                                                       context,
                                                                                       internalContext);
 
@@ -354,7 +349,7 @@ public class DefaultPaymentApi implements PaymentApi {
         final InternalCallContext internalContext = internalCallContextFactory.createInternalCallContext(account.getId(), context);
         final String directPaymentTransactionExternalKey = UUID.randomUUID().toString();
 
-        final DirectPayment directPayment = retryableDirectPaymentAutomatonRunner.run(true,
+        final DirectPayment directPayment = pluginControlledDirectPaymentAutomatonRunner.run(true,
                                                                                       TransactionType.PURCHASE,
                                                                                       account,
                                                                                       account.getPaymentMethodId(),
@@ -364,9 +359,8 @@ public class DefaultPaymentApi implements PaymentApi {
                                                                                       null,
                                                                                       account.getCurrency(),
                                                                                       true,
-                                                                                      invoiceItemIdsWithAmounts,
                                                                                       ImmutableList.<PluginProperty>of(),
-                                                                                      InvoiceRetryPluginApi.PLUGIN_NAME,
+                                                                                      InvoicePaymentControlPluginApi.PLUGIN_NAME,
                                                                                       context,
                                                                                       internalContext);
 

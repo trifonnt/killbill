@@ -36,14 +36,13 @@ import org.killbill.billing.payment.api.PaymentService;
 import org.killbill.billing.payment.api.svcs.DefaultDirectPaymentApi;
 import org.killbill.billing.payment.api.svcs.DefaultPaymentGatewayApi;
 import org.killbill.billing.payment.api.svcs.DefaultPaymentInternalApi;
-import org.killbill.billing.payment.api.svcs.RetryableDirectPaymentApi;
 import org.killbill.billing.payment.bus.InvoiceHandler;
 import org.killbill.billing.payment.bus.PaymentTagHandler;
 import org.killbill.billing.payment.core.DirectPaymentProcessor;
 import org.killbill.billing.payment.core.PaymentGatewayProcessor;
 import org.killbill.billing.payment.core.PaymentMethodProcessor;
-import org.killbill.billing.payment.core.RetryableDirectPaymentProcessor;
-import org.killbill.billing.payment.core.sm.RetryableDirectPaymentAutomatonRunner;
+import org.killbill.billing.payment.core.PluginControlledPaymentProcessor;
+import org.killbill.billing.payment.core.sm.PluginControlledDirectPaymentAutomatonRunner;
 import org.killbill.billing.payment.dao.DefaultPaymentDao;
 import org.killbill.billing.payment.dao.PaymentDao;
 import org.killbill.billing.payment.plugin.api.PaymentPluginApi;
@@ -57,7 +56,7 @@ import org.killbill.billing.payment.retry.FailedPaymentRetryService.FailedPaymen
 import org.killbill.billing.payment.retry.PluginFailureRetryService;
 import org.killbill.billing.payment.retry.PluginFailureRetryService.PluginFailureRetryServiceScheduler;
 import org.killbill.billing.payment.retry.RetryService;
-import org.killbill.billing.retry.plugin.api.RetryPluginApi;
+import org.killbill.billing.retry.plugin.api.PaymentControlPluginApi;
 import org.killbill.billing.util.config.PaymentConfig;
 import org.killbill.xmlloader.XMLLoader;
 import org.skife.config.ConfigSource;
@@ -138,7 +137,7 @@ public class PaymentModule extends AbstractModule {
     }
 
     protected void installAutomatonRunner() {
-        bind(RetryableDirectPaymentAutomatonRunner.class).asEagerSingleton();
+        bind(PluginControlledDirectPaymentAutomatonRunner.class).asEagerSingleton();
     }
 
     protected void installProcessors(final PaymentConfig paymentConfig) {
@@ -153,7 +152,7 @@ public class PaymentModule extends AbstractModule {
         });
         bind(ExecutorService.class).annotatedWith(Names.named(PLUGIN_EXECUTOR_NAMED)).toInstance(pluginExecutorService);
         bind(DirectPaymentProcessor.class).asEagerSingleton();
-        bind(RetryableDirectPaymentProcessor.class).asEagerSingleton();
+        bind(PluginControlledPaymentProcessor.class).asEagerSingleton();
         bind(PaymentGatewayProcessor.class).asEagerSingleton();
         bind(PaymentMethodProcessor.class).asEagerSingleton();
     }
@@ -165,13 +164,11 @@ public class PaymentModule extends AbstractModule {
 
         bind(PaymentConfig.class).toInstance(paymentConfig);
         bind(new TypeLiteral<OSGIServiceRegistration<PaymentPluginApi>>() {}).toProvider(DefaultPaymentProviderPluginRegistryProvider.class).asEagerSingleton();
-        bind(new TypeLiteral<OSGIServiceRegistration<RetryPluginApi>>() {}).toProvider(DefaultRetryProviderPluginRegistryProvider.class).asEagerSingleton();
+        bind(new TypeLiteral<OSGIServiceRegistration<PaymentControlPluginApi>>() {}).toProvider(DefaultPaymentControlProviderPluginRegistryProvider.class).asEagerSingleton();
 
         bind(PaymentInternalApi.class).to(DefaultPaymentInternalApi.class).asEagerSingleton();
         bind(PaymentApi.class).to(DefaultPaymentApi.class).asEagerSingleton();
         bind(DirectPaymentApi.class).to(DefaultDirectPaymentApi.class).asEagerSingleton();
-        bind(RetryableDirectPaymentApi.class).asEagerSingleton();
-        bind(DirectPaymentApi.class).annotatedWith(Names.named(PLUGIN_EXECUTOR_NAMED)).to(RetryableDirectPaymentApi.class);
         bind(PaymentGatewayApi.class).to(DefaultPaymentGatewayApi.class).asEagerSingleton();
         bind(InvoiceHandler.class).asEagerSingleton();
         bind(PaymentTagHandler.class).asEagerSingleton();

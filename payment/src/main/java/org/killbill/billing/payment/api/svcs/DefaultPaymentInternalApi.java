@@ -38,25 +38,23 @@ import org.killbill.billing.payment.api.PluginProperty;
 import org.killbill.billing.payment.api.TransactionType;
 import org.killbill.billing.payment.core.DirectPaymentProcessor;
 import org.killbill.billing.payment.core.PaymentMethodProcessor;
-import org.killbill.billing.payment.core.sm.RetryableDirectPaymentAutomatonRunner;
-import org.killbill.billing.payment.retry.InvoiceRetryPluginApi;
+import org.killbill.billing.payment.core.sm.PluginControlledDirectPaymentAutomatonRunner;
+import org.killbill.billing.payment.retry.InvoicePaymentControlPluginApi;
 import org.killbill.billing.util.callcontext.CallContext;
 import org.killbill.billing.util.callcontext.TenantContext;
 import org.killbill.billing.util.dao.NonEntityDao;
-
-import com.google.common.collect.ImmutableMap;
 
 public class DefaultPaymentInternalApi implements PaymentInternalApi {
 
     private final PaymentMethodProcessor methodProcessor;
     private final DirectPaymentProcessor directPaymentProcessor;
 
-    private final RetryableDirectPaymentAutomatonRunner retryableDirectPaymentAutomatonRunner;
+    private final PluginControlledDirectPaymentAutomatonRunner pluginControlledDirectPaymentAutomatonRunner;
     private final NonEntityDao nonEntityDao;
 
     @Inject
-    public DefaultPaymentInternalApi(final DirectPaymentProcessor directPaymentProcessor, final PaymentMethodProcessor methodProcessor, final NonEntityDao nonEntityDao, final RetryableDirectPaymentAutomatonRunner retryableDirectPaymentAutomatonRunner) {
-        this.retryableDirectPaymentAutomatonRunner = retryableDirectPaymentAutomatonRunner;
+    public DefaultPaymentInternalApi(final DirectPaymentProcessor directPaymentProcessor, final PaymentMethodProcessor methodProcessor, final NonEntityDao nonEntityDao, final PluginControlledDirectPaymentAutomatonRunner pluginControlledDirectPaymentAutomatonRunner) {
+        this.pluginControlledDirectPaymentAutomatonRunner = pluginControlledDirectPaymentAutomatonRunner;
         this.methodProcessor = methodProcessor;
         this.nonEntityDao = nonEntityDao;
         this.directPaymentProcessor = directPaymentProcessor;
@@ -67,7 +65,7 @@ public class DefaultPaymentInternalApi implements PaymentInternalApi {
                                        @Nullable final BigDecimal amount, final Iterable<PluginProperty> properties, final InternalCallContext internalContext) throws PaymentApiException {
 
         final CallContext callContext = internalContext.toCallContext(nonEntityDao.retrieveIdFromObject(internalContext.getTenantRecordId(), ObjectType.TENANT));
-        return retryableDirectPaymentAutomatonRunner.run(true,
+        return pluginControlledDirectPaymentAutomatonRunner.run(true,
                                                          TransactionType.PURCHASE,
                                                          account,
                                                          account.getPaymentMethodId(),
@@ -77,9 +75,8 @@ public class DefaultPaymentInternalApi implements PaymentInternalApi {
                                                          amount,
                                                          account.getCurrency(),
                                                          false,
-                                                         ImmutableMap.<UUID, BigDecimal>of(),
                                                          properties,
-                                                         InvoiceRetryPluginApi.PLUGIN_NAME,
+                                                         InvoicePaymentControlPluginApi.PLUGIN_NAME,
                                                          callContext,
                                                          internalContext);
     }

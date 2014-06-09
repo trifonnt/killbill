@@ -22,43 +22,43 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.killbill.billing.osgi.api.OSGIServiceDescriptor;
 import org.killbill.billing.osgi.api.OSGIServiceRegistration;
-import org.killbill.billing.retry.plugin.api.RetryPluginApi;
+import org.killbill.billing.retry.plugin.api.PaymentControlPluginApi;
 import org.killbill.billing.util.config.PaymentConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.inject.Inject;
 
-public class DefaultRetryProviderPluginRegistry implements OSGIServiceRegistration<RetryPluginApi> {
+public class DefaultPaymentControlProviderPluginRegistry implements OSGIServiceRegistration<PaymentControlPluginApi> {
 
     private final static Logger log = LoggerFactory.getLogger(DefaultPaymentProviderPluginRegistry.class);
 
     private final String defaultPlugin;
-    private final Map<String, RetryPluginApi> pluginsByName = new ConcurrentHashMap<String, RetryPluginApi>();
+    private final Map<String, PaymentControlPluginApi> pluginsByName = new ConcurrentHashMap<String, PaymentControlPluginApi>();
 
     @Inject
-    public DefaultRetryProviderPluginRegistry(final PaymentConfig config) {
+    public DefaultPaymentControlProviderPluginRegistry(final PaymentConfig config) {
         this.defaultPlugin = config.getDefaultRetryProvider();
     }
 
     @Override
-    public void registerService(final OSGIServiceDescriptor desc, final RetryPluginApi service) {
-        log.info("DefaultRetryProviderPluginRegistry registering service " + desc.getRegistrationName());
+    public void registerService(final OSGIServiceDescriptor desc, final PaymentControlPluginApi service) {
+        log.info("DefaultPaymentControlProviderPluginRegistry registering service " + desc.getRegistrationName());
         pluginsByName.put(desc.getRegistrationName(), service);
     }
 
     @Override
     public void unregisterService(final String serviceName) {
-        log.info("DefaultRetryProviderPluginRegistry unregistering service " + serviceName);
+        log.info("DefaultPaymentControlProviderPluginRegistry unregistering service " + serviceName);
         pluginsByName.remove(serviceName);
     }
 
     @Override
-    public RetryPluginApi getServiceForName(final String name) {
+    public PaymentControlPluginApi getServiceForName(final String name) {
         if (name == null) {
             throw new IllegalArgumentException("Null payment plugin APi name");
         }
-        final RetryPluginApi plugin = pluginsByName.get(name);
+        final PaymentControlPluginApi plugin = pluginsByName.get(name);
         return plugin;
     }
 
@@ -68,7 +68,7 @@ public class DefaultRetryProviderPluginRegistry implements OSGIServiceRegistrati
     }
 
     @Override
-    public Class<RetryPluginApi> getServiceType() {
-        return RetryPluginApi.class;
+    public Class<PaymentControlPluginApi> getServiceType() {
+        return PaymentControlPluginApi.class;
     }
 }

@@ -22,22 +22,21 @@ import org.killbill.billing.payment.api.DirectPayment;
 import org.killbill.billing.payment.api.PaymentApiException;
 import org.killbill.billing.payment.core.DirectPaymentProcessor;
 import org.killbill.billing.payment.dispatcher.PluginDispatcher;
-import org.killbill.billing.retry.plugin.api.RetryPluginApi;
+import org.killbill.billing.retry.plugin.api.PaymentControlPluginApi;
 import org.killbill.commons.locker.GlobalLocker;
 
 public class RetryCaptureOperationCallback extends RetryOperationCallback {
 
-    public RetryCaptureOperationCallback(final GlobalLocker locker, final PluginDispatcher<OperationResult> paymentPluginDispatcher, final RetryableDirectPaymentStateContext directPaymentStateContext, final DirectPaymentProcessor directPaymentProcessor, final OSGIServiceRegistration<RetryPluginApi> retryPluginRegistry) {
-        super(locker, paymentPluginDispatcher, directPaymentStateContext, directPaymentProcessor, retryPluginRegistry);
+    public RetryCaptureOperationCallback(final GlobalLocker locker, final PluginDispatcher<OperationResult> paymentPluginDispatcher, final RetryableDirectPaymentStateContext directPaymentStateContext, final DirectPaymentProcessor directPaymentProcessor, final OSGIServiceRegistration<PaymentControlPluginApi> paymentControlPluginRegistry) {
+        super(locker, paymentPluginDispatcher, directPaymentStateContext, directPaymentProcessor, paymentControlPluginRegistry);
     }
-
 
     @Override
     protected DirectPayment doPluginOperation() throws PaymentApiException {
         return directPaymentProcessor.createCapture(directPaymentStateContext.account, directPaymentStateContext.directPaymentId,
-                                             directPaymentStateContext.getAmount(), directPaymentStateContext.getCurrency(),
-                                             directPaymentStateContext.directPaymentTransactionExternalKey,
-                                             false, directPaymentStateContext.getProperties(),
-                                             directPaymentStateContext.callContext, directPaymentStateContext.internalCallContext);
+                                                    directPaymentStateContext.getAmount(), directPaymentStateContext.getCurrency(),
+                                                    directPaymentStateContext.directPaymentTransactionExternalKey,
+                                                    false, directPaymentStateContext.getProperties(),
+                                                    directPaymentStateContext.callContext, directPaymentStateContext.internalCallContext);
     }
 }

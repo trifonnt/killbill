@@ -263,7 +263,7 @@ CREATE TABLE direct_transactions (
 ) /*! CHARACTER SET utf8 COLLATE utf8_bin */;
 CREATE UNIQUE INDEX direct_transactions_id ON direct_transactions(id);
 CREATE INDEX direct_transactions_direct_id ON direct_transactions(direct_payment_id);
-CREATE INDEX direct_transactions_direct_key ON direct_transactions(transaction_external_key);
+CREATE UNIQUE INDEX direct_transactions_direct_key ON direct_transactions(transaction_external_key, payment_status);
 CREATE INDEX direct_transactions_tenant_account_record_id ON direct_transactions(tenant_record_id, account_record_id);
 
 DROP TABLE IF EXISTS direct_transaction_history;

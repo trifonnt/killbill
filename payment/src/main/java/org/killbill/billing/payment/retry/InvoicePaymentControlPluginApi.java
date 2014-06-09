@@ -33,12 +33,13 @@ import org.killbill.billing.invoice.api.InvoiceApiException;
 import org.killbill.billing.invoice.api.InvoiceInternalApi;
 import org.killbill.billing.invoice.api.InvoiceItem;
 import org.killbill.billing.payment.api.PaymentStatus;
+import org.killbill.billing.payment.api.PluginProperty;
 import org.killbill.billing.payment.api.TransactionType;
 import org.killbill.billing.payment.dao.DirectPaymentModelDao;
 import org.killbill.billing.payment.dao.DirectPaymentTransactionModelDao;
 import org.killbill.billing.payment.dao.PaymentDao;
-import org.killbill.billing.retry.plugin.api.RetryPluginApi;
-import org.killbill.billing.retry.plugin.api.RetryPluginApiException;
+import org.killbill.billing.retry.plugin.api.PaymentControlApiException;
+import org.killbill.billing.retry.plugin.api.PaymentControlPluginApi;
 import org.killbill.billing.retry.plugin.api.UnknownEntryException;
 import org.killbill.billing.util.callcontext.InternalCallContextFactory;
 import org.killbill.billing.util.config.PaymentConfig;
@@ -47,14 +48,18 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Objects;
+import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
 import com.google.common.collect.Collections2;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
 
-public final class InvoiceRetryPluginApi implements RetryPluginApi {
+public final class InvoicePaymentControlPluginApi implements PaymentControlPluginApi {
 
-    public final static String PLUGIN_NAME = "__INVOICE_RETRY_PLUGIN__";
+    public final static String PLUGIN_NAME = "__INVOICE_PAYMENT_CONTROL_PLUGIN__";
+
+    private static final String IPCD_REFUND_IDS_WITH_AMOUNT_KEY = "IPCD_REF_IDS_AMOUNTS";
 
     private final PaymentConfig paymentConfig;
     private final InvoiceInternalApi invoiceApi;
@@ -62,10 +67,10 @@ public final class InvoiceRetryPluginApi implements RetryPluginApi {
     private final InternalCallContextFactory internalCallContextFactory;
     private final Clock clock;
 
-    private final Logger logger = LoggerFactory.getLogger(InvoiceRetryPluginApi.class);
+    private final Logger logger = LoggerFactory.getLogger(InvoicePaymentControlPluginApi.class);
 
-    public InvoiceRetryPluginApi(final PaymentConfig paymentConfig, final InvoiceInternalApi invoiceApi, final PaymentDao paymentDao,
-                                 final InternalCallContextFactory internalCallContextFactory, final Clock clock) {
+    public InvoicePaymentControlPluginApi(final PaymentConfig paymentConfig, final InvoiceInternalApi invoiceApi, final PaymentDao paymentDao,
+                                          final InternalCallContextFactory internalCallContextFactory, final Clock clock) {
         this.paymentConfig = paymentConfig;
         this.invoiceApi = invoiceApi;
         this.paymentDao = paymentDao;
@@ -74,59 +79,92 @@ public final class InvoiceRetryPluginApi implements RetryPluginApi {
     }
 
     @Override
-    public RetryPluginResult getPluginResult(final RetryPluginContext retryPluginContext) throws RetryPluginApiException {
+    public PriorPaymentControlResult priorCall(final PaymentControlContext paymentControlContext) throws PaymentControlApiException {
 
-        final InternalCallContext internalContext = internalCallContextFactory.createInternalCallContext(retryPluginContext.getAccount().getId(), retryPluginContext);
-        switch (retryPluginContext.getTransactionType()) {
-            case PURCHASE:
-                return getPluginPurchaseResult(retryPluginContext, internalContext);
+        final TransactionType transactionType = paymentControlContext.getTransactionType();
+        Preconditions.checkArgument(transactionType == TransactionType.PURCHASE ||
+                                   transactionType == TransactionType.REFUND);
 
-            case REFUND:
-                return getPluginRefundResult(retryPluginContext, internalContext);
-
-            default:
-                throw new RuntimeException("Unsupported transaction type " + retryPluginContext.getTransactionType());
+        final InternalCallContext internalContext = internalCallContextFactory.createInternalCallContext(paymentControlContext.getAccount().getId(), paymentControlContext);
+        if (transactionType == TransactionType.PURCHASE) {
+            return getPluginPurchaseResult(paymentControlContext, internalContext);
+        } else /* TransactionType.REFUND */ {
+            return getPluginRefundResult(paymentControlContext, internalContext);
         }
     }
 
     @Override
-    public DateTime getNextRetryDate(RetryPluginContext retryPluginContext)
-            throws RetryPluginApiException {
-        final InternalCallContext internalContext = internalCallContextFactory.createInternalCallContext(retryPluginContext.getAccount().getId(), retryPluginContext);
-        switch (retryPluginContext.getTransactionType()) {
-            case PURCHASE:
-                return computeNextRetryDate(retryPluginContext.getPaymentExternalKey(), internalContext);
-            default:
-                return null;
+    public void onCompletionCall(final PaymentControlContext paymentControlContext) throws PaymentControlApiException {
+
+        final UUID invoiceId = UUID.fromString(paymentControlContext.getPaymentExternalKey());
+        final InternalCallContext internalContext = internalCallContextFactory.createInternalCallContext(paymentControlContext.getAccount().getId(), paymentControlContext);
+        try {
+            invoiceApi.notifyOfPayment(invoiceId,
+                                       paymentControlContext.getAmount(),
+                                       paymentControlContext.getCurrency(),
+                                       paymentControlContext.getProcessedCurrency(),
+                                       paymentControlContext.getPaymentId(),
+                                       paymentControlContext.getCreatedDate(),
+                                       internalContext);
+        } catch (InvoiceApiException e) {
+            logger.error("Invoice " + invoiceId + " seems missing", e);
+            //throw new PaymentControlApiException(e);
         }
     }
 
-    private RetryPluginResult getPluginPurchaseResult(final RetryPluginContext retryPluginContext, final InternalCallContext internalContext) throws RetryPluginApiException {
-        final UUID invoiceId = UUID.fromString(retryPluginContext.getPaymentExternalKey());
+    @Override
+    public FailureCallResult onFailureCall(final PaymentControlContext paymentControlContext) throws PaymentControlApiException {
+
+        final InternalCallContext internalContext = internalCallContextFactory.createInternalCallContext(paymentControlContext.getAccount().getId(), paymentControlContext);
+        switch (paymentControlContext.getTransactionType()) {
+            case PURCHASE:
+                final DateTime nextRetryDate = computeNextRetryDate(paymentControlContext.getPaymentExternalKey(), paymentControlContext.isApiPayment(), internalContext);
+                return new DefaultFailureCallResult(nextRetryDate);
+            default:
+                return new DefaultFailureCallResult(null);
+        }
+    }
+
+    private PriorPaymentControlResult getPluginPurchaseResult(final PaymentControlContext paymentControlPluginContext, final InternalCallContext internalContext) throws PaymentControlApiException {
+        final UUID invoiceId = UUID.fromString(paymentControlPluginContext.getPaymentExternalKey());
         try {
             final Invoice invoice = rebalanceAndGetInvoice(invoiceId, internalContext);
-            final BigDecimal requestedAmount = validateAndComputePaymentAmount(invoice, retryPluginContext.getAmount(), retryPluginContext.isApiPayment());
+            final BigDecimal requestedAmount = validateAndComputePaymentAmount(invoice, paymentControlPluginContext.getAmount(), paymentControlPluginContext.isApiPayment());
             final boolean isAborted = requestedAmount.compareTo(BigDecimal.ZERO) == 0;
-            return new DefaultRetryPluginResult(isAborted, requestedAmount);
+            return new DefaultPriorPaymentControlResult(isAborted, requestedAmount);
         } catch (InvoiceApiException e) {
             // Invoice is not known so return UnknownEntryException so caller knows whether or not it should try with other plugins
             throw new UnknownEntryException();
         }
     }
 
-    private RetryPluginResult getPluginRefundResult(final RetryPluginContext retryPluginContext, final InternalCallContext internalContext) throws RetryPluginApiException {
+    private PriorPaymentControlResult getPluginRefundResult(final PaymentControlContext paymentControlPluginContext, final InternalCallContext internalContext) throws PaymentControlApiException {
 
+        final Map<UUID, BigDecimal> idWithAmount = extractIdsWithAmountFromProperties(paymentControlPluginContext.getPluginProperties());
         try {
-            final DirectPaymentModelDao directPayment = paymentDao.getDirectPaymentByExternalKey(retryPluginContext.getPaymentExternalKey(), internalContext);
+            final DirectPaymentModelDao directPayment = paymentDao.getDirectPaymentByExternalKey(paymentControlPluginContext.getPaymentExternalKey(), internalContext);
             if (directPayment == null) {
                 throw new UnknownEntryException();
             }
-            final BigDecimal amountToBeRefunded = computeRefundAmount(directPayment.getId(), retryPluginContext.getAmount(), retryPluginContext.getIdsWithAmount(), internalContext);
+            final BigDecimal amountToBeRefunded = computeRefundAmount(directPayment.getId(), paymentControlPluginContext.getAmount(), idWithAmount, internalContext);
             final boolean isAborted = amountToBeRefunded.compareTo(BigDecimal.ZERO) == 0;
-            return new DefaultRetryPluginResult(isAborted, amountToBeRefunded);
+            return new DefaultPriorPaymentControlResult(isAborted, amountToBeRefunded);
         } catch (InvoiceApiException e) {
             throw new UnknownEntryException();
         }
+    }
+
+    private Map<UUID, BigDecimal> extractIdsWithAmountFromProperties(final Iterable<PluginProperty> properties) {
+        final PluginProperty prop = Iterables.tryFind(properties, new Predicate<PluginProperty>() {
+            @Override
+            public boolean apply(final PluginProperty input) {
+                return input.getKey().equals(IPCD_REFUND_IDS_WITH_AMOUNT_KEY);
+            }
+        }).orNull();
+        if (prop == null) {
+            return ImmutableMap.<UUID, BigDecimal>of();
+        }
+        return (Map<UUID, BigDecimal>) prop.getValue();
     }
 
     private BigDecimal computeRefundAmount(final UUID paymentId, @Nullable final BigDecimal specifiedRefundAmount,
@@ -158,7 +196,13 @@ public final class InvoiceRetryPluginApi implements RetryPluginApi {
         throw new IllegalArgumentException("Unable to find invoice item for id " + itemId);
     }
 
-    private DateTime computeNextRetryDate(final String paymentExternalKey, final InternalCallContext internalContext) {
+    private DateTime computeNextRetryDate(final String paymentExternalKey, final boolean isApiAPayment, final InternalCallContext internalContext) {
+
+        // Don't retry call that come from API.
+        if (isApiAPayment) {
+            return null;
+        }
+
         final List<DirectPaymentTransactionModelDao> purchasedTransactions = getPurchasedTransactions(paymentExternalKey, internalContext);
         if (purchasedTransactions.size() == 0) {
             return null;
@@ -270,4 +314,5 @@ public final class InvoiceRetryPluginApi implements RetryPluginApi {
             return invoice.getBalance().compareTo(inputAmount) < 0 ? invoice.getBalance() : inputAmount;
         }
     }
+
 }

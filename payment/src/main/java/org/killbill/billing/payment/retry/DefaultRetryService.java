@@ -20,7 +20,7 @@ import java.util.UUID;
 
 import org.killbill.billing.callcontext.InternalCallContext;
 import org.killbill.billing.payment.api.PluginProperty;
-import org.killbill.billing.payment.core.RetryableDirectPaymentProcessor;
+import org.killbill.billing.payment.core.PluginControlledPaymentProcessor;
 import org.killbill.billing.util.callcontext.InternalCallContextFactory;
 import org.killbill.notificationq.api.NotificationQueueService;
 
@@ -30,10 +30,10 @@ public class DefaultRetryService extends BaseRetryService implements RetryServic
 
     public static final String QUEUE_NAME = "retry";
 
-    private final RetryableDirectPaymentProcessor processor;
+    private final PluginControlledPaymentProcessor processor;
 
     @Inject
-    public DefaultRetryService(final NotificationQueueService notificationQueueService, final InternalCallContextFactory internalCallContextFactory, final RetryableDirectPaymentProcessor processor) {
+    public DefaultRetryService(final NotificationQueueService notificationQueueService, final InternalCallContextFactory internalCallContextFactory, final PluginControlledPaymentProcessor processor) {
         super(notificationQueueService, internalCallContextFactory);
         this.processor = processor;
     }
