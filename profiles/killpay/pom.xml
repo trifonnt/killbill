@@ -25,6 +25,5 @@
     <artifactId>killbill-profiles-killpay</artifactId>
     <packaging>jar</packaging>
     <name>killbill-profiles-killpay</name>
-    <dependencies>
-    </dependencies>
+    <dependencies></dependencies>
 </project>
