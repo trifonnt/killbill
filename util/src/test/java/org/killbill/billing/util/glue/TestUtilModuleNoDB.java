@@ -21,7 +21,6 @@ package org.killbill.billing.util.glue;
 import org.killbill.billing.GuicyKillbillTestNoDBModule;
 import org.killbill.billing.mock.glue.MockGlobalLockerModule;
 import org.killbill.billing.mock.glue.MockNonEntityDaoModule;
-import org.killbill.billing.mock.glue.MockNotificationQueueModule;
 import org.killbill.billing.platform.api.KillbillConfigSource;
 import org.killbill.billing.platform.test.glue.TestPlatformModuleNoDB;
 import org.killbill.billing.util.api.AuditUserApi;
@@ -48,7 +47,6 @@ public class TestUtilModuleNoDB extends TestUtilModule {
         install(new MockNonEntityDaoModule(configSource));
         install(new MockGlobalLockerModule(configSource));
         install(new TestPlatformModuleNoDB(configSource));
-        install(new MockNotificationQueueModule(configSource));
 
         installAuditMock();
 

@@ -27,7 +27,6 @@ import org.killbill.billing.platform.test.glue.TestPlatformModuleWithEmbeddedDB;
 import org.killbill.billing.subscription.glue.DefaultSubscriptionModule;
 import org.killbill.billing.util.glue.AuditModule;
 import org.killbill.billing.util.glue.NonEntityDaoModule;
-import org.killbill.billing.util.glue.NotificationQueueModule;
 import org.killbill.billing.util.glue.TagStoreModule;
 
 public class TestEntitlementModuleWithEmbeddedDB extends TestEntitlementModule {
@@ -45,7 +44,6 @@ public class TestEntitlementModuleWithEmbeddedDB extends TestEntitlementModule {
         install(new TestPlatformModuleWithEmbeddedDB(configSource));
         install(new TagStoreModule(configSource));
         install(new CatalogModule(configSource));
-        install(new NotificationQueueModule(configSource));
         install(new DefaultSubscriptionModule(configSource));
         install(new AuditModule(configSource));
 

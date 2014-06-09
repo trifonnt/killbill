@@ -30,7 +30,6 @@ import org.killbill.billing.util.glue.CacheModule;
 import org.killbill.billing.util.glue.CallContextModule;
 import org.killbill.billing.util.glue.CustomFieldModule;
 import org.killbill.billing.util.glue.MemoryGlobalLockerModule;
-import org.killbill.billing.util.glue.NotificationQueueModule;
 import org.killbill.billing.util.glue.TagStoreModule;
 import org.mockito.Mockito;
 
@@ -56,7 +55,6 @@ public class TestInvoiceModule extends DefaultInvoiceModule {
         install(new TemplateModule(configSource));
         install(new EmailModule(configSource));
 
-        install(new NotificationQueueModule(configSource));
         install(new TagStoreModule(configSource));
         install(new CustomFieldModule(configSource));
         install(new UsageModule(configSource));

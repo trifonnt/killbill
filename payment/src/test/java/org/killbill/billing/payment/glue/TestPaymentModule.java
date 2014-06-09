@@ -24,7 +24,6 @@ import org.killbill.billing.ObjectType;
 import org.killbill.billing.callcontext.InternalTenantContext;
 import org.killbill.billing.mock.glue.MockAccountModule;
 import org.killbill.billing.mock.glue.MockInvoiceModule;
-import org.killbill.billing.mock.glue.MockNotificationQueueModule;
 import org.killbill.billing.mock.glue.MockSubscriptionModule;
 import org.killbill.billing.payment.TestPaymentHelper;
 import org.killbill.billing.payment.provider.MockPaymentProviderPlugin;
@@ -65,7 +64,6 @@ public class TestPaymentModule extends PaymentModule {
     protected void configure() {
         super.configure();
         install(new TestPlatformModuleNoDB(configSource));
-        install(new MockNotificationQueueModule(configSource));
         install(new MockInvoiceModule(configSource));
         install(new MockAccountModule(configSource));
         install(new MockSubscriptionModule(configSource));

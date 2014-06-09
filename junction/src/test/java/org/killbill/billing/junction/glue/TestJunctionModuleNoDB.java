@@ -51,17 +51,5 @@ public class TestJunctionModuleNoDB extends TestJunctionModule {
         install(new MockSubscriptionModule(configSource));
         install(new MockEntitlementModuleForJunction(configSource));
         install(new MockTagModule(configSource));
-        installNotificationQueue();
-    }
-
-    private void installNotificationQueue() {
-        bind(NotificationQueueService.class).to(MockNotificationQueueService.class).asEagerSingleton();
-        configureNotificationQueueConfig();
-    }
-
-    protected void configureNotificationQueueConfig() {
-        final NotificationQueueConfig config = new ConfigurationObjectFactory(skifeConfigSource).buildWithReplacements(NotificationQueueConfig.class,
-                                                                                                                       ImmutableMap.<String, String>of("instanceName", "main"));
-        bind(NotificationQueueConfig.class).toInstance(config);
     }
 }

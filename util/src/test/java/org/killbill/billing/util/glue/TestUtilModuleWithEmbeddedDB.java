@@ -39,7 +39,6 @@ public class TestUtilModuleWithEmbeddedDB extends TestUtilModule {
         install(new TagStoreModule(configSource));
         install(new CustomFieldModule(configSource));
         install(new TestPlatformModuleWithEmbeddedDB(configSource));
-        install(new NotificationQueueModule(configSource));
         install(new NonEntityDaoModule(configSource));
         install(new GlobalLockerModule(DBTestingHelper.get().getDBEngine(), configSource));
 

@@ -57,7 +57,6 @@ import org.killbill.billing.util.glue.GlobalLockerModule;
 import org.killbill.billing.util.glue.KillBillModule;
 import org.killbill.billing.util.glue.KillBillShiroModule;
 import org.killbill.billing.util.glue.NonEntityDaoModule;
-import org.killbill.billing.util.glue.NotificationQueueModule;
 import org.killbill.billing.util.glue.RecordIdModule;
 import org.killbill.billing.util.glue.SecurityModule;
 import org.killbill.billing.util.glue.TagStoreModule;
@@ -80,7 +79,6 @@ public class BeatrixIntegrationModule extends KillBillModule {
         install(new CacheModule(configSource));
         install(new EmailModule(configSource));
         install(new CallContextModule(configSource));
-        install(new NotificationQueueModule(configSource));
         install(new TagStoreModule(configSource));
         install(new CustomFieldModule(configSource));
         install(new DefaultAccountModule(configSource));

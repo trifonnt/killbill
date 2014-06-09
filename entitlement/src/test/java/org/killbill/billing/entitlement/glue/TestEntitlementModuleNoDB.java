@@ -28,12 +28,6 @@ import org.killbill.billing.mock.glue.MockSubscriptionModule;
 import org.killbill.billing.mock.glue.MockTagModule;
 import org.killbill.billing.platform.api.KillbillConfigSource;
 import org.killbill.billing.platform.test.glue.TestPlatformModuleNoDB;
-import org.killbill.notificationq.MockNotificationQueueService;
-import org.killbill.notificationq.api.NotificationQueueConfig;
-import org.killbill.notificationq.api.NotificationQueueService;
-import org.skife.config.ConfigurationObjectFactory;
-
-import com.google.common.collect.ImmutableMap;
 
 public class TestEntitlementModuleNoDB extends TestEntitlementModule {
 
@@ -51,22 +45,10 @@ public class TestEntitlementModuleNoDB extends TestEntitlementModule {
         install(new MockSubscriptionModule(configSource));
         install(new MockCatalogModule(configSource));
         install(new MockAccountModule(configSource));
-        installNotificationQueue();
     }
 
     @Override
     public void installBlockingStateDao() {
         bind(BlockingStateDao.class).to(MockBlockingStateDao.class).asEagerSingleton();
-    }
-
-    private void installNotificationQueue() {
-        bind(NotificationQueueService.class).to(MockNotificationQueueService.class).asEagerSingleton();
-        configureNotificationQueueConfig();
-    }
-
-    protected void configureNotificationQueueConfig() {
-        final NotificationQueueConfig config = new ConfigurationObjectFactory(skifeConfigSource).buildWithReplacements(NotificationQueueConfig.class,
-                                                                                                                       ImmutableMap.<String, String>of("instanceName", "main"));
-        bind(NotificationQueueConfig.class).toInstance(config);
     }
 }

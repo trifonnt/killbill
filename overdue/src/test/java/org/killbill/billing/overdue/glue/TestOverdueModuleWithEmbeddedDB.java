@@ -22,7 +22,6 @@ import org.killbill.billing.GuicyKillbillTestWithEmbeddedDBModule;
 import org.killbill.billing.platform.api.KillbillConfigSource;
 import org.killbill.billing.platform.test.glue.TestPlatformModuleWithEmbeddedDB;
 import org.killbill.billing.util.glue.NonEntityDaoModule;
-import org.killbill.billing.util.glue.NotificationQueueModule;
 
 public class TestOverdueModuleWithEmbeddedDB extends TestOverdueModule {
 
@@ -36,7 +35,6 @@ public class TestOverdueModuleWithEmbeddedDB extends TestOverdueModule {
 
         install(new GuicyKillbillTestWithEmbeddedDBModule(configSource));
         install(new NonEntityDaoModule(configSource));
-        install(new NotificationQueueModule(configSource));
         install(new TestPlatformModuleWithEmbeddedDB(configSource));
     }
 }

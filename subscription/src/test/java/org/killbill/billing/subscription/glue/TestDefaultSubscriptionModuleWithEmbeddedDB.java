@@ -27,7 +27,6 @@ import org.killbill.billing.subscription.engine.dao.RepairSubscriptionDao;
 import org.killbill.billing.subscription.engine.dao.SubscriptionDao;
 import org.killbill.billing.util.glue.CustomFieldModule;
 import org.killbill.billing.util.glue.NonEntityDaoModule;
-import org.killbill.billing.util.glue.NotificationQueueModule;
 
 import com.google.inject.name.Names;
 
@@ -52,7 +51,6 @@ public class TestDefaultSubscriptionModuleWithEmbeddedDB extends TestDefaultSubs
 
         install(new NonEntityDaoModule(configSource));
 
-        install(new NotificationQueueModule(configSource));
         install(new CustomFieldModule(configSource));
         install(new TestPlatformModuleWithEmbeddedDB(configSource));
 
