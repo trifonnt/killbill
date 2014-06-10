@@ -16,6 +16,7 @@
 
 package org.killbill.billing.payment.glue;
 
+import org.killbill.billing.payment.api.DirectPaymentApi;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -43,7 +44,7 @@ public class DefaultPaymentService implements PaymentService {
     private final InvoiceHandler invoiceHandler;
     private final PaymentTagHandler tagHandler;
     private final PersistentBus eventBus;
-    private final PaymentApi api;
+    private final DirectPaymentApi api;
     private final FailedPaymentRetryService failedRetryService;
     private final PluginFailureRetryService timedoutRetryService;
     private final AutoPayRetryService autoPayoffRetryService;
@@ -51,7 +52,7 @@ public class DefaultPaymentService implements PaymentService {
     @Inject
     public DefaultPaymentService(final InvoiceHandler invoiceHandler,
                                  final PaymentTagHandler tagHandler,
-                                 final PaymentApi api, final PersistentBus eventBus,
+                                 final DirectPaymentApi api, final PersistentBus eventBus,
                                  final FailedPaymentRetryService failedRetryService,
                                  final PluginFailureRetryService timedoutRetryService,
                                  final AutoPayRetryService autoPayoffRetryService) {
@@ -103,7 +104,7 @@ public class DefaultPaymentService implements PaymentService {
     }
 
     @Override
-    public PaymentApi getPaymentApi() {
+    public DirectPaymentApi getPaymentApi() {
         return api;
     }
 }

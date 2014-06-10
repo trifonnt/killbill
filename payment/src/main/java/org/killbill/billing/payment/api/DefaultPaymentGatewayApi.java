@@ -15,7 +15,7 @@
  * under the License.
  */
 
-package org.killbill.billing.payment.api.svcs;
+package org.killbill.billing.payment.api;
 
 import javax.inject.Inject;
 

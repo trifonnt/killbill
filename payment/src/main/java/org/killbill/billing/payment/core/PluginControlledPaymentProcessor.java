@@ -177,9 +177,7 @@ public class PluginControlledPaymentProcessor extends ProcessorBase {
             final DirectPaymentTransactionModelDao transaction = paymentDao.getDirectPaymentTransactionByExternalKey(transactionExternalKey, internalCallContext);
             final DirectPaymentModelDao payment = paymentDao.getDirectPayment(transaction.getDirectPaymentId(), internalCallContext);
 
-            // STEPH we should retrieve the info, but also, if this is an external payment does retrying really make sense?
             final boolean isExternalPayment = false;
-
             final Account account = accountInternalApi.getAccountById(payment.getAccountId(), internalCallContext);
             final UUID tenantId = nonEntityDao.retrieveIdFromObject(internalCallContext.getTenantRecordId(), ObjectType.TENANT);
             final CallContext callContext = internalCallContext.toCallContext(tenantId);

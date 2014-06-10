@@ -31,6 +31,7 @@ import org.killbill.billing.invoice.api.Invoice;
 import org.killbill.billing.invoice.api.InvoiceApiException;
 import org.killbill.billing.invoice.api.InvoiceInternalApi;
 import org.killbill.billing.invoice.api.InvoiceItem;
+import org.killbill.billing.payment.api.DirectPaymentApi;
 import org.killbill.billing.payment.api.PaymentApi;
 import org.killbill.billing.payment.api.PaymentMethodPlugin;
 import org.killbill.billing.payment.api.PluginProperty;
@@ -49,7 +50,7 @@ public class TestPaymentHelper {
 
     protected final AccountInternalApi AccountApi;
     protected final InvoiceInternalApi invoiceApi;
-    protected PaymentApi paymentApi;
+    protected DirectPaymentApi paymentApi;
     private final PersistentBus eventBus;
     private final Clock clock;
 
@@ -58,7 +59,7 @@ public class TestPaymentHelper {
 
     @Inject
     public TestPaymentHelper(final AccountInternalApi AccountApi, final InvoiceInternalApi invoiceApi,
-                             final PaymentApi paymentApi, final PersistentBus eventBus, final Clock clock,
+                             final DirectPaymentApi paymentApi, final PersistentBus eventBus, final Clock clock,
                              final CallContext context, final InternalCallContext internalCallContext) {
         this.eventBus = eventBus;
         this.AccountApi = AccountApi;

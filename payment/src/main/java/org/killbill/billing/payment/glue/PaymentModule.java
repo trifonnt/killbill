@@ -27,15 +27,11 @@ import javax.inject.Provider;
 import org.killbill.automaton.DefaultStateMachineConfig;
 import org.killbill.automaton.StateMachineConfig;
 import org.killbill.billing.osgi.api.OSGIServiceRegistration;
-import org.killbill.billing.payment.api.DefaultPaymentApi;
+import org.killbill.billing.payment.api.DefaultDirectPaymentApi;
+import org.killbill.billing.payment.api.DefaultPaymentGatewayApi;
 import org.killbill.billing.payment.api.DirectPaymentApi;
-import org.killbill.billing.payment.api.PaymentApi;
 import org.killbill.billing.payment.api.PaymentGatewayApi;
-import org.killbill.billing.payment.api.PaymentInternalApi;
 import org.killbill.billing.payment.api.PaymentService;
-import org.killbill.billing.payment.api.svcs.DefaultDirectPaymentApi;
-import org.killbill.billing.payment.api.svcs.DefaultPaymentGatewayApi;
-import org.killbill.billing.payment.api.svcs.DefaultPaymentInternalApi;
 import org.killbill.billing.payment.bus.InvoiceHandler;
 import org.killbill.billing.payment.bus.PaymentTagHandler;
 import org.killbill.billing.payment.core.DirectPaymentProcessor;
@@ -166,8 +162,6 @@ public class PaymentModule extends AbstractModule {
         bind(new TypeLiteral<OSGIServiceRegistration<PaymentPluginApi>>() {}).toProvider(DefaultPaymentProviderPluginRegistryProvider.class).asEagerSingleton();
         bind(new TypeLiteral<OSGIServiceRegistration<PaymentControlPluginApi>>() {}).toProvider(DefaultPaymentControlProviderPluginRegistryProvider.class).asEagerSingleton();
 
-        bind(PaymentInternalApi.class).to(DefaultPaymentInternalApi.class).asEagerSingleton();
-        bind(PaymentApi.class).to(DefaultPaymentApi.class).asEagerSingleton();
         bind(DirectPaymentApi.class).to(DefaultDirectPaymentApi.class).asEagerSingleton();
         bind(PaymentGatewayApi.class).to(DefaultPaymentGatewayApi.class).asEagerSingleton();
         bind(InvoiceHandler.class).asEagerSingleton();

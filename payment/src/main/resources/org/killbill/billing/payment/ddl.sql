@@ -1,58 +1,5 @@
 /*! SET storage_engine=INNODB */;
 
-DROP TABLE IF EXISTS payments;
-CREATE TABLE payments (
-    record_id int(11) unsigned NOT NULL AUTO_INCREMENT,
-    id char(36) NOT NULL,
-    account_id char(36) NOT NULL,
-    invoice_id char(36) NOT NULL,
-    payment_method_id char(36) NOT NULL,
-    amount numeric(15,9),
-    currency char(3),
-    processed_amount numeric(15,9),
-    processed_currency char(3),
-    effective_date datetime,
-    payment_status varchar(50),
-    created_by varchar(50) NOT NULL,
-    created_date datetime NOT NULL,
-    updated_by varchar(50) NOT NULL,
-    updated_date datetime NOT NULL,
-    account_record_id int(11) unsigned default null,
-    tenant_record_id int(11) unsigned default null,
-    PRIMARY KEY (record_id)
-) /*! CHARACTER SET utf8 COLLATE utf8_bin */;
-CREATE UNIQUE INDEX payments_id ON payments(id);
-CREATE INDEX payments_inv ON payments(invoice_id);
-CREATE INDEX payments_accnt ON payments(account_id);
-CREATE INDEX payments_tenant_account_record_id ON payments(tenant_record_id, account_record_id);
-
-DROP TABLE IF EXISTS payment_history;
-CREATE TABLE payment_history (
-    record_id int(11) unsigned NOT NULL AUTO_INCREMENT,
-    id char(36) NOT NULL,
-    target_record_id int(11) unsigned NOT NULL,
-    account_id char(36) NOT NULL,
-    invoice_id char(36) NOT NULL,
-    payment_method_id char(36) NOT NULL,
-    amount numeric(15,9),
-    currency char(3),
-    processed_amount numeric(15,9),
-    processed_currency char(3),
-    effective_date datetime,
-    payment_status varchar(50),
-    ext_first_payment_ref_id varchar(128),
-    ext_second_payment_ref_id varchar(128),
-    change_type char(6) NOT NULL,
-    created_by varchar(50) NOT NULL,
-    created_date datetime NOT NULL,
-    updated_by varchar(50) NOT NULL,
-    updated_date datetime NOT NULL,
-    account_record_id int(11) unsigned default null,
-    tenant_record_id int(11) unsigned default null,
-    PRIMARY KEY(record_id)
-) /*! CHARACTER SET utf8 COLLATE utf8_bin */;
-CREATE INDEX payment_history_target_record_id ON payment_history(target_record_id);
-CREATE INDEX payment_history_tenant_account_record_id ON payment_history(tenant_record_id, account_record_id);
 
 DROP TABLE IF EXISTS payment_attempts;
 CREATE TABLE payment_attempts (
@@ -136,56 +83,6 @@ CREATE TABLE payment_method_history (
 ) /*! CHARACTER SET utf8 COLLATE utf8_bin */;
 CREATE INDEX payment_method_history_target_record_id ON payment_method_history(target_record_id);
 CREATE INDEX payment_method_history_tenant_account_record_id ON payment_method_history(tenant_record_id, account_record_id);
-
-DROP TABLE IF EXISTS refunds;
-CREATE TABLE refunds (
-    record_id int(11) unsigned NOT NULL AUTO_INCREMENT,
-    id char(36) NOT NULL,
-    account_id char(36) NOT NULL,
-    payment_id char(36) NOT NULL,
-    amount numeric(15,9),
-    currency char(3),
-    processed_amount numeric(15,9),
-    processed_currency char(3),
-    is_adjusted tinyint(1),
-    refund_status varchar(50),
-    created_by varchar(50) NOT NULL,
-    created_date datetime NOT NULL,
-    updated_by varchar(50) NOT NULL,
-    updated_date datetime NOT NULL,
-    account_record_id int(11) unsigned default null,
-    tenant_record_id int(11) unsigned default null,
-    PRIMARY KEY (record_id)
-) /*! CHARACTER SET utf8 COLLATE utf8_bin */;
-CREATE UNIQUE INDEX refunds_id ON refunds(id);
-CREATE INDEX refunds_pay ON refunds(payment_id);
-CREATE INDEX refunds_accnt ON refunds(account_id);
-CREATE INDEX refunds_tenant_account_record_id ON refunds(tenant_record_id, account_record_id);
-
-DROP TABLE IF EXISTS refund_history;
-CREATE TABLE refund_history (
-    record_id int(11) unsigned NOT NULL AUTO_INCREMENT,
-    id char(36) NOT NULL,
-    target_record_id int(11) unsigned NOT NULL,
-    account_id char(36) NOT NULL,
-    payment_id char(36) NOT NULL,
-    amount numeric(15,9),
-    currency char(3),
-    processed_amount numeric(15,9),
-    processed_currency char(3),
-    is_adjusted tinyint(1),
-    refund_status varchar(50),
-    change_type char(6) NOT NULL,
-    created_by varchar(50) NOT NULL,
-    created_date datetime NOT NULL,
-    updated_by varchar(50) NOT NULL,
-    updated_date datetime NOT NULL,
-    account_record_id int(11) unsigned default null,
-    tenant_record_id int(11) unsigned default null,
-    PRIMARY KEY(record_id)
-) /*! CHARACTER SET utf8 COLLATE utf8_bin */;
-CREATE INDEX refund_history_target_record_id ON refund_history(target_record_id);
-CREATE INDEX refund_history_tenant_account_record_id ON refund_history(tenant_record_id, account_record_id);
 
 
 DROP TABLE IF EXISTS direct_payments;
@@ -295,3 +192,36 @@ CREATE TABLE direct_transaction_history (
 ) /*! CHARACTER SET utf8 COLLATE utf8_bin */;
 CREATE INDEX direct_transaction_history_target_record_id ON direct_transaction_history(target_record_id);
 CREATE INDEX direct_transaction_history_tenant_account_record_id ON direct_transaction_history(tenant_record_id, account_record_id);
+
+/*  PaymentControlPlugin leaves  here until this becomes a first class citizen plugin */
+DROP TABLE IF EXISTS _invoice_payment_control_plugin_properties;
+CREATE TABLE _invoice_payment_control_plugin_properties (
+    record_id int(11) unsigned NOT NULL AUTO_INCREMENT,
+    payment_external_key varchar(255),
+    transaction_external_key varchar(255),
+    account_id char(36) NOT NULL,
+    plugin_name varchar(50) DEFAULT NULL,
+    prop_key varchar(255),
+    prop_value varchar(255),
+    created_by varchar(50) NOT NULL,
+    created_date datetime NOT NULL,
+    PRIMARY KEY (record_id)
+) /*! CHARACTER SET utf8 COLLATE utf8_bin */;
+CREATE INDEX _invoice_payment_control_plugin_properties_ext ON _invoice_payment_control_plugin_properties(payment_external_key);
+
+DROP TABLE IF EXISTS _invoice_payment_control_plugin_auto_pay_off;
+CREATE TABLE _invoice_payment_control_plugin_auto_pay_off (
+    record_id int(11) unsigned NOT NULL AUTO_INCREMENT,
+    payment_external_key varchar(255),
+    transaction_external_key varchar(255),
+    account_id char(36) NOT NULL,
+    plugin_name varchar(50) DEFAULT NULL,
+    payment_id char(36),
+    payment_method_id char(36) NOT NULL,
+    amount numeric(15,9),
+    currency char(3),
+    created_by varchar(50) NOT NULL,
+    created_date datetime NOT NULL,
+    PRIMARY KEY (record_id)
+) /*! CHARACTER SET utf8 COLLATE utf8_bin */;
+CREATE INDEX _invoice_payment_control_plugin_auto_pay_off_account ON _invoice_payment_control_plugin_auto_pay_off(account_id);

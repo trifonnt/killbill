@@ -127,11 +127,6 @@ public class PluginControlledDirectPaymentAutomatonRunner extends DirectPaymentA
                              final Iterable<PluginProperty> properties, @Nullable final String pluginName,
                              final CallContext callContext, final InternalCallContext internalCallContext) throws PaymentApiException {
 
-        if (isAccountAutoPayOff(account.getId(), internalCallContext)) {
-            // STEPH_RETRY fix error code
-            throw new PaymentApiException(ErrorCode.__UNKNOWN_ERROR_CODE);
-        }
-
         final RetryableDirectPaymentStateContext directPaymentStateContext = createContext(isApiPayment, transactionType, account, paymentMethodId,
                                                                                            directPaymentId, directPaymentExternalKey,
                                                                                            directPaymentTransactionExternalKey,

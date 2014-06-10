@@ -14,7 +14,7 @@
  * under the License.
  */
 
-package org.killbill.billing.payment.retry;
+package org.killbill.billing.payment.control;
 
 import java.math.BigDecimal;
 import java.util.Collection;
@@ -38,15 +38,22 @@ import org.killbill.billing.payment.api.TransactionType;
 import org.killbill.billing.payment.dao.DirectPaymentModelDao;
 import org.killbill.billing.payment.dao.DirectPaymentTransactionModelDao;
 import org.killbill.billing.payment.dao.PaymentDao;
+import org.killbill.billing.payment.retry.DefaultFailureCallResult;
+import org.killbill.billing.payment.retry.DefaultPriorPaymentControlResult;
 import org.killbill.billing.retry.plugin.api.PaymentControlApiException;
 import org.killbill.billing.retry.plugin.api.PaymentControlPluginApi;
 import org.killbill.billing.retry.plugin.api.UnknownEntryException;
+import org.killbill.billing.util.api.TagUserApi;
+import org.killbill.billing.util.callcontext.CallContext;
 import org.killbill.billing.util.callcontext.InternalCallContextFactory;
 import org.killbill.billing.util.config.PaymentConfig;
+import org.killbill.billing.util.tag.ControlTagType;
+import org.killbill.billing.util.tag.Tag;
 import org.killbill.clock.Clock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.base.Function;
 import com.google.common.base.Objects;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
@@ -63,23 +70,46 @@ public final class InvoicePaymentControlPluginApi implements PaymentControlPlugi
 
     private final PaymentConfig paymentConfig;
     private final InvoiceInternalApi invoiceApi;
+    private final TagUserApi tagApi;
     private final PaymentDao paymentDao;
     private final InternalCallContextFactory internalCallContextFactory;
     private final Clock clock;
 
     private final Logger logger = LoggerFactory.getLogger(InvoicePaymentControlPluginApi.class);
 
-    public InvoicePaymentControlPluginApi(final PaymentConfig paymentConfig, final InvoiceInternalApi invoiceApi, final PaymentDao paymentDao,
+    public InvoicePaymentControlPluginApi(final PaymentConfig paymentConfig, final InvoiceInternalApi invoiceApi, final TagUserApi tagApi, final PaymentDao paymentDao,
                                           final InternalCallContextFactory internalCallContextFactory, final Clock clock) {
         this.paymentConfig = paymentConfig;
         this.invoiceApi = invoiceApi;
+        this.tagApi = tagApi;
         this.paymentDao = paymentDao;
         this.internalCallContextFactory = internalCallContextFactory;
         this.clock = clock;
     }
 
+    private boolean scheduleRetryForAccountWith_AUTO_PAY_OFF(final PaymentControlContext paymentControlContext) {
+        if (!isAccountAutoPayOff(paymentControlContext.getAccount().getId(), paymentControlContext)) {
+            return false;
+        }
+    // STEPH
+        return true;
+
+    }
+
+    private boolean isAccountAutoPayOff(final UUID accountId, final CallContext callContext) {
+        final List<Tag> accountTags = tagApi.getTagsForAccount(accountId, false, callContext);
+        return ControlTagType.isAutoPayOff(Collections2.transform(accountTags, new Function<Tag, UUID>() {
+            @Override
+            public UUID apply(final Tag tag) {
+                return tag.getTagDefinitionId();
+            }
+        }));
+    }
+
+
     @Override
     public PriorPaymentControlResult priorCall(final PaymentControlContext paymentControlContext) throws PaymentControlApiException {
+
 
         final TransactionType transactionType = paymentControlContext.getTransactionType();
         Preconditions.checkArgument(transactionType == TransactionType.PURCHASE ||

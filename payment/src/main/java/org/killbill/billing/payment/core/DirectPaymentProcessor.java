@@ -117,9 +117,10 @@ public class DirectPaymentProcessor extends ProcessorBase {
                                                                              properties,
                                                                              callContext,
                                                                              internalCallContext);
-
-        return getPayment(nonNullDirectPaymentId, true, properties, callContext, internalCallContext);
-
+        // TODO STEPH We should try to post the event from within transaction
+        final DirectPayment directPayment = getPayment(nonNullDirectPaymentId, true, properties, callContext, internalCallContext);
+        postPaymentEvent(account, directPayment, directPaymentTransactionExternalKey, internalCallContext);
+        return directPayment;
     }
 
     public DirectPayment createCapture(final Account account, final UUID directPaymentId, final BigDecimal amount, final Currency currency,
@@ -137,7 +138,9 @@ public class DirectPaymentProcessor extends ProcessorBase {
                                                                              callContext,
                                                                              internalCallContext);
 
-        return getPayment(nonNullDirectPaymentId, true, properties, callContext, internalCallContext);
+        final DirectPayment directPayment = getPayment(nonNullDirectPaymentId, true, properties, callContext, internalCallContext);
+        postPaymentEvent(account, directPayment, directPaymentTransactionExternalKey, internalCallContext);
+        return directPayment;
     }
 
     public DirectPayment createPurchase(final Account account, @Nullable final UUID paymentMethodId, @Nullable final UUID directPaymentId, final BigDecimal amount, final Currency currency,
@@ -158,7 +161,6 @@ public class DirectPaymentProcessor extends ProcessorBase {
                                                                              internalCallContext);
 
         final DirectPayment directPayment = getPayment(nonNullDirectPaymentId, true, properties, callContext, internalCallContext);
-        // STEPH shouldnt' that be part of the transaction that update the state? what about state machine above?
         postPaymentEvent(account, directPayment, directPaymentTransactionExternalKey, internalCallContext);
         return directPayment;
     }
@@ -192,8 +194,9 @@ public class DirectPaymentProcessor extends ProcessorBase {
                                                                              properties,
                                                                              callContext,
                                                                              internalCallContext);
-
-        return getPayment(nonNullDirectPaymentId, true, properties, callContext, internalCallContext);
+        final DirectPayment directPayment = getPayment(nonNullDirectPaymentId, true, properties, callContext, internalCallContext);
+        postPaymentEvent(account, directPayment, directPaymentTransactionExternalKey, internalCallContext);
+        return directPayment;
     }
 
     public DirectPayment createCredit(final Account account, @Nullable final UUID paymentMethodId, @Nullable final UUID directPaymentId, final BigDecimal amount, final Currency currency,
@@ -212,8 +215,9 @@ public class DirectPaymentProcessor extends ProcessorBase {
                                                                              properties,
                                                                              callContext,
                                                                              internalCallContext);
-
-        return getPayment(nonNullDirectPaymentId, true, properties, callContext, internalCallContext);
+        final DirectPayment directPayment = getPayment(nonNullDirectPaymentId, true, properties, callContext, internalCallContext);
+        postPaymentEvent(account, directPayment, directPaymentTransactionExternalKey, internalCallContext);
+        return directPayment;
     }
 
     public List<DirectPayment> getAccountPayments(final UUID accountId, final InternalTenantContext tenantContext) throws PaymentApiException {
@@ -258,7 +262,7 @@ public class DirectPaymentProcessor extends ProcessorBase {
     }
 
     public void process_AUTO_PAY_OFF_removal(final Account account, final InternalCallContext context) throws PaymentApiException {
-        // STEPH TODO
+        // STEPH TODO implement AUTO_PAY_OFF
     }
 
     public Pagination<DirectPayment> getPayments(final Long offset, final Long limit, final Iterable<PluginProperty> properties,

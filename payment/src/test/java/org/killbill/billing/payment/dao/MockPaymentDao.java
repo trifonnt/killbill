@@ -200,54 +200,12 @@ public class MockPaymentDao implements PaymentDao {
         }
     }
 
-    @Override
-    public PaymentModelDao insertPaymentWithFirstAttempt(final PaymentModelDao paymentInfo, final PaymentAttemptModelDao attempt,
-                                                         final InternalCallContext context) {
-        return null;
-    }
-
-    @Override
-    public PaymentAttemptModelDao updatePaymentWithNewAttempt(final UUID paymentId, final PaymentAttemptModelDao attempt, final InternalCallContext context) {
-        return null;
-    }
-
-    @Override
-    public void updatePaymentAndAttemptOnCompletion(final UUID paymentId, final PaymentStatus paymentStatus,
-                                                    BigDecimal processedAmount, Currency processedCurrency,
-                                                    final UUID attemptId, final String gatewayErrorCode,
-                                                    final String gatewayErrorMsg,
-                                                    final InternalCallContext context) {
-    }
 
     @Override
     public PaymentAttemptModelDao getPaymentAttempt(final UUID attemptId, final InternalTenantContext context) {
         return attempts.get(attemptId);
     }
 
-    @Override
-    public List<PaymentModelDao> getPaymentsForInvoice(final UUID invoiceId, final InternalTenantContext context) {
-        return null;
-    }
-
-    @Override
-    public List<PaymentModelDao> getPaymentsForAccount(final UUID accountId, final InternalTenantContext context) {
-        return null;
-    }
-
-    @Override
-    public Pagination<PaymentModelDao> getPayments(final String pluginName, final Long offset, final Long limit, final InternalTenantContext context) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public PaymentModelDao getPayment(final UUID paymentId, final InternalTenantContext context) {
-        return null;
-    }
-
-    @Override
-    public List<PaymentAttemptModelDao> getAttemptsForPayment(final UUID paymentId, final InternalTenantContext context) {
-        return null;
-    }
 
     private final List<PaymentMethodModelDao> paymentMethods = new LinkedList<PaymentMethodModelDao>();
 
@@ -298,46 +256,6 @@ public class MockPaymentDao implements PaymentDao {
     @Override
     public List<PaymentMethodModelDao> refreshPaymentMethods(final UUID accountId, final String pluginName, final List<PaymentMethodModelDao> paymentMethods, final InternalCallContext context) {
         return ImmutableList.<PaymentMethodModelDao>of();
-    }
-
-    @Override
-    public void undeletedPaymentMethod(final UUID paymentMethodId, final InternalCallContext context) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public RefundModelDao insertRefund(final RefundModelDao refundInfo, final InternalCallContext context) {
-        return null;
-    }
-
-    @Override
-    public void updateRefundStatus(final UUID refundId, final RefundStatus status, final BigDecimal processedAmount, final Currency processedCurrency, final InternalCallContext context) {
-        return;
-    }
-
-    @Override
-    public Pagination<RefundModelDao> getRefunds(final String pluginName, final Long offset, final Long limit, final InternalTenantContext context) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public RefundModelDao getRefund(final UUID refundId, final InternalTenantContext context) {
-        return null;
-    }
-
-    @Override
-    public List<RefundModelDao> getRefundsForPayment(final UUID paymentId, final InternalTenantContext context) {
-        return Collections.emptyList();
-    }
-
-    @Override
-    public List<RefundModelDao> getRefundsForAccount(final UUID accountId, final InternalTenantContext context) {
-        return Collections.emptyList();
-    }
-
-    @Override
-    public PaymentModelDao getLastPaymentForPaymentMethod(final UUID accountId, final UUID paymentMethodId, final InternalTenantContext context) {
-        return null;
     }
 
     @Override

@@ -66,7 +66,7 @@ public class TestPaymentApi extends PaymentTestSuiteWithEmbeddedDB {
                                                             Currency.USD));
 
         try {
-            paymentApi.createPayment(account, invoice.getId(), requestedAmount, ImmutableList.<PluginProperty>of(), callContext);
+            paymentApi.createPurchase(account, account.getPaymentMethodId(), null, requestedAmount, Currency.AED, invoice.getId().toString(), "yo", ImmutableList.<PluginProperty>of(), callContext);
         } catch (final PaymentApiException e) {
             Assert.assertEquals(e.getCode(), ErrorCode.PAYMENT_NO_DEFAULT_PAYMENT_METHOD.getCode());
         }
