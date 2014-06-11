@@ -16,6 +16,8 @@
 
 package org.killbill.billing.util.glue;
 
+import java.util.Collection;
+
 import javax.inject.Inject;
 import javax.inject.Provider;
 
@@ -50,7 +52,9 @@ public class IniRealmProvider implements Provider<Realm> {
             // to parse the [main] section of the ini file. Without duplicating code, this seems to be possible only
             // by going through IniSecurityManagerFactory.
             final DefaultSecurityManager securityManager = (DefaultSecurityManager) factory.getInstance();
-            return securityManager.getRealms().iterator().next();
+            final Collection<Realm> realms = securityManager.getRealms();
+            // Null check mainly for testing
+            return realms == null ? new IniRealm(securityConfig.getShiroResourcePath()) : realms.iterator().next();
         } catch (final ConfigurationException e) {
             log.warn("Unable to configure RBAC", e);
             return new IniRealm();
