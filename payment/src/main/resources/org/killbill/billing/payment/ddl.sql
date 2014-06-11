@@ -6,16 +6,16 @@ CREATE TABLE payment_attempts (
     record_id int(11) unsigned NOT NULL AUTO_INCREMENT,
     id char(36) NOT NULL,
     direct_transaction_id char(36),
-    transaction_external_key char(128) NULL,
-    state_name varchar(32),
-    operation_name varchar(32),
+    transaction_external_key char(128) NOT NULL,
+    state_name varchar(32) NOT NULL,
+    operation_name varchar(32) NOT NULL,
     plugin_name varchar(50),
     created_by varchar(50) NOT NULL,
     created_date datetime NOT NULL,
     updated_by varchar(50) NOT NULL,
     updated_date datetime NOT NULL,
-    account_record_id int(11) unsigned default null,
-    tenant_record_id int(11) unsigned default null,
+    account_record_id int(11) unsigned DEFAULT NULL,
+    tenant_record_id int(11) unsigned DEFAULT NULL,
     PRIMARY KEY (record_id)
 ) /*! CHARACTER SET utf8 COLLATE utf8_bin */;
 CREATE UNIQUE INDEX payment_attempts_id ON payment_attempts(id);
@@ -29,17 +29,17 @@ CREATE TABLE payment_attempt_history (
     id char(36) NOT NULL,
     target_record_id int(11) unsigned NOT NULL,
     direct_transaction_id char(36),
-    transaction_external_key char(128) NULL,
-    state_name varchar(32),
-    operation_name varchar(32),
+    transaction_external_key char(128) NOT NULL,
+    state_name varchar(32) NOT NULL,
+    operation_name varchar(32) NOT NULL,
     plugin_name varchar(50),
     change_type char(6) NOT NULL,
     created_by varchar(50) NOT NULL,
     created_date datetime NOT NULL,
     updated_by varchar(50) NOT NULL,
     updated_date datetime NOT NULL,
-    account_record_id int(11) unsigned default null,
-    tenant_record_id int(11) unsigned default null,
+    account_record_id int(11) unsigned DEFAULT NULL,
+    tenant_record_id int(11) unsigned DEFAULT NULL,
     PRIMARY KEY(record_id)
 ) /*! CHARACTER SET utf8 COLLATE utf8_bin */;
 CREATE INDEX payment_attempt_history_target_record_id ON payment_attempt_history(target_record_id);
@@ -56,8 +56,8 @@ CREATE TABLE payment_methods (
     created_date datetime NOT NULL,
     updated_by varchar(50) NOT NULL,
     updated_date datetime NOT NULL,
-    account_record_id int(11) unsigned default null,
-    tenant_record_id int(11) unsigned default null,
+    account_record_id int(11) unsigned DEFAULT NULL,
+    tenant_record_id int(11) unsigned DEFAULT NULL,
     PRIMARY KEY (record_id)
 ) /*! CHARACTER SET utf8 COLLATE utf8_bin */;
 CREATE UNIQUE INDEX payment_methods_id ON payment_methods(id);
@@ -77,8 +77,8 @@ CREATE TABLE payment_method_history (
     created_date datetime NOT NULL,
     updated_by varchar(50) NOT NULL,
     updated_date datetime NOT NULL,
-    account_record_id int(11) unsigned default null,
-    tenant_record_id int(11) unsigned default null,
+    account_record_id int(11) unsigned DEFAULT NULL,
+    tenant_record_id int(11) unsigned DEFAULT NULL,
     PRIMARY KEY(record_id)
 ) /*! CHARACTER SET utf8 COLLATE utf8_bin */;
 CREATE INDEX payment_method_history_target_record_id ON payment_method_history(target_record_id);
@@ -91,7 +91,7 @@ CREATE TABLE direct_payments (
     id char(36) NOT NULL,
     account_id char(36) NOT NULL,
     payment_method_id char(36) NOT NULL,
-    external_key varchar(255),
+    external_key varchar(255) NOT NULL,
     current_state_name varchar(255),
     ext_first_payment_ref_id varchar(128),
     ext_second_payment_ref_id varchar(128),
@@ -99,8 +99,8 @@ CREATE TABLE direct_payments (
     created_date datetime NOT NULL,
     updated_by varchar(50) NOT NULL,
     updated_date datetime NOT NULL,
-    account_record_id int(11) unsigned default null,
-    tenant_record_id int(11) unsigned default null,
+    account_record_id int(11) unsigned DEFAULT NULL,
+    tenant_record_id int(11) unsigned DEFAULT NULL,
     PRIMARY KEY (record_id)
 ) /*! CHARACTER SET utf8 COLLATE utf8_bin */;
 CREATE UNIQUE INDEX direct_payments_id ON direct_payments(id);
@@ -116,7 +116,7 @@ CREATE TABLE direct_payment_history (
     target_record_id int(11) unsigned NOT NULL,
     account_id char(36) NOT NULL,
     payment_method_id char(36) NOT NULL,
-    external_key varchar(255),
+    external_key varchar(255) NOT NULL,
     current_state_name varchar(255),
     ext_first_payment_ref_id varchar(128),
     ext_second_payment_ref_id varchar(128),
@@ -125,8 +125,8 @@ CREATE TABLE direct_payment_history (
     created_date datetime NOT NULL,
     updated_by varchar(50) NOT NULL,
     updated_date datetime NOT NULL,
-    account_record_id int(11) unsigned default null,
-    tenant_record_id int(11) unsigned default null,
+    account_record_id int(11) unsigned DEFAULT NULL,
+    tenant_record_id int(11) unsigned DEFAULT NULL,
     PRIMARY KEY(record_id)
 ) /*! CHARACTER SET utf8 COLLATE utf8_bin */;
 CREATE INDEX direct_payment_history_target_record_id ON direct_payment_history(target_record_id);
@@ -137,7 +137,7 @@ DROP TABLE IF EXISTS direct_transactions;
 CREATE TABLE direct_transactions (
     record_id int(11) unsigned NOT NULL AUTO_INCREMENT,
     id char(36) NOT NULL,
-    transaction_external_key varchar(255),
+    transaction_external_key varchar(255) NOT NULL,
     transaction_type varchar(32) NOT NULL,
     effective_date datetime NOT NULL,
     payment_status varchar(50),
@@ -154,8 +154,8 @@ CREATE TABLE direct_transactions (
     created_date datetime NOT NULL,
     updated_by varchar(50) NOT NULL,
     updated_date datetime NOT NULL,
-    account_record_id int(11) unsigned default null,
-    tenant_record_id int(11) unsigned default null,
+    account_record_id int(11) unsigned DEFAULT NULL,
+    tenant_record_id int(11) unsigned DEFAULT NULL,
     PRIMARY KEY (record_id)
 ) /*! CHARACTER SET utf8 COLLATE utf8_bin */;
 CREATE UNIQUE INDEX direct_transactions_id ON direct_transactions(id);
@@ -167,7 +167,7 @@ DROP TABLE IF EXISTS direct_transaction_history;
 CREATE TABLE direct_transaction_history (
     record_id int(11) unsigned NOT NULL AUTO_INCREMENT,
     id char(36) NOT NULL,
-    transaction_external_key varchar(255),
+    transaction_external_key varchar(255) NOT NULL,
     target_record_id int(11) unsigned NOT NULL,
     transaction_type varchar(32) NOT NULL,
     effective_date datetime NOT NULL,
@@ -186,8 +186,8 @@ CREATE TABLE direct_transaction_history (
     created_date datetime NOT NULL,
     updated_by varchar(50) NOT NULL,
     updated_date datetime NOT NULL,
-    account_record_id int(11) unsigned default null,
-    tenant_record_id int(11) unsigned default null,
+    account_record_id int(11) unsigned DEFAULT NULL,
+    tenant_record_id int(11) unsigned DEFAULT NULL,
     PRIMARY KEY (record_id)
 ) /*! CHARACTER SET utf8 COLLATE utf8_bin */;
 CREATE INDEX direct_transaction_history_target_record_id ON direct_transaction_history(target_record_id);
