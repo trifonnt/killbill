@@ -32,6 +32,8 @@ import org.skife.jdbi.v2.sqlobject.mixins.Transactional;
 @EntitySqlDaoStringTemplate
 public interface PluginPropertySqlDao extends Transactional<PluginPropertySqlDao>, CloseMe {
 
+    // STEPH does not follow similar pattern (! extends Entity,... this is not cachable/auditable on purpose)
+    // Mapper needs to be defined and PaymentDao is a bit funky, to be reviewed
     public class PluginPropertySqlDaoMapper extends LowerToCamelBeanMapper<PluginPropertyModelDao> {
         public PluginPropertySqlDaoMapper() {
             super(PluginPropertyModelDao.class);

@@ -29,6 +29,7 @@ import org.killbill.billing.catalog.api.Currency;
 import org.killbill.billing.invoice.api.Invoice;
 import org.killbill.billing.payment.MockRecurringInvoiceItem;
 import org.killbill.billing.payment.PaymentTestSuiteNoDB;
+import org.killbill.billing.payment.control.InvoicePaymentControlPluginApi;
 import org.killbill.billing.payment.provider.DefaultNoOpPaymentMethodPlugin;
 import org.killbill.billing.payment.provider.MockPaymentProviderPlugin;
 import org.mockito.Mockito;
@@ -50,6 +51,16 @@ public class TestPaymentApiNoDB extends PaymentTestSuiteNoDB {
     private static final Logger log = LoggerFactory.getLogger(TestPaymentApiNoDB.class);
 
     private final Iterable<PluginProperty> PLUGIN_PROPERTIES = ImmutableList.<PluginProperty>of();
+    private final static PaymentOptions PAYMENT_OPTIONS = new PaymentOptions() {
+        @Override
+        public boolean isExternalPayment() {
+            return false;
+        }
+        @Override
+        public String getPaymentControlPluginName() {
+            return InvoicePaymentControlPluginApi.PLUGIN_NAME;
+        }
+    };
 
     private Account account;
 
@@ -120,15 +131,14 @@ public class TestPaymentApiNoDB extends PaymentTestSuiteNoDB {
                                                             Currency.USD));
 
         try {
-            final DirectPayment paymentInfo = paymentApi.createPayment(account, invoice.getId(), requestedAmount, PLUGIN_PROPERTIES, callContext);
+            final DirectPayment paymentInfo = paymentApi.createPurchaseWithPaymentControl(account, account.getPaymentMethodId(), null, requestedAmount, account.getCurrency(),
+                                                                                          invoice.getId().toString(), UUID.randomUUID().toString(), PLUGIN_PROPERTIES, PAYMENT_OPTIONS, callContext);
             if (expectedAmount == null) {
                 fail("Expected to fail because requested amount > invoice amount");
             }
             assertNotNull(paymentInfo.getId());
             assertTrue(paymentInfo.getPurchasedAmount().compareTo(expectedAmount) == 0);
             assertNotNull(paymentInfo.getPaymentNumber());
-            // STEPH should DirectPayment be extended to export its state name ?
-            //assertEquals(paymentInfo.get(), PaymentStatus.SUCCESS);
             assertEquals(paymentInfo.getExternalKey(), invoice.getId().toString());
             assertEquals(paymentInfo.getCurrency(), Currency.USD);
             assertTrue(paymentInfo.getTransactions().get(0).getAmount().compareTo(expectedAmount) == 0);

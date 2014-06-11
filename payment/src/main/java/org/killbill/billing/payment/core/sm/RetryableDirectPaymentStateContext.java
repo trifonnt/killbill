@@ -17,7 +17,6 @@
 package org.killbill.billing.payment.core.sm;
 
 import java.math.BigDecimal;
-import java.util.Map;
 import java.util.UUID;
 
 import javax.annotation.Nullable;
@@ -31,8 +30,6 @@ import org.killbill.billing.payment.api.PluginProperty;
 import org.killbill.billing.payment.api.TransactionType;
 import org.killbill.billing.util.callcontext.CallContext;
 
-import com.google.common.collect.ImmutableMap;
-
 public class RetryableDirectPaymentStateContext extends DirectPaymentStateContext {
 
     private boolean isApiPayment;
@@ -41,8 +38,8 @@ public class RetryableDirectPaymentStateContext extends DirectPaymentStateContex
     private DirectPayment result;
 
     public RetryableDirectPaymentStateContext(@Nullable String pluginName, boolean isApiPayment, @Nullable final UUID directPaymentId, final String directPaymentExternalKey, @Nullable final String directPaymentTransactionExternalKey, final TransactionType transactionType, final Account account, @Nullable final UUID paymentMethodId,
-                                              final BigDecimal amount, final Currency currency, final boolean isExternalPayment, final Iterable<PluginProperty> properties, final InternalCallContext internalCallContext, final CallContext callContext) {
-        super(directPaymentId, directPaymentTransactionExternalKey, transactionType, account, paymentMethodId, amount, currency, true, isExternalPayment, properties, internalCallContext, callContext);
+                                              final BigDecimal amount, final Currency currency, final Iterable<PluginProperty> properties, final InternalCallContext internalCallContext, final CallContext callContext) {
+        super(directPaymentId, directPaymentExternalKey, directPaymentTransactionExternalKey, transactionType, account, paymentMethodId, amount, currency, true, properties, internalCallContext, callContext);
         this.pluginName = pluginName;
         this.isApiPayment = isApiPayment;
     }

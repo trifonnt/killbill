@@ -90,29 +90,29 @@ public class DirectPaymentAutomatonRunner {
 
     public UUID run(final TransactionType transactionType, final Account account,
                     @Nullable final UUID directPaymentId, final String directPaymentTransactionExternalKey,
-                    final boolean shouldLockAccount, final boolean isExternalPayment, final Iterable<PluginProperty> properties,
+                    final boolean shouldLockAccount, final Iterable<PluginProperty> properties,
                     final CallContext callContext, final InternalCallContext internalCallContext) throws PaymentApiException {
-        return run(transactionType, account, null, directPaymentId, null, directPaymentTransactionExternalKey, null, null, shouldLockAccount, isExternalPayment, properties, callContext, internalCallContext);
+        return run(transactionType, account, null, directPaymentId, null, directPaymentTransactionExternalKey, null, null, shouldLockAccount, properties, callContext, internalCallContext);
     }
 
     public UUID run(final TransactionType transactionType, final Account account,
                     @Nullable final UUID directPaymentId, final String directPaymentTransactionExternalKey,
                     final BigDecimal amount, final Currency currency,
-                    final boolean shouldLockAccount, final boolean isExternalPayment, final Iterable<PluginProperty> properties,
+                    final boolean shouldLockAccount, final Iterable<PluginProperty> properties,
                     final CallContext callContext, final InternalCallContext internalCallContext) throws PaymentApiException {
-        return run(transactionType, account, null, directPaymentId, null, directPaymentTransactionExternalKey, amount, currency, shouldLockAccount, isExternalPayment, properties, callContext, internalCallContext);
+        return run(transactionType, account, null, directPaymentId, null, directPaymentTransactionExternalKey, amount, currency, shouldLockAccount, properties, callContext, internalCallContext);
     }
 
     public UUID run(final TransactionType transactionType, final Account account, @Nullable final UUID paymentMethodId,
                     @Nullable final UUID directPaymentId, @Nullable final String directPaymentExternalKey, final String directPaymentTransactionExternalKey,
                     @Nullable final BigDecimal amount, @Nullable final Currency currency,
-                    final boolean shouldLockAccount, final boolean isExternalPayment, final Iterable<PluginProperty> properties,
+                    final boolean shouldLockAccount, final Iterable<PluginProperty> properties,
                     final CallContext callContext, final InternalCallContext internalCallContext) throws PaymentApiException {
 
         final DateTime utcNow = clock.getUTCNow();
 
         final DirectPaymentStateContext directPaymentStateContext = new DirectPaymentStateContext(directPaymentId, directPaymentExternalKey, directPaymentTransactionExternalKey, transactionType,
-                                                                                                  account, paymentMethodId, amount, currency, shouldLockAccount, isExternalPayment, properties, internalCallContext, callContext);
+                                                                                                  account, paymentMethodId, amount, currency, shouldLockAccount, properties, internalCallContext, callContext);
         final DirectPaymentAutomatonDAOHelper daoHelper = new DirectPaymentAutomatonDAOHelper(directPaymentStateContext, utcNow, paymentDao, pluginRegistry, internalCallContext);
 
         final UUID nonNullPaymentMethodId;

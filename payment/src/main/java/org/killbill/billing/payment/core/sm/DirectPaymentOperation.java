@@ -55,8 +55,8 @@ public abstract class DirectPaymentOperation extends PluginOperation implements 
     private OperationResult doOperationCallbackWithDispatchAndAccountLock() throws OperationException {
         return dispatchWithTimeout(new WithAccountLockCallback<OperationResult>() {
             @Override
-            public OperationResult doOperation() throws PaymentApiException {
-                return doOperation();
+            public OperationResult doOperation() throws Exception {
+                return doSimpleOperationCallback();
             }
         });
     }

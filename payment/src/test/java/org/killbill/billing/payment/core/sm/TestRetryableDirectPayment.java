@@ -158,7 +158,6 @@ public class TestRetryableDirectPayment extends PaymentTestSuiteNoDB {
                                                        paymentMethodId,
                                                        amount,
                                                        currency,
-                                                       false,
                                                        emptyProperties,
                                                        internalCallContext,
                                                        callContext);
@@ -215,7 +214,6 @@ public class TestRetryableDirectPayment extends PaymentTestSuiteNoDB {
                    directPaymentTransactionExternalKey,
                    amount,
                    currency,
-                   false,
                    emptyProperties,
                    null,
                    callContext,
@@ -250,7 +248,6 @@ public class TestRetryableDirectPayment extends PaymentTestSuiteNoDB {
                    directPaymentTransactionExternalKey,
                    amount,
                    currency,
-                   false,
                    emptyProperties,
                    null,
                    callContext,
@@ -285,7 +282,6 @@ public class TestRetryableDirectPayment extends PaymentTestSuiteNoDB {
                    directPaymentTransactionExternalKey,
                    amount,
                    currency,
-                   false,
                    emptyProperties,
                    null,
                    callContext, internalCallContext);
@@ -320,7 +316,6 @@ public class TestRetryableDirectPayment extends PaymentTestSuiteNoDB {
                        directPaymentTransactionExternalKey,
                        amount,
                        currency,
-                       false,
                        emptyProperties,
                        null,
                        callContext, internalCallContext);
@@ -359,7 +354,6 @@ public class TestRetryableDirectPayment extends PaymentTestSuiteNoDB {
                        directPaymentTransactionExternalKey,
                        amount,
                        currency,
-                       false,
                        emptyProperties,
                        null,
                        callContext, internalCallContext);
@@ -397,7 +391,6 @@ public class TestRetryableDirectPayment extends PaymentTestSuiteNoDB {
                        directPaymentTransactionExternalKey,
                        amount,
                        currency,
-                       false,
                        emptyProperties,
                        null,
                        callContext, internalCallContext);
@@ -435,7 +428,6 @@ public class TestRetryableDirectPayment extends PaymentTestSuiteNoDB {
                        directPaymentTransactionExternalKey,
                        amount,
                        currency,
-                       false,
                        emptyProperties,
                        null,
                        callContext, internalCallContext);
@@ -477,7 +469,6 @@ public class TestRetryableDirectPayment extends PaymentTestSuiteNoDB {
                    directPaymentTransactionExternalKey,
                    amount,
                    currency,
-                   false,
                    emptyProperties,
                    null,
                    callContext,
@@ -519,7 +510,6 @@ public class TestRetryableDirectPayment extends PaymentTestSuiteNoDB {
                        directPaymentTransactionExternalKey,
                        amount,
                        currency,
-                       false,
                        emptyProperties,
                        null,
                        callContext,
@@ -564,7 +554,6 @@ public class TestRetryableDirectPayment extends PaymentTestSuiteNoDB {
                        directPaymentTransactionExternalKey,
                        amount,
                        currency,
-                       false,
                        emptyProperties,
                        null,
                        callContext,

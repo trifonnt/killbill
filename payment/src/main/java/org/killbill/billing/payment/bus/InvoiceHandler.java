@@ -59,11 +59,7 @@ public class InvoiceHandler {
             return false;
         }
         @Override
-        public boolean shouldRetryOnFailure() {
-            return true;
-        }
-        @Override
-        public String getRetryPluginName() {
+        public String getPaymentControlPluginName() {
             return InvoicePaymentControlPluginApi.PLUGIN_NAME;
         }
     };

@@ -208,7 +208,7 @@ CREATE TABLE payment_plugin_properties (
 ) /*! CHARACTER SET utf8 COLLATE utf8_bin */;
 CREATE INDEX payment_plugin_properties_ext ON payment_plugin_properties(transaction_external_key);
 
-/*  PaymentControlPlugin leaves  here until this becomes a first class citizen plugin */
+/*  PaymentControlPlugin lives  here until this becomes a first class citizen plugin */
 DROP TABLE IF EXISTS _invoice_payment_control_plugin_auto_pay_off;
 CREATE TABLE _invoice_payment_control_plugin_auto_pay_off (
     record_id int(11) unsigned NOT NULL AUTO_INCREMENT,

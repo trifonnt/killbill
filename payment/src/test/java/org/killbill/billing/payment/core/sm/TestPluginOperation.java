@@ -205,7 +205,6 @@ public class TestPluginOperation extends PaymentTestSuiteNoDB {
                                                                                                   new BigDecimal("192.3920111"),
                                                                                                   Currency.BRL,
                                                                                                   shouldLockAccount,
-                                                                                                  false,
                                                                                                   ImmutableList.<PluginProperty>of(),
                                                                                                   internalCallContext,
                                                                                                   callContext);

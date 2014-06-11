@@ -17,7 +17,6 @@
 package org.killbill.billing.payment.core.sm;
 
 import java.math.BigDecimal;
-import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 
@@ -73,12 +72,12 @@ public class MockRetryableDirectPaymentAutomatonRunner extends PluginControlledD
     @Override
     RetryableDirectPaymentStateContext createContext(final boolean isApiPayment, final TransactionType transactionType, final Account account, @Nullable final UUID paymentMethodId,
                                                      @Nullable final UUID directPaymentId, @Nullable final String directPaymentExternalKey, final String directPaymentTransactionExternalKey,
-                                                     @Nullable final BigDecimal amount, @Nullable final Currency currency, final boolean isExternalPayment,
+                                                     @Nullable final BigDecimal amount, @Nullable final Currency currency,
                                                      final Iterable<PluginProperty> properties,
                                                      final String pluginName, final CallContext callContext, final InternalCallContext internalCallContext) throws PaymentApiException {
         if (context == null) {
             return super.createContext(isApiPayment, transactionType, account, paymentMethodId, directPaymentId, directPaymentExternalKey, directPaymentTransactionExternalKey,
-                                       amount, currency, false,  properties, pluginName, callContext, internalCallContext);
+                                       amount, currency, properties, pluginName, callContext, internalCallContext);
         } else {
             return context;
         }

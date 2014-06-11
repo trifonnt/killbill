@@ -151,6 +151,7 @@ public final class InvoicePaymentControlPluginApi implements PaymentControlPlugi
                 final DateTime nextRetryDate = computeNextRetryDate(paymentControlContext.getPaymentExternalKey(), paymentControlContext.isApiPayment(), internalContext);
                 return new DefaultFailureCallResult(nextRetryDate);
             default:
+                // We don't retry  REFUND
                 return new DefaultFailureCallResult(null);
         }
     }

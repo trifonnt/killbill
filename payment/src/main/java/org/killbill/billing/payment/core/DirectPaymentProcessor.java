@@ -113,7 +113,6 @@ public class DirectPaymentProcessor extends ProcessorBase {
                                                                              amount,
                                                                              currency,
                                                                              shouldLockAccountAndDispatch,
-                                                                             false,
                                                                              properties,
                                                                              callContext,
                                                                              internalCallContext);
@@ -133,7 +132,6 @@ public class DirectPaymentProcessor extends ProcessorBase {
                                                                              amount,
                                                                              currency,
                                                                              shouldLockAccountAndDispatch,
-                                                                             false,
                                                                              properties,
                                                                              callContext,
                                                                              internalCallContext);
@@ -155,7 +153,6 @@ public class DirectPaymentProcessor extends ProcessorBase {
                                                                              amount,
                                                                              currency,
                                                                              shouldLockAccountAndDispatch,
-                                                                             false,
                                                                              properties,
                                                                              callContext,
                                                                              internalCallContext);
@@ -172,7 +169,6 @@ public class DirectPaymentProcessor extends ProcessorBase {
                                                                              directPaymentId,
                                                                              directPaymentTransactionExternalKey,
                                                                              shouldLockAccountAndDispatch,
-                                                                             false,
                                                                              properties,
                                                                              callContext,
                                                                              internalCallContext);
@@ -190,7 +186,6 @@ public class DirectPaymentProcessor extends ProcessorBase {
                                                                              amount,
                                                                              currency,
                                                                              shouldLockAccountAndDispatch,
-                                                                             false,
                                                                              properties,
                                                                              callContext,
                                                                              internalCallContext);
@@ -211,7 +206,6 @@ public class DirectPaymentProcessor extends ProcessorBase {
                                                                              amount,
                                                                              currency,
                                                                              shouldLockAccountAndDispatch,
-                                                                             false,
                                                                              properties,
                                                                              callContext,
                                                                              internalCallContext);
