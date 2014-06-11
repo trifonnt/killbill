@@ -14,7 +14,7 @@
  * under the License.
  */
 
-package org.killbill.billing.payment.bus;
+package org.killbill.billing.payment.control;
 
 import java.util.UUID;
 
@@ -24,8 +24,10 @@ import org.killbill.billing.account.api.AccountApiException;
 import org.killbill.billing.account.api.AccountInternalApi;
 import org.killbill.billing.callcontext.InternalCallContext;
 import org.killbill.billing.events.ControlTagDeletionInternalEvent;
+import org.killbill.billing.osgi.api.OSGIServiceRegistration;
 import org.killbill.billing.payment.api.PaymentApiException;
 import org.killbill.billing.payment.core.DirectPaymentProcessor;
+import org.killbill.billing.retry.plugin.api.PaymentControlPluginApi;
 import org.killbill.billing.util.callcontext.CallOrigin;
 import org.killbill.billing.util.callcontext.InternalCallContextFactory;
 import org.killbill.billing.util.callcontext.UserType;
@@ -45,15 +47,20 @@ public class PaymentTagHandler {
     private final AccountInternalApi accountApi;
     private final DirectPaymentProcessor paymentProcessor;
     private final InternalCallContextFactory internalCallContextFactory;
+    private final OSGIServiceRegistration<PaymentControlPluginApi> paymentControlPluginRegistry;
+    private final PaymentControlPluginApi invoicePaymentControlPlugin;
 
     @Inject
     public PaymentTagHandler(final Clock clock,
                              final AccountInternalApi accountApi,
                              final DirectPaymentProcessor paymentProcessor,
+                             final OSGIServiceRegistration<PaymentControlPluginApi> paymentControlPluginRegistry,
                              final InternalCallContextFactory internalCallContextFactory) {
         this.clock = clock;
         this.accountApi = accountApi;
         this.paymentProcessor = paymentProcessor;
+        this.paymentControlPluginRegistry = paymentControlPluginRegistry;
+        this.invoicePaymentControlPlugin = paymentControlPluginRegistry.getServiceForName(InvoicePaymentControlPluginApi.PLUGIN_NAME);
         this.internalCallContextFactory = internalCallContextFactory;
     }
 
@@ -71,11 +78,9 @@ public class PaymentTagHandler {
             final InternalCallContext internalCallContext = internalCallContextFactory.createInternalCallContext(tenantRecordId, accountRecordId,
                                                                                                                  "PaymentRequestProcessor", CallOrigin.INTERNAL, UserType.SYSTEM, userToken);
             final Account account = accountApi.getAccountById(accountId, internalCallContext);
-            paymentProcessor.process_AUTO_PAY_OFF_removal(account, internalCallContext);
+            ((InvoicePaymentControlPluginApi) invoicePaymentControlPlugin).process_AUTO_PAY_OFF_removal(account, internalCallContext);
 
         } catch (AccountApiException e) {
-            log.warn(String.format("Failed to process process  removal AUTO_PAY_OFF for account %s", accountId), e);
-        } catch (PaymentApiException e) {
             log.warn(String.format("Failed to process process  removal AUTO_PAY_OFF for account %s", accountId), e);
         }
     }

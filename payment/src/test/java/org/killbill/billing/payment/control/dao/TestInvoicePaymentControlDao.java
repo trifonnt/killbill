@@ -25,15 +25,24 @@ import java.util.UUID;
 import org.joda.time.DateTime;
 import org.killbill.billing.catalog.api.Currency;
 import org.killbill.billing.payment.PaymentTestSuiteWithEmbeddedDB;
+import org.killbill.billing.payment.dao.PluginPropertyModelDao;
+import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
 import static org.testng.Assert.assertEquals;
 
 public class TestInvoicePaymentControlDao extends PaymentTestSuiteWithEmbeddedDB {
 
-    @Test(groups = "slow")
+    private InvoicePaymentControlDao dao;
+
+    @BeforeClass(groups = "slow")
+    protected void beforeClass() throws Exception {
+        super.beforeClass();
+        dao = new InvoicePaymentControlDao(dbi);
+    }
+
+        @Test(groups = "slow")
     public void testPluginAutoPayOffSimple() {
-        InvoicePaymentControlDao dao = new InvoicePaymentControlDao(dbi);
 
         UUID accountId = UUID.randomUUID();
         UUID paymentId = UUID.randomUUID();
@@ -59,7 +68,6 @@ public class TestInvoicePaymentControlDao extends PaymentTestSuiteWithEmbeddedDB
 
     @Test(groups = "slow")
     public void testPluginAutoPayOffMutlitpleEntries() {
-        InvoicePaymentControlDao dao = new InvoicePaymentControlDao(dbi);
 
         UUID accountId = UUID.randomUUID();
         UUID paymentId1 = UUID.randomUUID();
@@ -79,7 +87,6 @@ public class TestInvoicePaymentControlDao extends PaymentTestSuiteWithEmbeddedDB
 
     @Test(groups = "slow")
     public void testPluginAutoPayOffNoEntries() {
-        InvoicePaymentControlDao dao = new InvoicePaymentControlDao(dbi);
 
         UUID accountId = UUID.randomUUID();
         UUID paymentId1 = UUID.randomUUID();
@@ -92,45 +99,4 @@ public class TestInvoicePaymentControlDao extends PaymentTestSuiteWithEmbeddedDB
         final List<PluginAutoPayOffModelDao> entries = dao.getAutoPayOffEntry(UUID.randomUUID());
         assertEquals(entries.size(), 0);
     }
-
-    @Test(groups = "slow")
-    public void testInsertPluginPropertiesSimple() {
-        InvoicePaymentControlDao dao = new InvoicePaymentControlDao(dbi);
-
-        UUID accountId = UUID.randomUUID();
-        DateTime utcNow = clock.getUTCNow();
-        PluginPropertyModelDao entry = new PluginPropertyModelDao("key1", "tkey1", accountId, "XXX", "prop_key", "prop_value", "lulu", utcNow);
-        dao.insertPluginProperties(Collections.singletonList(entry));
-
-        List<PluginPropertyModelDao> entries = dao.getPluginProperties("tkey1");
-        assertEquals(entries.size(), 1);
-        assertEquals(entries.get(0).getPaymentExternalKey(), "key1");
-        assertEquals(entries.get(0).getTransactionExternalKey(), "tkey1");
-        assertEquals(entries.get(0).getAccountId(), accountId);
-        assertEquals(entries.get(0).getPluginName(), "XXX");
-        assertEquals(entries.get(0).getPropKey(), "prop_key");
-        assertEquals(entries.get(0).getPropValue(), "prop_value");
-        assertEquals(entries.get(0).getCreatedBy(), "lulu");
-        assertEquals(entries.get(0).getCreatedDate(), utcNow);
-    }
-
-    @Test(groups = "slow")
-    public void testInsertPluginPropertiesMultipleEntries() {
-        InvoicePaymentControlDao dao = new InvoicePaymentControlDao(dbi);
-
-        UUID accountId = UUID.randomUUID();
-        DateTime utcNow = clock.getUTCNow();
-        PluginPropertyModelDao entry1 = new PluginPropertyModelDao("key", "tkey", accountId, "XXX", "prop_key1", "prop_value1", "lulu", utcNow);
-        PluginPropertyModelDao entry2 = new PluginPropertyModelDao("key", "tkey", accountId, "XXX", "prop_key2", "prop_value2", "lulu", utcNow);
-        PluginPropertyModelDao entry3 = new PluginPropertyModelDao("key", "tkey", accountId, "XXX", "prop_key3", "prop_value3", "lulu", utcNow);
-        List input = new ArrayList();
-        input.add(entry1);
-        input.add(entry2);
-        input.add(entry3);
-        dao.insertPluginProperties(input);
-
-        List<PluginPropertyModelDao> entries = dao.getPluginProperties("tkey");
-        assertEquals(entries.size(), 3);
-    }
-
 }

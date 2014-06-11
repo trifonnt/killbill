@@ -71,14 +71,30 @@ public class DefaultPaymentDao implements PaymentDao {
     }
 
     @Override
-    public PaymentAttemptModelDao insertPaymentAttempt(final PaymentAttemptModelDao attempt, final InternalCallContext context) {
+    public List<PluginPropertyModelDao> getProperties(final String transactionExternalKey, final InternalCallContext context) {
+        return transactionalSqlDao.execute(new EntitySqlDaoTransactionWrapper<List<PluginPropertyModelDao>>() {
+            @Override
+            public List<PluginPropertyModelDao> inTransaction(final EntitySqlDaoWrapperFactory<EntitySqlDao> entitySqlDaoWrapperFactory) throws Exception {
+                final PaymentAttemptSqlDao transactional = entitySqlDaoWrapperFactory.become(PaymentAttemptSqlDao.class);
+                return transactional.become(PluginPropertySqlDao.class).getPluginProperties(transactionExternalKey);
+            }
+        });
+    }
+
+    @Override
+    public PaymentAttemptModelDao insertPaymentAttemptWithProperties(final PaymentAttemptModelDao attempt, final List<PluginPropertyModelDao> properties, final InternalCallContext context) {
         return transactionalSqlDao.execute(new EntitySqlDaoTransactionWrapper<PaymentAttemptModelDao>() {
 
             @Override
             public PaymentAttemptModelDao inTransaction(final EntitySqlDaoWrapperFactory<EntitySqlDao> entitySqlDaoWrapperFactory) throws Exception {
                 final PaymentAttemptSqlDao transactional = entitySqlDaoWrapperFactory.become(PaymentAttemptSqlDao.class);
                 transactional.create(attempt, context);
-                return transactional.getById(attempt.getId().toString(), context);
+                final PaymentAttemptModelDao result = transactional.getById(attempt.getId().toString(), context);
+
+                // Those calls are not part of history and audit on purpose, this is just to implement a temporary property cache cache
+                transactional.become(PluginPropertySqlDao.class).batchCreateFromTransaction(properties);
+
+                return result;
             }
         });
     }

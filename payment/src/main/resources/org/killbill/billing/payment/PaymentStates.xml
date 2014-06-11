@@ -276,7 +276,7 @@
         </linkStateMachine>
         <linkStateMachine>
             <initialStateMachine>PURCHASE</initialStateMachine>
-            <initialState>PURCHASE_SUCCESS</initialState>
+            <initialState>PURCHASE_FAILED</initialState>
             <finalStateMachine>PURCHASE</finalStateMachine>
             <finalState>PURCHASE_INIT</finalState>
         </linkStateMachine>

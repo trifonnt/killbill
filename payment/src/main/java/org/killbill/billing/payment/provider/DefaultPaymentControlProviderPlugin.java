@@ -24,7 +24,7 @@ import org.killbill.billing.retry.plugin.api.UnknownEntryException;
 
 public class DefaultPaymentControlProviderPlugin implements PaymentControlPluginApi {
 
-    public static final String PLUGIN_NAME = "__DEFAULT_RETRY__";
+    public static final String PLUGIN_NAME = "__DEFAULT_PAYMENT_CONTROL__";
 
     @Override
     public PriorPaymentControlResult priorCall(final PaymentControlContext paymentControlContext) throws PaymentControlApiException, UnknownEntryException {

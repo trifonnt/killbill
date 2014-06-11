@@ -14,7 +14,7 @@
  * under the License.
  */
 
-package org.killbill.billing.payment.control.dao;
+package org.killbill.billing.payment.dao;
 
 import java.util.UUID;
 

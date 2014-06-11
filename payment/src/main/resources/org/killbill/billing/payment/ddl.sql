@@ -193,9 +193,8 @@ CREATE TABLE direct_transaction_history (
 CREATE INDEX direct_transaction_history_target_record_id ON direct_transaction_history(target_record_id);
 CREATE INDEX direct_transaction_history_tenant_account_record_id ON direct_transaction_history(tenant_record_id, account_record_id);
 
-/*  PaymentControlPlugin leaves  here until this becomes a first class citizen plugin */
-DROP TABLE IF EXISTS _invoice_payment_control_plugin_properties;
-CREATE TABLE _invoice_payment_control_plugin_properties (
+DROP TABLE IF EXISTS payment_plugin_properties;
+CREATE TABLE payment_plugin_properties (
     record_id int(11) unsigned NOT NULL AUTO_INCREMENT,
     payment_external_key varchar(255),
     transaction_external_key varchar(255),
@@ -207,8 +206,9 @@ CREATE TABLE _invoice_payment_control_plugin_properties (
     created_date datetime NOT NULL,
     PRIMARY KEY (record_id)
 ) /*! CHARACTER SET utf8 COLLATE utf8_bin */;
-CREATE INDEX _invoice_payment_control_plugin_properties_ext ON _invoice_payment_control_plugin_properties(payment_external_key);
+CREATE INDEX payment_plugin_properties_ext ON payment_plugin_properties(transaction_external_key);
 
+/*  PaymentControlPlugin leaves  here until this becomes a first class citizen plugin */
 DROP TABLE IF EXISTS _invoice_payment_control_plugin_auto_pay_off;
 CREATE TABLE _invoice_payment_control_plugin_auto_pay_off (
     record_id int(11) unsigned NOT NULL AUTO_INCREMENT,

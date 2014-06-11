@@ -71,4 +71,14 @@
             </operations>
         </stateMachine>
     </stateMachines>
+
+    <linkStateMachines>
+        <linkStateMachine>
+            <initialStateMachine>PAYMENT_RETRY</initialStateMachine>
+            <initialState>ABORTED</initialState>
+            <finalStateMachine>PAYMENT_RETRY</finalStateMachine>
+            <finalState>INIT</finalState>
+        </linkStateMachine>
+    </linkStateMachines>
+
 </stateMachineConfig>

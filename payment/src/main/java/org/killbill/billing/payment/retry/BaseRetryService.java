@@ -24,7 +24,6 @@ import java.util.UUID;
 import org.joda.time.DateTime;
 import org.killbill.billing.ObjectType;
 import org.killbill.billing.callcontext.InternalCallContext;
-import org.killbill.billing.payment.api.PluginProperty;
 import org.killbill.billing.payment.glue.DefaultPaymentService;
 import org.killbill.billing.util.callcontext.CallOrigin;
 import org.killbill.billing.util.callcontext.InternalCallContextFactory;
@@ -40,7 +39,6 @@ import org.killbill.notificationq.api.NotificationQueueService.NotificationQueue
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
 
 public abstract class BaseRetryService implements RetryService {
@@ -72,7 +70,7 @@ public abstract class BaseRetryService implements RetryService {
                                                                               }
                                                                               final PaymentRetryNotificationKey key = (PaymentRetryNotificationKey) notificationKey;
                                                                               final InternalCallContext callContext = internalCallContextFactory.createInternalCallContext(tenantRecordId, accountRecordId, PAYMENT_RETRY_SERVICE, CallOrigin.INTERNAL, UserType.SYSTEM, userToken);
-                                                                              retryPaymentTransaction(key.getTransactionExternalKey(), ImmutableList.<PluginProperty>of(), callContext);
+                                                                              retryPaymentTransaction(key.getTransactionExternalKey(), callContext);
                                                                           }
                                                                       }
                                                                      );
@@ -106,23 +104,17 @@ public abstract class BaseRetryService implements RetryService {
             this.internalCallContextFactory = internalCallContextFactory;
         }
 
-        public boolean scheduleRetryFromTransaction(final UUID paymentId, final DateTime timeOfRetry, final EntitySqlDaoWrapperFactory<EntitySqlDao> entitySqlDaoWrapperFactory) {
-           // STEPH_RETRY
-           // return scheduleRetryInternal(paymentId, timeOfRetry, entitySqlDaoWrapperFactory);
-            return true;
-        }
-
-        public boolean scheduleRetry(final UUID paymentId, final String transactionExternalKey, final DateTime timeOfRetry) {
-            return scheduleRetryInternal(paymentId, transactionExternalKey, timeOfRetry, null);
+        public boolean scheduleRetry(final UUID paymentId, final String transactionExternalKey, final String pluginName, final DateTime timeOfRetry) {
+            return scheduleRetryInternal(paymentId, transactionExternalKey, pluginName, timeOfRetry, null);
         }
 
 
-        private boolean scheduleRetryInternal(final UUID paymentId, final String transactionExternalKey, final DateTime timeOfRetry, final EntitySqlDaoWrapperFactory<EntitySqlDao> transactionalDao) {
+        private boolean scheduleRetryInternal(final UUID paymentId, final String transactionExternalKey, final String pluginName, final DateTime timeOfRetry, final EntitySqlDaoWrapperFactory<EntitySqlDao> transactionalDao) {
             final InternalCallContext context = createCallContextFromPaymentId(paymentId);
 
             try {
                 final NotificationQueue retryQueue = notificationQueueService.getNotificationQueue(DefaultPaymentService.SERVICE_NAME, getQueueName());
-                final NotificationEvent key = new PaymentRetryNotificationKey(transactionExternalKey);
+                final NotificationEvent key = new PaymentRetryNotificationKey(transactionExternalKey, pluginName);
                 if (retryQueue != null) {
                     if (transactionalDao == null) {
                         retryQueue.recordFutureNotification(timeOfRetry, key, context.getUserToken(), context.getAccountRecordId(), context.getTenantRecordId());

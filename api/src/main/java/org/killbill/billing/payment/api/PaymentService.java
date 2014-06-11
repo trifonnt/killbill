@@ -22,6 +22,6 @@ public interface PaymentService extends KillbillService {
     @Override
     String getName();
 
-    PaymentApi getPaymentApi();
+    DirectPaymentApi getPaymentApi();
 
 }

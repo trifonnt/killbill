@@ -24,13 +24,20 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 public class PaymentRetryNotificationKey implements NotificationEvent {
 
     private final String transactionExternalKey;
+    private final String pluginName;
 
     @JsonCreator
-    public PaymentRetryNotificationKey(@JsonProperty("transactionExternalKey") String transactionExternalKey) {
+    public PaymentRetryNotificationKey(@JsonProperty("transactionExternalKey") String transactionExternalKey,
+                                       @JsonProperty("pluginName") String pluginName) {
         this.transactionExternalKey = transactionExternalKey;
+        this.pluginName = pluginName;
     }
 
     public String getTransactionExternalKey() {
         return transactionExternalKey;
+    }
+
+    public String getPluginName() {
+        return pluginName;
     }
 }

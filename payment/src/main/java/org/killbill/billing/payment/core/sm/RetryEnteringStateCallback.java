@@ -44,7 +44,8 @@ public class RetryEnteringStateCallback implements EnteringStateCallback {
         retryableDirectPaymentAutomatonRunner.paymentDao.updatePaymentAttempt(attempt.getId(), state.getName(), directPaymentStateContext.internalCallContext);
 
         if ("RETRIED".equals(state.getName())) {
-            retryServiceScheduler.scheduleRetry(directPaymentStateContext.directPaymentId, directPaymentStateContext.directPaymentTransactionExternalKey, directPaymentStateContext.getRetryDate());
+            retryServiceScheduler.scheduleRetry(directPaymentStateContext.directPaymentId, directPaymentStateContext.directPaymentTransactionExternalKey,
+                                                directPaymentStateContext.getPluginName(), directPaymentStateContext.getRetryDate());
         }
     }
 }

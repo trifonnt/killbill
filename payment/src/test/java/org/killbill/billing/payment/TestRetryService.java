@@ -55,11 +55,6 @@ public class TestRetryService extends PaymentTestSuiteNoDB {
     @BeforeMethod(groups = "fast")
     public void beforeMethod() throws Exception {
         super.beforeMethod();
-        pluginRetryService.initialize(DefaultPaymentService.SERVICE_NAME);
-        pluginRetryService.start();
-
-        retryService.initialize(DefaultPaymentService.SERVICE_NAME);
-        retryService.start();
 
         mockPaymentProviderPlugin = (MockPaymentProviderPlugin) registry.getServiceForName(MockPaymentProviderPlugin.PLUGIN_NAME);
         mockPaymentProviderPlugin.clear();
@@ -69,8 +64,6 @@ public class TestRetryService extends PaymentTestSuiteNoDB {
     @AfterMethod(groups = "fast")
     public void afterMethod() throws Exception {
         super.afterMethod();
-        retryService.stop();
-        pluginRetryService.stop();
     }
 
     private DirectPayment getPaymentForInvoice(final UUID invoiceId) throws PaymentApiException {

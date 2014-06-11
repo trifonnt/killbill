@@ -18,6 +18,7 @@ package org.killbill.billing.payment.glue;
 
 import org.killbill.billing.osgi.api.OSGIServiceDescriptor;
 import org.killbill.billing.osgi.api.OSGIServiceRegistration;
+import org.killbill.billing.payment.control.InvoicePaymentControlPluginApi;
 import org.killbill.billing.payment.provider.DefaultPaymentControlProviderPlugin;
 import org.killbill.billing.payment.provider.DefaultPaymentControlProviderPluginRegistry;
 import org.killbill.billing.retry.plugin.api.PaymentControlPluginApi;
@@ -29,12 +30,16 @@ import com.google.inject.Provider;
 public class DefaultPaymentControlProviderPluginRegistryProvider implements Provider<OSGIServiceRegistration<PaymentControlPluginApi>> {
 
     private final PaymentConfig paymentConfig;
-    private final DefaultPaymentControlProviderPlugin externalRetryProviderPlugin;
+    private final DefaultPaymentControlProviderPlugin externalPaymentControlProviderPlugin;
+    private final InvoicePaymentControlPluginApi invoicePaymentControlPlugin;
 
     @Inject
-    public DefaultPaymentControlProviderPluginRegistryProvider(final PaymentConfig paymentConfig, final DefaultPaymentControlProviderPlugin externalRetryProviderPlugin) {
+    public DefaultPaymentControlProviderPluginRegistryProvider(final PaymentConfig paymentConfig,
+                                                               final DefaultPaymentControlProviderPlugin externalPaymentControlProviderPlugin,
+                                                              final InvoicePaymentControlPluginApi invoicePaymentControlPlugin) {
         this.paymentConfig = paymentConfig;
-        this.externalRetryProviderPlugin = externalRetryProviderPlugin;
+        this.externalPaymentControlProviderPlugin = externalPaymentControlProviderPlugin;
+        this.invoicePaymentControlPlugin = invoicePaymentControlPlugin;
     }
 
     @Override
@@ -53,7 +58,21 @@ public class DefaultPaymentControlProviderPluginRegistryProvider implements Prov
                 return DefaultPaymentControlProviderPlugin.PLUGIN_NAME;
             }
         };
-        pluginRegistry.registerService(desc, externalRetryProviderPlugin);
+        pluginRegistry.registerService(desc, externalPaymentControlProviderPlugin);
+
+        // Hack, because this is not a real plugin, so it can't register itself during lifecycle as it should.
+        final OSGIServiceDescriptor desc2 = new OSGIServiceDescriptor() {
+            @Override
+            public String getPluginSymbolicName() {
+                return null;
+            }
+
+            @Override
+            public String getRegistrationName() {
+                return InvoicePaymentControlPluginApi.PLUGIN_NAME;
+            }
+        };
+        pluginRegistry.registerService(desc2, invoicePaymentControlPlugin);
 
         return pluginRegistry;
     }

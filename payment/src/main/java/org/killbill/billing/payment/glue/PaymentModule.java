@@ -33,7 +33,8 @@ import org.killbill.billing.payment.api.DirectPaymentApi;
 import org.killbill.billing.payment.api.PaymentGatewayApi;
 import org.killbill.billing.payment.api.PaymentService;
 import org.killbill.billing.payment.bus.InvoiceHandler;
-import org.killbill.billing.payment.bus.PaymentTagHandler;
+import org.killbill.billing.payment.control.PaymentTagHandler;
+import org.killbill.billing.payment.control.dao.InvoicePaymentControlDao;
 import org.killbill.billing.payment.core.DirectPaymentProcessor;
 import org.killbill.billing.payment.core.PaymentGatewayProcessor;
 import org.killbill.billing.payment.core.PaymentMethodProcessor;
@@ -42,15 +43,9 @@ import org.killbill.billing.payment.core.sm.PluginControlledDirectPaymentAutomat
 import org.killbill.billing.payment.dao.DefaultPaymentDao;
 import org.killbill.billing.payment.dao.PaymentDao;
 import org.killbill.billing.payment.plugin.api.PaymentPluginApi;
-import org.killbill.billing.payment.retry.AutoPayRetryService;
-import org.killbill.billing.payment.retry.AutoPayRetryService.AutoPayRetryServiceScheduler;
 import org.killbill.billing.payment.retry.BaseRetryService.RetryServiceScheduler;
 import org.killbill.billing.payment.retry.DefaultRetryService;
 import org.killbill.billing.payment.retry.DefaultRetryService.DefaultRetryServiceScheduler;
-import org.killbill.billing.payment.retry.FailedPaymentRetryService;
-import org.killbill.billing.payment.retry.FailedPaymentRetryService.FailedPaymentRetryServiceScheduler;
-import org.killbill.billing.payment.retry.PluginFailureRetryService;
-import org.killbill.billing.payment.retry.PluginFailureRetryService.PluginFailureRetryServiceScheduler;
 import org.killbill.billing.payment.retry.RetryService;
 import org.killbill.billing.retry.plugin.api.PaymentControlPluginApi;
 import org.killbill.billing.util.config.PaymentConfig;
@@ -82,20 +77,14 @@ public class PaymentModule extends AbstractModule {
 
     protected void installPaymentDao() {
         bind(PaymentDao.class).to(DefaultPaymentDao.class).asEagerSingleton();
+        // Payment Control Plugin Dao
+        bind(InvoicePaymentControlDao.class).asEagerSingleton();
     }
 
     protected void installPaymentProviderPlugins(final PaymentConfig config) {
     }
 
     protected void installRetryEngines() {
-
-        // STEPH_RETRY all those should disappear
-        bind(FailedPaymentRetryService.class).asEagerSingleton();
-        bind(PluginFailureRetryService.class).asEagerSingleton();
-        bind(AutoPayRetryService.class).asEagerSingleton();
-        bind(FailedPaymentRetryServiceScheduler.class).asEagerSingleton();
-        bind(PluginFailureRetryServiceScheduler.class).asEagerSingleton();
-        bind(AutoPayRetryServiceScheduler.class).asEagerSingleton();
 
         bind(DefaultRetryService.class).asEagerSingleton();
         bind(RetryService.class).annotatedWith(Names.named(RETRYABLE_NAMED)).to(DefaultRetryService.class);

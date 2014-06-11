@@ -16,23 +16,33 @@
 
 package org.killbill.billing.payment.core.sm;
 
+import java.util.List;
+
+import javax.annotation.Nullable;
+
 import org.joda.time.DateTime;
 import org.killbill.automaton.State;
 import org.killbill.automaton.State.LeavingStateCallback;
+import org.killbill.billing.payment.api.PluginProperty;
 import org.killbill.billing.payment.api.TransactionType;
 import org.killbill.billing.payment.dao.PaymentAttemptModelDao;
+import org.killbill.billing.payment.dao.PluginPropertyModelDao;
+
+import com.google.common.base.Function;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterables;
 
 public class RetryLeavingStateCallback implements LeavingStateCallback {
 
     private PluginControlledDirectPaymentAutomatonRunner retryableDirectPaymentAutomatonRunner;
-    private final DirectPaymentStateContext stateContext;
+    private final RetryableDirectPaymentStateContext stateContext;
     private final State initialState;
     private final TransactionType transactionType;
 
     public RetryLeavingStateCallback(final PluginControlledDirectPaymentAutomatonRunner retryableDirectPaymentAutomatonRunner, final DirectPaymentStateContext stateContext, final State initialState, final TransactionType transactionType) {
         this.retryableDirectPaymentAutomatonRunner = retryableDirectPaymentAutomatonRunner;
         this.initialState = initialState;
-        this.stateContext = stateContext;
+        this.stateContext = (RetryableDirectPaymentStateContext) stateContext;
         this.transactionType = transactionType;
     }
 
@@ -41,7 +51,15 @@ public class RetryLeavingStateCallback implements LeavingStateCallback {
 
         final DateTime utcNow = retryableDirectPaymentAutomatonRunner.clock.getUTCNow();
         if (state.getName().equals(initialState.getName())) {
-            retryableDirectPaymentAutomatonRunner.paymentDao.insertPaymentAttempt(new PaymentAttemptModelDao(utcNow, utcNow, null, stateContext.directPaymentTransactionExternalKey, state.getName(), transactionType.name(), null), stateContext.internalCallContext);
+            final List<PluginPropertyModelDao> properties = ImmutableList.copyOf(Iterables.transform(stateContext.getProperties(), new Function<PluginProperty, PluginPropertyModelDao>() {
+                @Override
+                public PluginPropertyModelDao apply(final PluginProperty input) {
+                    return new PluginPropertyModelDao(stateContext.getDirectPaymentExternalKey(), stateContext.directPaymentTransactionExternalKey, stateContext.getAccount().getId(),
+                                                      stateContext.getPluginName(), input.getKey(), (String) input.getValue(), stateContext.getCallContext().getUserName(), stateContext.getCallContext().getCreatedDate());
+                }
+            }));
+            retryableDirectPaymentAutomatonRunner.paymentDao.insertPaymentAttemptWithProperties(new PaymentAttemptModelDao(utcNow, utcNow, null, stateContext.directPaymentTransactionExternalKey, state.getName(), transactionType.name(), null),
+                                                                                                properties, stateContext.internalCallContext);
         }
     }
 }

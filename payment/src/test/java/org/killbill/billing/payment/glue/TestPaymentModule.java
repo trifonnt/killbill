@@ -18,6 +18,8 @@ package org.killbill.billing.payment.glue;
 
 import java.util.UUID;
 
+import org.killbill.billing.util.api.TagUserApi;
+import org.killbill.billing.util.callcontext.TenantContext;
 import org.killbill.billing.util.glue.MemoryGlobalLockerModule;
 import org.mockito.Mockito;
 import org.skife.config.ConfigSource;
@@ -55,9 +57,14 @@ public class TestPaymentModule extends PaymentModule {
     }
 
     private void installExternalApis() {
-        final TagInternalApi tagUserApi = Mockito.mock(TagInternalApi.class);
-        bind(TagInternalApi.class).toInstance(tagUserApi);
-        Mockito.when(tagUserApi.getTags(Mockito.<UUID>any(), Mockito.<ObjectType>any(), Mockito.<InternalTenantContext>any())).thenReturn(ImmutableList.<Tag>of());
+        final TagInternalApi tagInternalApi = Mockito.mock(TagInternalApi.class);
+        bind(TagInternalApi.class).toInstance(tagInternalApi);
+        Mockito.when(tagInternalApi.getTags(Mockito.<UUID>any(), Mockito.<ObjectType>any(), Mockito.<InternalTenantContext>any())).thenReturn(ImmutableList.<Tag>of());
+
+
+        final TagUserApi tagUserApi = Mockito.mock(TagUserApi.class);
+        bind(TagUserApi.class).toInstance(tagUserApi);
+        //Mockito.when(tagUserApi.getTagsForAccount(Mockito.<UUID>any(), Mockito.<Boolean>any(), Mockito.<TenantContext>any())).thenReturn(ImmutableList.<Tag>of());
     }
 
     @Override

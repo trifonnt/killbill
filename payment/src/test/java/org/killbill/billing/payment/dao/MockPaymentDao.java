@@ -50,8 +50,14 @@ public class MockPaymentDao implements PaymentDao {
         transactions.clear();
         attempts.clear();
     }
+
     @Override
-    public PaymentAttemptModelDao insertPaymentAttempt(final PaymentAttemptModelDao attempt, final InternalCallContext context) {
+    public List<PluginPropertyModelDao> getProperties(final String transactionExternalKey, final InternalCallContext context) {
+        return null;
+    }
+
+    @Override
+    public PaymentAttemptModelDao insertPaymentAttemptWithProperties(final PaymentAttemptModelDao attempt, final List<PluginPropertyModelDao> properties, final InternalCallContext context) {
         synchronized (this) {
             attempts.put(attempt.getTransactionExternalKey(), attempt);
             return attempt;

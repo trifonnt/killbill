@@ -17,6 +17,7 @@
 package org.killbill.billing.payment.core;
 
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 
@@ -41,6 +42,7 @@ import org.killbill.billing.payment.dao.DirectPaymentModelDao;
 import org.killbill.billing.payment.dao.DirectPaymentTransactionModelDao;
 import org.killbill.billing.payment.dao.PaymentAttemptModelDao;
 import org.killbill.billing.payment.dao.PaymentDao;
+import org.killbill.billing.payment.dao.PluginPropertyModelDao;
 import org.killbill.billing.payment.plugin.api.PaymentPluginApi;
 import org.killbill.billing.tag.TagInternalApi;
 import org.killbill.billing.util.callcontext.CallContext;
@@ -48,6 +50,9 @@ import org.killbill.billing.util.dao.NonEntityDao;
 import org.killbill.bus.api.PersistentBus;
 import org.killbill.commons.locker.GlobalLocker;
 
+import com.google.common.base.Function;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterables;
 import com.google.inject.name.Named;
 
 import static org.killbill.billing.payment.glue.PaymentModule.PLUGIN_EXECUTOR_NAMED;
@@ -170,12 +175,22 @@ public class PluginControlledPaymentProcessor extends ProcessorBase {
                                                          callContext, internalCallContext);
     }
 
-    public void retryPaymentTransaction(final String transactionExternalKey, final Iterable<PluginProperty> properties, final InternalCallContext internalCallContext) {
+    public void retryPaymentTransaction(final String transactionExternalKey, final InternalCallContext internalCallContext) {
         try {
 
             final PaymentAttemptModelDao attempt = paymentDao.getPaymentAttemptByExternalKey(transactionExternalKey, internalCallContext);
             final DirectPaymentTransactionModelDao transaction = paymentDao.getDirectPaymentTransactionByExternalKey(transactionExternalKey, internalCallContext);
             final DirectPaymentModelDao payment = paymentDao.getDirectPayment(transaction.getDirectPaymentId(), internalCallContext);
+
+            final List<PluginPropertyModelDao> properties = paymentDao.getProperties(transactionExternalKey, internalCallContext);
+
+            final List<PluginProperty> pluginProperties = ImmutableList.copyOf(Iterables.transform(properties, new Function<PluginPropertyModelDao, PluginProperty>() {
+                @Nullable
+                @Override
+                public PluginProperty apply(final PluginPropertyModelDao input) {
+                    return new PluginProperty(input.getPropKey(), input.getPropValue(), false);
+                }
+            }));
 
             final boolean isExternalPayment = false;
             final Account account = accountInternalApi.getAccountById(payment.getAccountId(), internalCallContext);
@@ -194,7 +209,7 @@ public class PluginControlledPaymentProcessor extends ProcessorBase {
                                                       transaction.getAmount(),
                                                       transaction.getCurrency(),
                                                       isExternalPayment,
-                                                      properties,
+                                                      pluginProperties,
                                                       null,
                                                       callContext,
                                                       internalCallContext);

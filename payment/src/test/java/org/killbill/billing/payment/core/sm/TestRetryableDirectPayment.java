@@ -17,7 +17,6 @@
 package org.killbill.billing.payment.core.sm;
 
 import java.math.BigDecimal;
-import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 
@@ -45,6 +44,7 @@ import org.killbill.billing.payment.dao.DirectPaymentTransactionModelDao;
 import org.killbill.billing.payment.dao.MockPaymentDao;
 import org.killbill.billing.payment.dao.PaymentAttemptModelDao;
 import org.killbill.billing.payment.dao.PaymentDao;
+import org.killbill.billing.payment.dao.PluginPropertyModelDao;
 import org.killbill.billing.payment.glue.PaymentModule;
 import org.killbill.billing.payment.plugin.api.PaymentPluginApi;
 import org.killbill.billing.payment.provider.MockPaymentControlProviderPlugin;
@@ -63,7 +63,6 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import com.google.inject.Inject;
 
 import static org.killbill.billing.payment.glue.PaymentModule.PLUGIN_EXECUTOR_NAMED;
@@ -466,7 +465,8 @@ public class TestRetryableDirectPayment extends PaymentTestSuiteNoDB {
 
         final State state = runner.fetchState("RETRIED");
         final UUID directTransactionId = UUID.randomUUID();
-        paymentDao.insertPaymentAttempt(new PaymentAttemptModelDao(utcNow, utcNow, directTransactionId, directPaymentTransactionExternalKey, state.getName(), TransactionType.AUTHORIZE.name(), null), internalCallContext);
+        paymentDao.insertPaymentAttemptWithProperties(new PaymentAttemptModelDao(utcNow, utcNow, directTransactionId, directPaymentTransactionExternalKey, state.getName(), TransactionType.AUTHORIZE.name(), null),
+                                                      ImmutableList.<PluginPropertyModelDao>of(), internalCallContext);
         runner.run(state,
                    false,
                    TransactionType.AUTHORIZE,
@@ -505,7 +505,8 @@ public class TestRetryableDirectPayment extends PaymentTestSuiteNoDB {
 
         final State state = runner.fetchState("RETRIED");
         final UUID directTransactionId = UUID.randomUUID();
-        paymentDao.insertPaymentAttempt(new PaymentAttemptModelDao(utcNow, utcNow, directTransactionId, directPaymentTransactionExternalKey, state.getName(), TransactionType.AUTHORIZE.name(), null), internalCallContext);
+        paymentDao.insertPaymentAttemptWithProperties(new PaymentAttemptModelDao(utcNow, utcNow, directTransactionId, directPaymentTransactionExternalKey, state.getName(), TransactionType.AUTHORIZE.name(), null),
+                                        ImmutableList.<PluginPropertyModelDao>of(), internalCallContext);
 
         try {
             runner.run(state,
@@ -549,7 +550,8 @@ public class TestRetryableDirectPayment extends PaymentTestSuiteNoDB {
 
         final State state = runner.fetchState("RETRIED");
         final UUID directTransactionId = UUID.randomUUID();
-        paymentDao.insertPaymentAttempt(new PaymentAttemptModelDao(utcNow, utcNow, directTransactionId, directPaymentTransactionExternalKey, state.getName(), TransactionType.AUTHORIZE.name(), null), internalCallContext);
+        paymentDao.insertPaymentAttemptWithProperties(new PaymentAttemptModelDao(utcNow, utcNow, directTransactionId, directPaymentTransactionExternalKey, state.getName(), TransactionType.AUTHORIZE.name(), null),
+                                                      ImmutableList.<PluginPropertyModelDao>of(), internalCallContext);
 
         try {
             runner.run(state,
@@ -594,12 +596,13 @@ public class TestRetryableDirectPayment extends PaymentTestSuiteNoDB {
         final State state = runner.fetchState("RETRIED");
         final UUID directTransactionId = UUID.randomUUID();
         final UUID directPaymentId = UUID.randomUUID();
-        paymentDao.insertPaymentAttempt(new PaymentAttemptModelDao(utcNow, utcNow, directTransactionId, directPaymentTransactionExternalKey, state.getName(), TransactionType.AUTHORIZE.name(), null), internalCallContext);
+        paymentDao.insertPaymentAttemptWithProperties(new PaymentAttemptModelDao(utcNow, utcNow, directTransactionId, directPaymentTransactionExternalKey, state.getName(), TransactionType.AUTHORIZE.name(), null),
+                                                      ImmutableList.<PluginPropertyModelDao>of(), internalCallContext);
         paymentDao.insertDirectPaymentWithFirstTransaction(new DirectPaymentModelDao(directPaymentId, utcNow, utcNow, account.getId(), paymentMethodId, -1, directPaymentExternalKey, null, null),
                                                            new DirectPaymentTransactionModelDao(directTransactionId, directPaymentTransactionExternalKey, utcNow, utcNow, directPaymentId, TransactionType.AUTHORIZE, utcNow, PaymentStatus.PAYMENT_FAILURE, amount, currency, "bla", "foo", null, null),
                                                            internalCallContext);
 
-        processor.retryPaymentTransaction(directPaymentTransactionExternalKey, emptyProperties, internalCallContext);
+        processor.retryPaymentTransaction(directPaymentTransactionExternalKey, internalCallContext);
 
         final PaymentAttemptModelDao pa = ((MockPaymentDao) paymentDao).getPaymentAttemptByExternalKey(directPaymentTransactionExternalKey, internalCallContext);
         assertEquals(pa.getTransactionExternalKey(), directPaymentTransactionExternalKey);
@@ -624,14 +627,15 @@ public class TestRetryableDirectPayment extends PaymentTestSuiteNoDB {
         final State state = runner.fetchState("RETRIED");
         final UUID directTransactionId = UUID.randomUUID();
         final UUID directPaymentId = UUID.randomUUID();
-        paymentDao.insertPaymentAttempt(new PaymentAttemptModelDao(utcNow, utcNow, directTransactionId, directPaymentTransactionExternalKey, state.getName(), TransactionType.AUTHORIZE.name(), null), internalCallContext);
+        paymentDao.insertPaymentAttemptWithProperties(new PaymentAttemptModelDao(utcNow, utcNow, directTransactionId, directPaymentTransactionExternalKey, state.getName(), TransactionType.AUTHORIZE.name(), null),
+                                                      ImmutableList.<PluginPropertyModelDao>of(), internalCallContext);
         paymentDao.insertDirectPaymentWithFirstTransaction(new DirectPaymentModelDao(directPaymentId, utcNow, utcNow, account.getId(), paymentMethodId, -1, directPaymentExternalKey, null, null),
                                                            new DirectPaymentTransactionModelDao(directTransactionId, directPaymentTransactionExternalKey, utcNow, utcNow, directPaymentId, TransactionType.AUTHORIZE, utcNow,
                                                                                                 PaymentStatus.PAYMENT_FAILURE, amount, currency, "bla", "foo", null, null),
                                                            internalCallContext
                                                           );
 
-        processor.retryPaymentTransaction(directPaymentTransactionExternalKey, emptyProperties, internalCallContext);
+        processor.retryPaymentTransaction(directPaymentTransactionExternalKey, internalCallContext);
 
         final PaymentAttemptModelDao pa = ((MockPaymentDao) paymentDao).getPaymentAttemptByExternalKey(directPaymentTransactionExternalKey, internalCallContext);
         assertEquals(pa.getTransactionExternalKey(), directPaymentTransactionExternalKey);
@@ -661,14 +665,15 @@ public class TestRetryableDirectPayment extends PaymentTestSuiteNoDB {
             final State state = runner.fetchState("RETRIED");
             final UUID directTransactionId = UUID.randomUUID();
             final UUID directPaymentId = UUID.randomUUID();
-            paymentDao.insertPaymentAttempt(new PaymentAttemptModelDao(utcNow, utcNow, directTransactionId, directPaymentTransactionExternalKey, state.getName(), TransactionType.AUTHORIZE.name(), null), internalCallContext);
+            paymentDao.insertPaymentAttemptWithProperties(new PaymentAttemptModelDao(utcNow, utcNow, directTransactionId, directPaymentTransactionExternalKey, state.getName(), TransactionType.AUTHORIZE.name(), null),
+                                                          ImmutableList.<PluginPropertyModelDao>of(), internalCallContext);
             paymentDao.insertDirectPaymentWithFirstTransaction(new DirectPaymentModelDao(directPaymentId, utcNow, utcNow, account.getId(), paymentMethodId, -1, directPaymentExternalKey, null, null),
                                                                new DirectPaymentTransactionModelDao(directTransactionId, directPaymentTransactionExternalKey, utcNow, utcNow, directPaymentId, TransactionType.AUTHORIZE, utcNow,
                                                                                                     PaymentStatus.PAYMENT_FAILURE, amount, currency, "bla", "foo", null, null),
                                                                internalCallContext
                                                               );
 
-            processor.retryPaymentTransaction(directPaymentTransactionExternalKey, emptyProperties, internalCallContext);
+            processor.retryPaymentTransaction(directPaymentTransactionExternalKey, internalCallContext);
 
             final PaymentAttemptModelDao pa = ((MockPaymentDao) paymentDao).getPaymentAttemptByExternalKey(directPaymentTransactionExternalKey, internalCallContext);
             assertEquals(pa.getTransactionExternalKey(), directPaymentTransactionExternalKey);

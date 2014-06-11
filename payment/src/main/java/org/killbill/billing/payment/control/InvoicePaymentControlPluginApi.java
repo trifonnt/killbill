@@ -24,8 +24,11 @@ import java.util.Map;
 import java.util.UUID;
 
 import javax.annotation.Nullable;
+import javax.inject.Inject;
+import javax.inject.Named;
 
 import org.joda.time.DateTime;
+import org.killbill.billing.account.api.Account;
 import org.killbill.billing.callcontext.InternalCallContext;
 import org.killbill.billing.callcontext.InternalTenantContext;
 import org.killbill.billing.invoice.api.Invoice;
@@ -35,9 +38,13 @@ import org.killbill.billing.invoice.api.InvoiceItem;
 import org.killbill.billing.payment.api.PaymentStatus;
 import org.killbill.billing.payment.api.PluginProperty;
 import org.killbill.billing.payment.api.TransactionType;
+import org.killbill.billing.payment.control.dao.InvoicePaymentControlDao;
+import org.killbill.billing.payment.control.dao.PluginAutoPayOffModelDao;
 import org.killbill.billing.payment.dao.DirectPaymentModelDao;
 import org.killbill.billing.payment.dao.DirectPaymentTransactionModelDao;
 import org.killbill.billing.payment.dao.PaymentDao;
+import org.killbill.billing.payment.glue.PaymentModule;
+import org.killbill.billing.payment.retry.BaseRetryService.RetryServiceScheduler;
 import org.killbill.billing.payment.retry.DefaultFailureCallResult;
 import org.killbill.billing.payment.retry.DefaultPriorPaymentControlResult;
 import org.killbill.billing.retry.plugin.api.PaymentControlApiException;
@@ -65,6 +72,7 @@ import com.google.common.collect.Iterables;
 public final class InvoicePaymentControlPluginApi implements PaymentControlPluginApi {
 
     public final static String PLUGIN_NAME = "__INVOICE_PAYMENT_CONTROL_PLUGIN__";
+    public final static String CREATED_BY = "InvoicePaymentControlPluginApi";
 
     private static final String IPCD_REFUND_IDS_WITH_AMOUNT_KEY = "IPCD_REF_IDS_AMOUNTS";
 
@@ -72,38 +80,26 @@ public final class InvoicePaymentControlPluginApi implements PaymentControlPlugi
     private final InvoiceInternalApi invoiceApi;
     private final TagUserApi tagApi;
     private final PaymentDao paymentDao;
+    private final InvoicePaymentControlDao controlDao;
+    private final RetryServiceScheduler retryServiceScheduler;
     private final InternalCallContextFactory internalCallContextFactory;
     private final Clock clock;
 
     private final Logger logger = LoggerFactory.getLogger(InvoicePaymentControlPluginApi.class);
 
+    @Inject
     public InvoicePaymentControlPluginApi(final PaymentConfig paymentConfig, final InvoiceInternalApi invoiceApi, final TagUserApi tagApi, final PaymentDao paymentDao,
+                                          final InvoicePaymentControlDao invoicePaymentControlDao,
+                                          @Named(PaymentModule.RETRYABLE_NAMED) final RetryServiceScheduler retryServiceScheduler,
                                           final InternalCallContextFactory internalCallContextFactory, final Clock clock) {
         this.paymentConfig = paymentConfig;
         this.invoiceApi = invoiceApi;
         this.tagApi = tagApi;
         this.paymentDao = paymentDao;
+        this.controlDao = invoicePaymentControlDao;
+        this.retryServiceScheduler = retryServiceScheduler;
         this.internalCallContextFactory = internalCallContextFactory;
         this.clock = clock;
-    }
-
-    private boolean scheduleRetryForAccountWith_AUTO_PAY_OFF(final PaymentControlContext paymentControlContext) {
-        if (!isAccountAutoPayOff(paymentControlContext.getAccount().getId(), paymentControlContext)) {
-            return false;
-        }
-    // STEPH
-        return true;
-
-    }
-
-    private boolean isAccountAutoPayOff(final UUID accountId, final CallContext callContext) {
-        final List<Tag> accountTags = tagApi.getTagsForAccount(accountId, false, callContext);
-        return ControlTagType.isAutoPayOff(Collections2.transform(accountTags, new Function<Tag, UUID>() {
-            @Override
-            public UUID apply(final Tag tag) {
-                return tag.getTagDefinitionId();
-            }
-        }));
     }
 
 
@@ -114,6 +110,10 @@ public final class InvoicePaymentControlPluginApi implements PaymentControlPlugi
         final TransactionType transactionType = paymentControlContext.getTransactionType();
         Preconditions.checkArgument(transactionType == TransactionType.PURCHASE ||
                                    transactionType == TransactionType.REFUND);
+
+        if (insert_AUTO_PAY_OFF_ifRequired(paymentControlContext)) {
+            return new DefaultPriorPaymentControlResult(true);
+        }
 
         final InternalCallContext internalContext = internalCallContextFactory.createInternalCallContext(paymentControlContext.getAccount().getId(), paymentControlContext);
         if (transactionType == TransactionType.PURCHASE) {
@@ -153,6 +153,14 @@ public final class InvoicePaymentControlPluginApi implements PaymentControlPlugi
             default:
                 return new DefaultFailureCallResult(null);
         }
+    }
+
+    public void process_AUTO_PAY_OFF_removal(final Account account, final InternalCallContext internalCallContext) {
+        final List<PluginAutoPayOffModelDao> entries = controlDao.getAutoPayOffEntry(account.getId());
+        for (PluginAutoPayOffModelDao cur : entries) {
+            retryServiceScheduler.scheduleRetry(cur.getPaymentId(), cur.getTransactionExternalKey(), PLUGIN_NAME, clock.getUTCNow());
+        }
+        controlDao.removeAutoPayOffEntry(account.getId());
     }
 
     private PriorPaymentControlResult getPluginPurchaseResult(final PaymentControlContext paymentControlPluginContext, final InternalCallContext internalContext) throws PaymentControlApiException {
@@ -345,4 +353,23 @@ public final class InvoicePaymentControlPluginApi implements PaymentControlPlugi
         }
     }
 
+    private boolean insert_AUTO_PAY_OFF_ifRequired(final PaymentControlContext paymentControlContext) {
+        if (!isAccountAutoPayOff(paymentControlContext.getAccount().getId(), paymentControlContext)) {
+            return false;
+        }
+        final PluginAutoPayOffModelDao data = new PluginAutoPayOffModelDao(paymentControlContext.getPaymentExternalKey(), paymentControlContext.getTransactionExternalKey(), paymentControlContext.getAccount().getId(), PLUGIN_NAME,
+                                                                           paymentControlContext.getPaymentId(), paymentControlContext.getPaymentMethodId(), paymentControlContext.getAmount(), paymentControlContext.getCurrency(), CREATED_BY, clock.getUTCNow());
+        controlDao.insertAutoPayOff(data);
+        return true;
+    }
+
+    private boolean isAccountAutoPayOff(final UUID accountId, final CallContext callContext) {
+        final List<Tag> accountTags = tagApi.getTagsForAccount(accountId, false, callContext);
+        return ControlTagType.isAutoPayOff(Collections2.transform(accountTags, new Function<Tag, UUID>() {
+            @Override
+            public UUID apply(final Tag tag) {
+                return tag.getTagDefinitionId();
+            }
+        }));
+    }
 }

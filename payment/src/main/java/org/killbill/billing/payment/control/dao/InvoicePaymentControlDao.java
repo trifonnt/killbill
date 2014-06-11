@@ -24,9 +24,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import javax.inject.Inject;
+
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.killbill.billing.catalog.api.Currency;
+import org.killbill.billing.payment.dao.PluginPropertyModelDao;
 import org.skife.jdbi.v2.Handle;
 import org.skife.jdbi.v2.IDBI;
 import org.skife.jdbi.v2.PreparedBatch;
@@ -41,6 +44,7 @@ public class InvoicePaymentControlDao {
 
     private final IDBI dbi;
 
+    @Inject
     public InvoicePaymentControlDao(final IDBI dbi) {
         this.dbi = dbi;
     }
@@ -89,51 +93,12 @@ public class InvoicePaymentControlDao {
         });
     }
 
-    public void insertPluginProperties(final List<PluginPropertyModelDao> dataEntries) {
-        dbi.inTransaction(new TransactionCallback<Void>() {
+    public void removeAutoPayOffEntry(final UUID accountId) {
+        dbi.withHandle(new HandleCallback<Void>() {
             @Override
-            public Void inTransaction(final Handle handle, final TransactionStatus status) throws Exception {
-
-                final PreparedBatch batch = handle.prepareBatch("insert into _invoice_payment_control_plugin_properties " +
-                                                                "(payment_external_key, transaction_external_key, account_id, plugin_name, prop_key, prop_value, created_by, created_date) values " +
-                                                                "(?,?,?,?,?,?,?,?)");
-                for (PluginPropertyModelDao data : dataEntries) {
-                    final PreparedBatchPart entry = batch.add();
-                    entry.bind(0, data.getPaymentExternalKey())
-                         .bind(1, data.getTransactionExternalKey())
-                         .bind(2, data.getAccountId().toString())
-                         .bind(3, data.getPluginName())
-                         .bind(4, data.getPropKey())
-                         .bind(5, data.getPropValue())
-                         .bind(6, data.getCreatedBy())
-                         .bind(7, data.getCreatedDate());
-                }
-                batch.execute();
+            public Void withHandle(final Handle handle) throws Exception {
+                handle.execute("delete from _invoice_payment_control_plugin_auto_pay_off where account_id = ?", accountId.toString());
                 return null;
-            }
-        });
-    }
-
-    public List<PluginPropertyModelDao> getPluginProperties(final String transactionExternalkey) {
-
-        return dbi.withHandle(new HandleCallback<List<PluginPropertyModelDao>>() {
-            @Override
-            public List<PluginPropertyModelDao> withHandle(final Handle handle) throws Exception {
-                final List<Map<String, Object>> queryResult = handle.select("select * from _invoice_payment_control_plugin_properties where transaction_external_key = ?", transactionExternalkey);
-                final List<PluginPropertyModelDao> result = new ArrayList<PluginPropertyModelDao>(queryResult.size());
-                for (final Map<String, Object> row : queryResult) {
-                    final PluginPropertyModelDao entry = new PluginPropertyModelDao((Long) row.get("record_id"),
-                                                                                    (String) row.get("payment_external_key"),
-                                                                                    (String) row.get("transaction_external_key"),
-                                                                                    UUID.fromString((String) row.get("account_id")),
-                                                                                    (String) row.get("plugin_name"),
-                                                                                    (String) row.get("prop_key"),
-                                                                                    (String) row.get("prop_value"),
-                                                                                    (String) row.get("created_by"),
-                                                                                    getDateTime(row.get("created_date")));
-                    result.add(entry);
-                }
-                return result;
             }
         });
     }
