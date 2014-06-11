@@ -18,11 +18,7 @@
 
 package org.killbill.billing.invoice;
 
-import java.io.IOException;
-import java.net.URISyntaxException;
-
 import org.killbill.billing.GuicyKillbillTestSuiteWithEmbeddedDB;
-import org.killbill.billing.TestKillbillConfigSource;
 import org.killbill.billing.account.api.AccountInternalApi;
 import org.killbill.billing.account.api.AccountUserApi;
 import org.killbill.billing.catalog.api.Currency;
@@ -112,8 +108,8 @@ public abstract class InvoiceTestSuiteWithEmbeddedDB extends GuicyKillbillTestSu
     protected TestInvoiceNotificationQListener testInvoiceNotificationQListener;
 
     @Override
-    protected KillbillConfigSource getConfigSource() throws IOException, URISyntaxException {
-        return new TestKillbillConfigSource("/resource.properties");
+    protected KillbillConfigSource getConfigSource() {
+        return getConfigSource("/resource.properties");
     }
 
     @BeforeClass(groups = "slow")

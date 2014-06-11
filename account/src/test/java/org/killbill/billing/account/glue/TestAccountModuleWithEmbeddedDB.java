@@ -20,7 +20,6 @@ package org.killbill.billing.account.glue;
 
 import org.killbill.billing.GuicyKillbillTestWithEmbeddedDBModule;
 import org.killbill.billing.platform.api.KillbillConfigSource;
-import org.killbill.billing.platform.test.glue.TestPlatformModuleWithEmbeddedDB;
 import org.killbill.billing.util.glue.NonEntityDaoModule;
 
 public class TestAccountModuleWithEmbeddedDB extends TestAccountModule {
@@ -35,6 +34,5 @@ public class TestAccountModuleWithEmbeddedDB extends TestAccountModule {
 
         install(new GuicyKillbillTestWithEmbeddedDBModule(configSource));
         install(new NonEntityDaoModule(configSource));
-        install(new TestPlatformModuleWithEmbeddedDB(configSource));
     }
 }

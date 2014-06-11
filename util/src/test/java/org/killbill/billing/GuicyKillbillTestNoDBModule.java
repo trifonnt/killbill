@@ -19,8 +19,7 @@
 package org.killbill.billing;
 
 import org.killbill.billing.platform.api.KillbillConfigSource;
-import org.mockito.Mockito;
-import org.skife.jdbi.v2.IDBI;
+import org.killbill.billing.platform.test.glue.TestPlatformModuleNoDB;
 
 public class GuicyKillbillTestNoDBModule extends GuicyKillbillTestModule {
 
@@ -28,14 +27,10 @@ public class GuicyKillbillTestNoDBModule extends GuicyKillbillTestModule {
         super(configSource);
     }
 
-    private void installDBI() {
-        final IDBI idbi = Mockito.mock(IDBI.class);
-        bind(IDBI.class).toInstance(idbi);
-    }
-
     @Override
     protected void configure() {
         super.configure();
-        installDBI();
+
+        install(new TestPlatformModuleNoDB(configSource));
     }
 }

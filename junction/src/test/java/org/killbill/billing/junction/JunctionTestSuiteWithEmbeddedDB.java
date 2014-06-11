@@ -18,14 +18,11 @@
 
 package org.killbill.billing.junction;
 
-import java.io.IOException;
-import java.net.URISyntaxException;
 import java.util.UUID;
 
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.killbill.billing.GuicyKillbillTestSuiteWithEmbeddedDB;
-import org.killbill.billing.TestKillbillConfigSource;
 import org.killbill.billing.account.api.AccountData;
 import org.killbill.billing.account.api.AccountUserApi;
 import org.killbill.billing.api.TestApiListener;
@@ -91,8 +88,8 @@ public abstract class JunctionTestSuiteWithEmbeddedDB extends GuicyKillbillTestS
     protected Catalog catalog;
 
     @Override
-    protected KillbillConfigSource getConfigSource() throws IOException, URISyntaxException {
-        return new TestKillbillConfigSource("/junction.properties");
+    protected KillbillConfigSource getConfigSource() {
+        return getConfigSource("/junction.properties");
     }
 
     @BeforeClass(groups = "slow")

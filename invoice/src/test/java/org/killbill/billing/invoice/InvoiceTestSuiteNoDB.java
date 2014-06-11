@@ -18,11 +18,7 @@
 
 package org.killbill.billing.invoice;
 
-import java.io.IOException;
-import java.net.URISyntaxException;
-
 import org.killbill.billing.GuicyKillbillTestSuiteNoDB;
-import org.killbill.billing.TestKillbillConfigSource;
 import org.killbill.billing.account.api.AccountInternalApi;
 import org.killbill.billing.currency.api.CurrencyConversionApi;
 import org.killbill.billing.invoice.api.InvoiceInternalApi;
@@ -97,8 +93,8 @@ public abstract class InvoiceTestSuiteNoDB extends GuicyKillbillTestSuiteNoDB {
     protected UsageUserApi usageUserApi;
 
     @Override
-    protected KillbillConfigSource getConfigSource() throws IOException, URISyntaxException {
-        return new TestKillbillConfigSource("/resource.properties");
+    protected KillbillConfigSource getConfigSource() {
+        return getConfigSource("/resource.properties");
     }
 
     @BeforeClass(groups = "fast")

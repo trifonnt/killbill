@@ -25,13 +25,6 @@ import org.killbill.billing.mock.glue.MockNonEntityDaoModule;
 import org.killbill.billing.mock.glue.MockSubscriptionModule;
 import org.killbill.billing.mock.glue.MockTagModule;
 import org.killbill.billing.platform.api.KillbillConfigSource;
-import org.killbill.billing.platform.test.glue.TestPlatformModuleNoDB;
-import org.killbill.notificationq.MockNotificationQueueService;
-import org.killbill.notificationq.api.NotificationQueueConfig;
-import org.killbill.notificationq.api.NotificationQueueService;
-import org.skife.config.ConfigurationObjectFactory;
-
-import com.google.common.collect.ImmutableMap;
 
 public class TestJunctionModuleNoDB extends TestJunctionModule {
 
@@ -45,7 +38,6 @@ public class TestJunctionModuleNoDB extends TestJunctionModule {
 
         install(new GuicyKillbillTestNoDBModule(configSource));
         install(new MockNonEntityDaoModule(configSource));
-        install(new TestPlatformModuleNoDB(configSource));
         install(new MockAccountModule(configSource));
         install(new MockCatalogModule(configSource));
         install(new MockSubscriptionModule(configSource));

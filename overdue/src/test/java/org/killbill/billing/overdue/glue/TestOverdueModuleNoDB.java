@@ -21,7 +21,6 @@ package org.killbill.billing.overdue.glue;
 import org.killbill.billing.GuicyKillbillTestNoDBModule;
 import org.killbill.billing.mock.glue.MockNonEntityDaoModule;
 import org.killbill.billing.platform.api.KillbillConfigSource;
-import org.killbill.billing.platform.test.glue.TestPlatformModuleNoDB;
 
 public class TestOverdueModuleNoDB extends TestOverdueModule {
 
@@ -35,6 +34,5 @@ public class TestOverdueModuleNoDB extends TestOverdueModule {
 
         install(new GuicyKillbillTestNoDBModule(configSource));
         install(new MockNonEntityDaoModule(configSource));
-        install(new TestPlatformModuleNoDB(configSource));
     }
 }

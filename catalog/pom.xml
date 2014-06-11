@@ -68,6 +68,11 @@
         </dependency>
         <dependency>
             <groupId>org.kill-bill.billing</groupId>
+            <artifactId>killbill-platform-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.kill-bill.billing</groupId>
             <artifactId>killbill-util</artifactId>
         </dependency>
         <dependency>
@@ -94,6 +99,12 @@
         <dependency>
             <groupId>org.kill-bill.commons</groupId>
             <artifactId>killbill-embeddeddb-mysql</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.kill-bill.commons</groupId>
+            <artifactId>killbill-queue</artifactId>
+            <type>test-jar</type>
             <scope>test</scope>
         </dependency>
         <dependency>

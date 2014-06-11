@@ -27,7 +27,6 @@ import org.killbill.billing.mock.glue.MockNonEntityDaoModule;
 import org.killbill.billing.mock.glue.MockSubscriptionModule;
 import org.killbill.billing.mock.glue.MockTagModule;
 import org.killbill.billing.platform.api.KillbillConfigSource;
-import org.killbill.billing.platform.test.glue.TestPlatformModuleNoDB;
 
 public class TestEntitlementModuleNoDB extends TestEntitlementModule {
 
@@ -40,7 +39,6 @@ public class TestEntitlementModuleNoDB extends TestEntitlementModule {
         super.configure();
         install(new GuicyKillbillTestNoDBModule(configSource));
         install(new MockNonEntityDaoModule(configSource));
-        install(new TestPlatformModuleNoDB(configSource));
         install(new MockTagModule(configSource));
         install(new MockSubscriptionModule(configSource));
         install(new MockCatalogModule(configSource));

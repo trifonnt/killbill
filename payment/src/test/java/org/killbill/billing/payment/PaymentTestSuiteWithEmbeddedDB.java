@@ -18,11 +18,7 @@
 
 package org.killbill.billing.payment;
 
-import java.io.IOException;
-import java.net.URISyntaxException;
-
 import org.killbill.billing.GuicyKillbillTestSuiteWithEmbeddedDB;
-import org.killbill.billing.TestKillbillConfigSource;
 import org.killbill.billing.account.api.AccountInternalApi;
 import org.killbill.billing.invoice.api.InvoiceInternalApi;
 import org.killbill.billing.osgi.api.OSGIServiceRegistration;
@@ -78,10 +74,10 @@ public abstract class PaymentTestSuiteWithEmbeddedDB extends GuicyKillbillTestSu
     protected TestPaymentHelper testHelper;
 
     @Override
-    protected KillbillConfigSource getConfigSource() throws IOException, URISyntaxException {
-        return new TestKillbillConfigSource("/payment.properties",
-                                            ImmutableMap.<String, String>of("org.killbill.payment.provider.default", MockPaymentProviderPlugin.PLUGIN_NAME,
-                                                                            "killbill.payment.engine.events.off", "false"));
+    protected KillbillConfigSource getConfigSource() {
+        return getConfigSource("/payment.properties",
+                               ImmutableMap.<String, String>of("org.killbill.payment.provider.default", MockPaymentProviderPlugin.PLUGIN_NAME,
+                                                               "killbill.payment.engine.events.off", "false"));
     }
 
     @BeforeClass(groups = "slow")

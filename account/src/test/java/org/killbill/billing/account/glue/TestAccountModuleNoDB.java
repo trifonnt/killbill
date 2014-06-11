@@ -23,8 +23,6 @@ import org.killbill.billing.account.dao.AccountDao;
 import org.killbill.billing.account.dao.MockAccountDao;
 import org.killbill.billing.mock.glue.MockNonEntityDaoModule;
 import org.killbill.billing.platform.api.KillbillConfigSource;
-import org.killbill.billing.platform.test.glue.TestPlatformModule;
-import org.killbill.billing.platform.test.glue.TestPlatformModuleNoDB;
 
 public class TestAccountModuleNoDB extends TestAccountModule {
 
@@ -43,6 +41,5 @@ public class TestAccountModuleNoDB extends TestAccountModule {
 
         install(new GuicyKillbillTestNoDBModule(configSource));
         install(new MockNonEntityDaoModule(configSource));
-        install(new TestPlatformModuleNoDB(configSource));
     }
 }

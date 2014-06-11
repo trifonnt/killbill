@@ -18,8 +18,6 @@
 
 package org.killbill.billing.jaxrs;
 
-import java.io.IOException;
-import java.net.URISyntaxException;
 import java.util.EventListener;
 import java.util.Iterator;
 import java.util.Map;
@@ -33,7 +31,6 @@ import org.eclipse.jetty.servlet.FilterHolder;
 import org.joda.time.LocalDate;
 import org.killbill.billing.DBTestingHelper;
 import org.killbill.billing.GuicyKillbillTestWithEmbeddedDBModule;
-import org.killbill.billing.TestKillbillConfigSource;
 import org.killbill.billing.account.glue.DefaultAccountModule;
 import org.killbill.billing.api.TestApiListener;
 import org.killbill.billing.beatrix.glue.BeatrixModule;
@@ -123,8 +120,8 @@ public class TestJaxrsBase extends KillbillClient {
     private HttpServer server;
 
     @Override
-    protected KillbillConfigSource getConfigSource() throws IOException, URISyntaxException {
-        return new TestKillbillConfigSource("/killbill.properties");
+    protected KillbillConfigSource getConfigSource() {
+        return getConfigSource("/killbill.properties");
     }
 
     public class TestKillbillGuiceListener extends KillbillGuiceListener {
@@ -192,7 +189,7 @@ public class TestJaxrsBase extends KillbillClient {
             install(new EmailModule(configSource));
             install(new CacheModule(configSource));
             install(new NonEntityDaoModule(configSource));
-            install(new GlobalLockerModule(DBTestingHelper.get().getDBEngine(), configSource));
+            install(new GlobalLockerModule(DBTestingHelper.get().getInstance().getDBEngine(), configSource));
             install(new CustomFieldModule(configSource));
             install(new TagStoreModule(configSource));
             install(new AuditModule(configSource));

@@ -18,13 +18,9 @@
 
 package org.killbill.billing.subscription;
 
-import java.io.IOException;
-import java.net.URISyntaxException;
-
 import javax.inject.Inject;
 
 import org.killbill.billing.GuicyKillbillTestSuiteNoDB;
-import org.killbill.billing.TestKillbillConfigSource;
 import org.killbill.billing.account.api.AccountData;
 import org.killbill.billing.api.TestApiListener;
 import org.killbill.billing.catalog.api.Catalog;
@@ -99,8 +95,8 @@ public class SubscriptionTestSuiteNoDB extends GuicyKillbillTestSuiteNoDB {
     protected SubscriptionBaseBundle bundle;
 
     @Override
-    protected KillbillConfigSource getConfigSource() throws IOException, URISyntaxException {
-        return new TestKillbillConfigSource("/subscription.properties");
+    protected KillbillConfigSource getConfigSource() {
+        return getConfigSource("/subscription.properties");
     }
 
     @BeforeClass(groups = "fast")

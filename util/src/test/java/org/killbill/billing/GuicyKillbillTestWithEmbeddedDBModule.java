@@ -23,28 +23,48 @@ import java.io.IOException;
 import javax.sql.DataSource;
 
 import org.killbill.billing.platform.api.KillbillConfigSource;
+import org.killbill.billing.platform.test.config.TestKillbillConfigSource;
+import org.killbill.billing.platform.test.glue.TestPlatformModuleWithEmbeddedDB;
 import org.killbill.commons.embeddeddb.EmbeddedDB;
 import org.skife.jdbi.v2.IDBI;
-import org.testng.Assert;
 
 public class GuicyKillbillTestWithEmbeddedDBModule extends GuicyKillbillTestModule {
 
+    private final boolean withOSGI;
+
     public GuicyKillbillTestWithEmbeddedDBModule(final KillbillConfigSource configSource) {
+        this(false, configSource);
+    }
+
+    public GuicyKillbillTestWithEmbeddedDBModule(final boolean withOSGI, final KillbillConfigSource configSource) {
         super(configSource);
+        this.withOSGI = withOSGI;
     }
 
     @Override
     protected void configure() {
         super.configure();
 
-        final EmbeddedDB instance = DBTestingHelper.get();
-        bind(EmbeddedDB.class).toInstance(instance);
+        install(new KillbillTestPlatformModuleWithEmbeddedDB(configSource));
+    }
 
-        try {
-            bind(DataSource.class).toInstance(DBTestingHelper.get().getDataSource());
-            bind(IDBI.class).toInstance(DBTestingHelper.getDBI());
-        } catch (final IOException e) {
-            Assert.fail(e.toString());
+    private final class KillbillTestPlatformModuleWithEmbeddedDB extends TestPlatformModuleWithEmbeddedDB {
+
+        public KillbillTestPlatformModuleWithEmbeddedDB(final KillbillConfigSource configSource) {
+            super(configSource, withOSGI, (TestKillbillConfigSource) configSource);
+        }
+
+        protected void configureEmbeddedDB() {
+            final DBTestingHelper dbTestingHelper = DBTestingHelper.get();
+            final EmbeddedDB instance = dbTestingHelper.getInstance();
+            bind(EmbeddedDB.class).toInstance(instance);
+
+            try {
+                bind(DataSource.class).toInstance(instance.getDataSource());
+                bind(IDBI.class).toInstance(dbTestingHelper.getDBI());
+            } catch (final IOException e) {
+                throw new RuntimeException(e);
+            }
         }
     }
 }

@@ -21,17 +21,11 @@ package org.killbill.billing.subscription.glue;
 import org.killbill.billing.GuicyKillbillTestNoDBModule;
 import org.killbill.billing.mock.glue.MockNonEntityDaoModule;
 import org.killbill.billing.platform.api.KillbillConfigSource;
-import org.killbill.billing.platform.test.glue.TestPlatformModuleNoDB;
 import org.killbill.billing.subscription.api.timeline.RepairSubscriptionLifecycleDao;
 import org.killbill.billing.subscription.engine.dao.MockSubscriptionDaoMemory;
 import org.killbill.billing.subscription.engine.dao.RepairSubscriptionDao;
 import org.killbill.billing.subscription.engine.dao.SubscriptionDao;
-import org.killbill.notificationq.MockNotificationQueueService;
-import org.killbill.notificationq.api.NotificationQueueConfig;
-import org.killbill.notificationq.api.NotificationQueueService;
-import org.skife.config.ConfigurationObjectFactory;
 
-import com.google.common.collect.ImmutableMap;
 import com.google.inject.name.Names;
 
 public class TestDefaultSubscriptionModuleNoDB extends TestDefaultSubscriptionModule {
@@ -50,14 +44,10 @@ public class TestDefaultSubscriptionModuleNoDB extends TestDefaultSubscriptionMo
 
     @Override
     protected void configure() {
-
         install(new GuicyKillbillTestNoDBModule(configSource));
 
         super.configure();
 
-        install(new TestPlatformModuleNoDB(configSource));
-
         install(new MockNonEntityDaoModule(configSource));
-
     }
 }

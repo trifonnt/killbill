@@ -29,7 +29,6 @@ import org.killbill.billing.payment.TestPaymentHelper;
 import org.killbill.billing.payment.provider.MockPaymentProviderPlugin;
 import org.killbill.billing.payment.provider.MockPaymentProviderPluginModule;
 import org.killbill.billing.platform.api.KillbillConfigSource;
-import org.killbill.billing.platform.test.glue.TestPlatformModuleNoDB;
 import org.killbill.billing.tag.TagInternalApi;
 import org.killbill.billing.util.config.PaymentConfig;
 import org.killbill.billing.util.glue.CacheModule;
@@ -63,7 +62,6 @@ public class TestPaymentModule extends PaymentModule {
     @Override
     protected void configure() {
         super.configure();
-        install(new TestPlatformModuleNoDB(configSource));
         install(new MockInvoiceModule(configSource));
         install(new MockAccountModule(configSource));
         install(new MockSubscriptionModule(configSource));

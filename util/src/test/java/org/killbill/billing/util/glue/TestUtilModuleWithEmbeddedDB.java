@@ -22,7 +22,6 @@ import org.killbill.billing.DBTestingHelper;
 import org.killbill.billing.GuicyKillbillTestWithEmbeddedDBModule;
 import org.killbill.billing.api.TestApiListener;
 import org.killbill.billing.platform.api.KillbillConfigSource;
-import org.killbill.billing.platform.test.glue.TestPlatformModuleWithEmbeddedDB;
 
 public class TestUtilModuleWithEmbeddedDB extends TestUtilModule {
 
@@ -38,9 +37,8 @@ public class TestUtilModuleWithEmbeddedDB extends TestUtilModule {
         install(new AuditModule(configSource));
         install(new TagStoreModule(configSource));
         install(new CustomFieldModule(configSource));
-        install(new TestPlatformModuleWithEmbeddedDB(configSource));
         install(new NonEntityDaoModule(configSource));
-        install(new GlobalLockerModule(DBTestingHelper.get().getDBEngine(), configSource));
+        install(new GlobalLockerModule(DBTestingHelper.get().getInstance().getDBEngine(), configSource));
 
         bind(TestApiListener.class).asEagerSingleton();
     }

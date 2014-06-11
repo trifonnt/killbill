@@ -20,7 +20,6 @@ package org.killbill.billing.beatrix.integration;
 
 import org.killbill.billing.DBTestingHelper;
 import org.killbill.billing.GuicyKillbillTestWithEmbeddedDBModule;
-import org.killbill.billing.TestKillbillConfigSource;
 import org.killbill.billing.account.glue.DefaultAccountModule;
 import org.killbill.billing.api.TestApiListener;
 import org.killbill.billing.beatrix.glue.BeatrixModule;
@@ -41,7 +40,6 @@ import org.killbill.billing.junction.glue.DefaultJunctionModule;
 import org.killbill.billing.payment.glue.PaymentModule;
 import org.killbill.billing.payment.provider.MockPaymentProviderPluginModule;
 import org.killbill.billing.platform.api.KillbillConfigSource;
-import org.killbill.billing.platform.test.glue.TestPlatformModuleWithEmbeddedDB;
 import org.killbill.billing.subscription.glue.DefaultSubscriptionModule;
 import org.killbill.billing.tenant.glue.TenantModule;
 import org.killbill.billing.usage.glue.UsageModule;
@@ -74,8 +72,8 @@ public class BeatrixIntegrationModule extends KillBillModule {
 
     @Override
     protected void configure() {
-        install(new GuicyKillbillTestWithEmbeddedDBModule(configSource));
-        install(new GlobalLockerModule(DBTestingHelper.get().getDBEngine(), configSource));
+        install(new GuicyKillbillTestWithEmbeddedDBModule(true, configSource));
+        install(new GlobalLockerModule(DBTestingHelper.get().getInstance().getDBEngine(), configSource));
         install(new CacheModule(configSource));
         install(new EmailModule(configSource));
         install(new CallContextModule(configSource));
@@ -100,7 +98,6 @@ public class BeatrixIntegrationModule extends KillBillModule {
         install(new SecurityModule(configSource));
         install(new KillBillShiroModule(configSource));
         install(new BeatrixModule(configSource));
-        install(new TestPlatformModuleWithEmbeddedDB(configSource, true, (TestKillbillConfigSource) configSource));
 
         bind(AccountChecker.class).asEagerSingleton();
         bind(SubscriptionChecker.class).asEagerSingleton();

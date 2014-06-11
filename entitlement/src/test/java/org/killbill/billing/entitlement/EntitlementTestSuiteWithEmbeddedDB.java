@@ -18,14 +18,11 @@
 
 package org.killbill.billing.entitlement;
 
-import java.io.IOException;
-import java.net.URISyntaxException;
 import java.util.UUID;
 
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.killbill.billing.GuicyKillbillTestSuiteWithEmbeddedDB;
-import org.killbill.billing.TestKillbillConfigSource;
 import org.killbill.billing.account.api.AccountData;
 import org.killbill.billing.account.api.AccountInternalApi;
 import org.killbill.billing.account.api.AccountUserApi;
@@ -112,8 +109,8 @@ public class EntitlementTestSuiteWithEmbeddedDB extends GuicyKillbillTestSuiteWi
     protected Catalog catalog;
 
     @Override
-    protected KillbillConfigSource getConfigSource() throws IOException, URISyntaxException {
-        return new TestKillbillConfigSource("/entitlement.properties");
+    protected KillbillConfigSource getConfigSource() {
+        return getConfigSource("/entitlement.properties");
     }
 
     @BeforeClass(groups = "slow")

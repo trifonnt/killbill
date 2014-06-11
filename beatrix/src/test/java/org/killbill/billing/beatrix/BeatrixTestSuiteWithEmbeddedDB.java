@@ -18,17 +18,13 @@
 
 package org.killbill.billing.beatrix;
 
-import java.io.IOException;
-import java.net.URISyntaxException;
-
 import org.killbill.billing.GuicyKillbillTestSuiteWithEmbeddedDB;
-import org.killbill.billing.TestKillbillConfigSource;
 import org.killbill.billing.platform.api.KillbillConfigSource;
 
 public abstract class BeatrixTestSuiteWithEmbeddedDB extends GuicyKillbillTestSuiteWithEmbeddedDB {
 
     @Override
-    protected KillbillConfigSource getConfigSource() throws IOException, URISyntaxException {
-        return new TestKillbillConfigSource("/beatrix.properties");
+    protected KillbillConfigSource getConfigSource() {
+        return getConfigSource("/beatrix.properties");
     }
 }

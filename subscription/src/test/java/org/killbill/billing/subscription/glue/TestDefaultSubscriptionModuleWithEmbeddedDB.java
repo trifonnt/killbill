@@ -20,7 +20,6 @@ package org.killbill.billing.subscription.glue;
 
 import org.killbill.billing.GuicyKillbillTestWithEmbeddedDBModule;
 import org.killbill.billing.platform.api.KillbillConfigSource;
-import org.killbill.billing.platform.test.glue.TestPlatformModuleWithEmbeddedDB;
 import org.killbill.billing.subscription.api.timeline.RepairSubscriptionLifecycleDao;
 import org.killbill.billing.subscription.engine.dao.MockSubscriptionDaoSql;
 import org.killbill.billing.subscription.engine.dao.RepairSubscriptionDao;
@@ -52,7 +51,6 @@ public class TestDefaultSubscriptionModuleWithEmbeddedDB extends TestDefaultSubs
         install(new NonEntityDaoModule(configSource));
 
         install(new CustomFieldModule(configSource));
-        install(new TestPlatformModuleWithEmbeddedDB(configSource));
 
         super.configure();
     }

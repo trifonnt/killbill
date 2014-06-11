@@ -24,7 +24,6 @@ import org.killbill.billing.currency.api.CurrencyConversionApi;
 import org.killbill.billing.invoice.InvoiceListener;
 import org.killbill.billing.invoice.TestInvoiceNotificationQListener;
 import org.killbill.billing.platform.api.KillbillConfigSource;
-import org.killbill.billing.platform.test.glue.TestPlatformModuleWithEmbeddedDB;
 import org.killbill.billing.util.glue.NonEntityDaoModule;
 import org.mockito.Mockito;
 
@@ -46,7 +45,6 @@ public class TestInvoiceModuleWithEmbeddedDb extends TestInvoiceModule {
         install(new DefaultAccountModule(configSource));
         install(new GuicyKillbillTestWithEmbeddedDBModule(configSource));
         install(new NonEntityDaoModule(configSource));
-        install(new TestPlatformModuleWithEmbeddedDB(configSource));
 
         bind(CurrencyConversionApi.class).toInstance(Mockito.mock(CurrencyConversionApi.class));
     }
