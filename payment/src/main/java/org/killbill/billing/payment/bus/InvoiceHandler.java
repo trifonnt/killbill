@@ -32,6 +32,7 @@ import org.killbill.billing.payment.api.PaymentApiException;
 import org.killbill.billing.payment.api.PaymentOptions;
 import org.killbill.billing.payment.api.PluginProperty;
 import org.killbill.billing.payment.control.InvoicePaymentControlPluginApi;
+import org.killbill.billing.payment.core.PluginControlledPaymentProcessor;
 import org.killbill.billing.util.callcontext.CallContext;
 import org.killbill.billing.util.callcontext.CallOrigin;
 import org.killbill.billing.util.callcontext.InternalCallContextFactory;
@@ -48,30 +49,19 @@ public class InvoiceHandler {
 
     private final AccountInternalApi accountApi;
     private final InternalCallContextFactory internalCallContextFactory;
-    private final DirectPaymentApi paymentApi;
+    private final PluginControlledPaymentProcessor pluginControlledPaymentProcessor;
     private final NonEntityDao nonEntityDao;
 
     private static final Logger log = LoggerFactory.getLogger(InvoiceHandler.class);
 
-    private final static PaymentOptions PAYMENT_OPTIONS = new PaymentOptions() {
-        @Override
-        public boolean isExternalPayment() {
-            return false;
-        }
-        @Override
-        public String getPaymentControlPluginName() {
-            return InvoicePaymentControlPluginApi.PLUGIN_NAME;
-        }
-    };
-
     @Inject
     public InvoiceHandler(final AccountInternalApi accountApi,
-                          final DirectPaymentApi paymentApi,
+                          final PluginControlledPaymentProcessor pluginControlledPaymentProcessor,
                           final NonEntityDao nonEntityDao,
                           final InternalCallContextFactory internalCallContextFactory) {
         this.accountApi = accountApi;
         this.internalCallContextFactory = internalCallContextFactory;
-        this.paymentApi = paymentApi;
+        this.pluginControlledPaymentProcessor = pluginControlledPaymentProcessor;
         this.nonEntityDao = nonEntityDao;
     }
 
@@ -87,8 +77,8 @@ public class InvoiceHandler {
             account = accountApi.getAccountById(event.getAccountId(), internalContext);
 
             final CallContext callContext = internalContext.toCallContext(nonEntityDao.retrieveIdFromObject(internalContext.getTenantRecordId(), ObjectType.TENANT));
-            paymentApi.createPurchaseWithPaymentControl(account, account.getPaymentMethodId(), null, null, account.getCurrency(), event.getInvoiceId().toString(), UUID.randomUUID().toString(),
-                                                        ImmutableList.<PluginProperty>of(), PAYMENT_OPTIONS, callContext);
+            pluginControlledPaymentProcessor.createPurchase(false, account, account.getPaymentMethodId(), null, null, account.getCurrency(), event.getInvoiceId().toString(), UUID.randomUUID().toString(),
+                                                            ImmutableList.<PluginProperty>of(), InvoicePaymentControlPluginApi.PLUGIN_NAME, callContext, internalContext);
         } catch (final AccountApiException e) {
             log.error("Failed to process invoice payment", e);
         } catch (final PaymentApiException e) {

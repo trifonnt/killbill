@@ -102,14 +102,12 @@ public final class InvoicePaymentControlPluginApi implements PaymentControlPlugi
         this.clock = clock;
     }
 
-
     @Override
     public PriorPaymentControlResult priorCall(final PaymentControlContext paymentControlContext) throws PaymentControlApiException {
 
-
         final TransactionType transactionType = paymentControlContext.getTransactionType();
         Preconditions.checkArgument(transactionType == TransactionType.PURCHASE ||
-                                   transactionType == TransactionType.REFUND);
+                                    transactionType == TransactionType.REFUND);
 
         if (insert_AUTO_PAY_OFF_ifRequired(paymentControlContext)) {
             return new DefaultPriorPaymentControlResult(true);
@@ -170,7 +168,13 @@ public final class InvoicePaymentControlPluginApi implements PaymentControlPlugi
             final Invoice invoice = rebalanceAndGetInvoice(invoiceId, internalContext);
             final BigDecimal requestedAmount = validateAndComputePaymentAmount(invoice, paymentControlPluginContext.getAmount(), paymentControlPluginContext.isApiPayment());
             final boolean isAborted = requestedAmount.compareTo(BigDecimal.ZERO) == 0;
-            return new DefaultPriorPaymentControlResult(isAborted, requestedAmount);
+            if (paymentControlPluginContext.isApiPayment() && isAborted) {
+                throw new PaymentControlApiException("Payment for invoice " + invoice.getId() +
+                                                     " aborted : invoice balance is = " + invoice.getBalance() +
+                                                     ", requested payment amount is = " + paymentControlPluginContext.getAmount());
+            } else {
+                return new DefaultPriorPaymentControlResult(isAborted, requestedAmount);
+            }
         } catch (InvoiceApiException e) {
             // Invoice is not known so return UnknownEntryException so caller knows whether or not it should try with other plugins
             throw new UnknownEntryException();
@@ -180,16 +184,26 @@ public final class InvoicePaymentControlPluginApi implements PaymentControlPlugi
     private PriorPaymentControlResult getPluginRefundResult(final PaymentControlContext paymentControlPluginContext, final InternalCallContext internalContext) throws PaymentControlApiException {
 
         final Map<UUID, BigDecimal> idWithAmount = extractIdsWithAmountFromProperties(paymentControlPluginContext.getPluginProperties());
-        try {
-            final DirectPaymentModelDao directPayment = paymentDao.getDirectPaymentByExternalKey(paymentControlPluginContext.getPaymentExternalKey(), internalContext);
-            if (directPayment == null) {
-                throw new UnknownEntryException();
-            }
-            final BigDecimal amountToBeRefunded = computeRefundAmount(directPayment.getId(), paymentControlPluginContext.getAmount(), idWithAmount, internalContext);
-            final boolean isAborted = amountToBeRefunded.compareTo(BigDecimal.ZERO) == 0;
-            return new DefaultPriorPaymentControlResult(isAborted, amountToBeRefunded);
-        } catch (InvoiceApiException e) {
+        if ((paymentControlPluginContext.getAmount() == null || paymentControlPluginContext.getAmount().compareTo(BigDecimal.ZERO) == 0) &&
+            idWithAmount.size() == 0) {
+            throw new PaymentControlApiException("Refund for payment, key = " + paymentControlPluginContext.getPaymentExternalKey() +
+                                                 " aborted: requested refund amount is = " + paymentControlPluginContext.getAmount());
+        }
+
+        final DirectPaymentModelDao directPayment = paymentDao.getDirectPaymentByExternalKey(paymentControlPluginContext.getPaymentExternalKey(), internalContext);
+        if (directPayment == null) {
             throw new UnknownEntryException();
+        }
+        // STEPH this check for invoice item but we also need to check that refundAmount is less or equal to paymentAmount - all refund.
+        final BigDecimal amountToBeRefunded = computeRefundAmount(directPayment.getId(), paymentControlPluginContext.getAmount(), idWithAmount, internalContext);
+        final boolean isAborted = amountToBeRefunded.compareTo(BigDecimal.ZERO) == 0;
+
+        if (paymentControlPluginContext.isApiPayment() && isAborted) {
+            throw new PaymentControlApiException("Refund for payment " + directPayment.getId() +
+                                                 " aborted : invoice item sum amount is " + amountToBeRefunded +
+                                                 ", requested refund amount is = " + paymentControlPluginContext.getAmount());
+        } else {
+            return new DefaultPriorPaymentControlResult(isAborted, amountToBeRefunded);
         }
     }
 
@@ -208,31 +222,34 @@ public final class InvoicePaymentControlPluginApi implements PaymentControlPlugi
 
     private BigDecimal computeRefundAmount(final UUID paymentId, @Nullable final BigDecimal specifiedRefundAmount,
                                            final Map<UUID, BigDecimal> invoiceItemIdsWithAmounts, final InternalTenantContext context)
-            throws InvoiceApiException {
-        final List<InvoiceItem> items = invoiceApi.getInvoiceForPaymentId(paymentId, context).getInvoiceItems();
+            throws PaymentControlApiException {
+        final List<InvoiceItem> items;
+        try {
+            items = invoiceApi.getInvoiceForPaymentId(paymentId, context).getInvoiceItems();
 
-        BigDecimal amountFromItems = BigDecimal.ZERO;
-        for (final UUID itemId : invoiceItemIdsWithAmounts.keySet()) {
-            amountFromItems = amountFromItems.add(Objects.firstNonNull(invoiceItemIdsWithAmounts.get(itemId),
-                                                                       getAmountFromItem(items, itemId)));
+            BigDecimal amountFromItems = BigDecimal.ZERO;
+            for (final UUID itemId : invoiceItemIdsWithAmounts.keySet()) {
+                amountFromItems = amountFromItems.add(Objects.firstNonNull(invoiceItemIdsWithAmounts.get(itemId),
+                                                                           getAmountFromItem(items, itemId)));
+            }
+            // Sanity check: if some items were specified, then the sum should be equal to specified refund amount, if specified
+            if (amountFromItems.compareTo(BigDecimal.ZERO) != 0 && specifiedRefundAmount != null && specifiedRefundAmount.compareTo(amountFromItems) != 0) {
+                throw new PaymentControlApiException("You can't specify a refund amount that doesn't match the invoice items amounts");
+            }
+
+            return Objects.firstNonNull(specifiedRefundAmount, amountFromItems);
+        } catch (InvoiceApiException e) {
+            throw new UnknownEntryException();
         }
-
-        // Sanity check: if some items were specified, then the sum should be equal to specified refund amount, if specified
-        if (amountFromItems.compareTo(BigDecimal.ZERO) != 0 && specifiedRefundAmount != null && specifiedRefundAmount.compareTo(amountFromItems) != 0) {
-            throw new IllegalArgumentException("You can't specify a refund amount that doesn't match the invoice items amounts");
-        }
-
-        return Objects.firstNonNull(specifiedRefundAmount, amountFromItems);
     }
 
-    private BigDecimal getAmountFromItem(final List<InvoiceItem> items, final UUID itemId) {
+    private BigDecimal getAmountFromItem(final List<InvoiceItem> items, final UUID itemId) throws PaymentControlApiException {
         for (final InvoiceItem item : items) {
             if (item.getId().equals(itemId)) {
                 return item.getAmount();
             }
         }
-        // STEPH should we really throw IllegalArgumentException , and how will the state machine react?
-        throw new IllegalArgumentException("Unable to find invoice item for id " + itemId);
+        throw new PaymentControlApiException("Unable to find invoice item for id " + itemId);
     }
 
     private DateTime computeNextRetryDate(final String paymentExternalKey, final boolean isApiAPayment, final InternalCallContext internalContext) {

@@ -21,6 +21,7 @@ import java.util.Collections;
 import org.killbill.automaton.OperationResult;
 import org.killbill.billing.osgi.api.OSGIServiceRegistration;
 import org.killbill.billing.payment.api.DefaultDirectPayment;
+import org.killbill.billing.payment.api.DefaultDirectPaymentTransaction;
 import org.killbill.billing.payment.api.DirectPayment;
 import org.killbill.billing.payment.api.DirectPaymentTransaction;
 import org.killbill.billing.payment.api.PaymentApiException;
@@ -75,8 +76,24 @@ public class MockRetryAuthorizeOperationCallback extends RetryAuthorizeOperation
                                                                                                   "",
                                                                                                   "");
         final DirectPaymentModelDao paymentModelDao = paymentDao.insertDirectPaymentWithFirstTransaction(payment, transaction, directPaymentStateContext.internalCallContext);
+        final DirectPaymentTransaction convertedTransaction = new DefaultDirectPaymentTransaction(transaction.getId(),
+                                                                                                  transaction.getTransactionExternalKey(),
+                                                                                                  transaction.getCreatedDate(),
+                                                                                                  transaction.getUpdatedDate(),
+                                                                                                  transaction.getDirectPaymentId(),
+                                                                                                  transaction.getTransactionType(),
+                                                                                                  transaction.getEffectiveDate(),
+                                                                                                  transaction.getPaymentStatus(),
+                                                                                                  transaction.getAmount(),
+                                                                                                  transaction.getCurrency(),
+                                                                                                  transaction.getProcessedAmount(),
+                                                                                                  transaction.getProcessedCurrency(),
+                                                                                                  transaction.getGatewayErrorCode(),
+                                                                                                  transaction.getGatewayErrorMsg(),
+                                                                                                  null);
+
         return new DefaultDirectPayment(paymentModelDao.getId(), paymentModelDao.getCreatedDate(), paymentModelDao.getUpdatedDate(), paymentModelDao.getAccountId(),
-                                        paymentModelDao.getPaymentMethodId(), paymentModelDao.getPaymentNumber(), paymentModelDao.getExternalKey(), Collections.<DirectPaymentTransaction>emptyList());
+                                        paymentModelDao.getPaymentMethodId(), paymentModelDao.getPaymentNumber(), paymentModelDao.getExternalKey(), Collections.singletonList(convertedTransaction));
     }
 
     public MockRetryAuthorizeOperationCallback setException(final Exception exception) {

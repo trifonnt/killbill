@@ -91,7 +91,7 @@ public class DefaultDirectPaymentApi implements DirectPaymentApi {
         final UUID nonNulPaymentMethodId = (paymentMethodId != null) ?
                                            paymentMethodId :
                                            paymentMethodProcessor.createOrGetExternalPaymentMethod(account, properties, callContext, internalCallContext);
-        return pluginControlledPaymentProcessor.createPurchase(account, nonNulPaymentMethodId, directPaymentId, amount, currency, directPaymentExternalKey, directPaymentTransactionExternalKey,
+        return pluginControlledPaymentProcessor.createPurchase(true, account, nonNulPaymentMethodId, directPaymentId, amount, currency, directPaymentExternalKey, directPaymentTransactionExternalKey,
                                                                properties, paymentOptions.getPaymentControlPluginName(), callContext, internalCallContext);
 
     }
@@ -117,7 +117,7 @@ public class DefaultDirectPaymentApi implements DirectPaymentApi {
     public DirectPayment createRefundWithPaymentControl(final Account account, final UUID directPaymentId, final BigDecimal amount, final Currency currency, final String directPaymentTransactionExternalKey, final Iterable<PluginProperty> properties,
                                                         final PaymentOptions paymentOptions, final CallContext callContext) throws PaymentApiException {
         final InternalCallContext internalCallContext = internalCallContextFactory.createInternalCallContext(account.getId(), callContext);
-        return pluginControlledPaymentProcessor.createRefund(account, directPaymentId, amount, currency, directPaymentTransactionExternalKey,
+        return pluginControlledPaymentProcessor.createRefund(true, account, directPaymentId, amount, currency, directPaymentTransactionExternalKey,
                                                              properties, paymentOptions.getPaymentControlPluginName(), callContext, internalCallContext);
 
     }

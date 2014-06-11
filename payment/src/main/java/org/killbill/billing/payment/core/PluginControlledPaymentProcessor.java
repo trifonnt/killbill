@@ -77,9 +77,9 @@ public class PluginControlledPaymentProcessor extends ProcessorBase {
         this.pluginControlledDirectPaymentAutomatonRunner = pluginControlledDirectPaymentAutomatonRunner;
     }
 
-    public DirectPayment createAuthorization(final Account account, final UUID paymentMethodId, @Nullable final UUID directPaymentId, final BigDecimal amount, final Currency currency, final String paymentExternalKey, final String transactionExternalKey,
+    public DirectPayment createAuthorization(final boolean isApiPayment, final Account account, final UUID paymentMethodId, @Nullable final UUID directPaymentId, final BigDecimal amount, final Currency currency, final String paymentExternalKey, final String transactionExternalKey,
                                              final Iterable<PluginProperty> properties, final String paymentControlPluginName, final CallContext callContext, final InternalCallContext internalCallContext) throws PaymentApiException {
-        return pluginControlledDirectPaymentAutomatonRunner.run(true,
+        return pluginControlledDirectPaymentAutomatonRunner.run(isApiPayment,
                                                          TransactionType.AUTHORIZE,
                                                          account,
                                                          paymentMethodId,
@@ -93,11 +93,11 @@ public class PluginControlledPaymentProcessor extends ProcessorBase {
                                                          callContext, internalCallContext);
     }
 
-    public DirectPayment createCapture(final Account account, final UUID directPaymentId, final BigDecimal amount, final Currency currency,
+    public DirectPayment createCapture(final boolean isApiPayment, final Account account, final UUID directPaymentId, final BigDecimal amount, final Currency currency,
                                        final String transactionExternalKey,
                                        final Iterable<PluginProperty> properties, final String paymentControlPluginName,
                                        final CallContext callContext, final InternalCallContext internalCallContext) throws PaymentApiException {
-        return pluginControlledDirectPaymentAutomatonRunner.run(true,
+        return pluginControlledDirectPaymentAutomatonRunner.run(isApiPayment,
                                                          TransactionType.CAPTURE,
                                                          account,
                                                          directPaymentId,
@@ -109,10 +109,10 @@ public class PluginControlledPaymentProcessor extends ProcessorBase {
                                                          callContext, internalCallContext);
     }
 
-    public DirectPayment createPurchase(final Account account, final UUID paymentMethodId, final UUID directPaymentId, final BigDecimal amount, final Currency currency,
+    public DirectPayment createPurchase(final boolean isApiPayment, final Account account, final UUID paymentMethodId, final UUID directPaymentId, final BigDecimal amount, final Currency currency,
                                         final String paymentExternalKey, final String transactionExternalKey, final Iterable<PluginProperty> properties,
                                         final String paymentControlPluginName, final CallContext callContext, final InternalCallContext internalCallContext) throws PaymentApiException {
-        return pluginControlledDirectPaymentAutomatonRunner.run(true,
+        return pluginControlledDirectPaymentAutomatonRunner.run(isApiPayment,
                                                          TransactionType.PURCHASE,
                                                          account,
                                                          paymentMethodId,
@@ -126,9 +126,9 @@ public class PluginControlledPaymentProcessor extends ProcessorBase {
                                                          callContext, internalCallContext);
     }
 
-    public DirectPayment createVoid(final Account account, final UUID directPaymentId, final String transactionExternalKey,
+    public DirectPayment createVoid(final boolean isApiPayment, final Account account, final UUID directPaymentId, final String transactionExternalKey,
                                     final Iterable<PluginProperty> properties, final CallContext callContext, final InternalCallContext internalCallContext) throws PaymentApiException {
-        return pluginControlledDirectPaymentAutomatonRunner.run(true,
+        return pluginControlledDirectPaymentAutomatonRunner.run(isApiPayment,
                                                          TransactionType.VOID,
                                                          account,
                                                          directPaymentId,
@@ -138,9 +138,9 @@ public class PluginControlledPaymentProcessor extends ProcessorBase {
                                                          callContext, internalCallContext);
     }
 
-    public DirectPayment createRefund(final Account account, final UUID directPaymentId, final BigDecimal amount, final Currency currency, final String transactionExternalKey,
+    public DirectPayment createRefund(final boolean isApiPayment, final Account account, final UUID directPaymentId, final BigDecimal amount, final Currency currency, final String transactionExternalKey,
                                       final Iterable<PluginProperty> properties, final String paymentControlPluginName, final CallContext callContext, final InternalCallContext internalCallContext) throws PaymentApiException {
-        return pluginControlledDirectPaymentAutomatonRunner.run(true,
+        return pluginControlledDirectPaymentAutomatonRunner.run(isApiPayment,
                                                          TransactionType.REFUND,
                                                          account,
                                                          directPaymentId,
@@ -152,10 +152,10 @@ public class PluginControlledPaymentProcessor extends ProcessorBase {
                                                          callContext, internalCallContext);
     }
 
-    public DirectPayment createCredit(final Account account, final UUID paymentMethodId, final UUID directPaymentId, final BigDecimal amount, final Currency currency, final String paymentExternalKey,
+    public DirectPayment createCredit(final boolean isApiPayment, final Account account, final UUID paymentMethodId, final UUID directPaymentId, final BigDecimal amount, final Currency currency, final String paymentExternalKey,
                                       final String transactionExternalKey, final Iterable<PluginProperty> properties, final String paymentControlPluginName, final CallContext callContext, final InternalCallContext internalCallContext) throws PaymentApiException {
 
-        return pluginControlledDirectPaymentAutomatonRunner.run(true,
+        return pluginControlledDirectPaymentAutomatonRunner.run(isApiPayment,
                                                          TransactionType.CREDIT,
                                                          account,
                                                          paymentMethodId,
@@ -178,7 +178,9 @@ public class PluginControlledPaymentProcessor extends ProcessorBase {
 
             final List<PluginPropertyModelDao> properties = paymentDao.getProperties(transactionExternalKey, internalCallContext);
 
-            final List<PluginProperty> pluginProperties = ImmutableList.copyOf(Iterables.transform(properties, new Function<PluginPropertyModelDao, PluginProperty>() {
+            final List<PluginProperty> pluginProperties = properties == null ?
+                                                          ImmutableList.<PluginProperty>of() :
+                                                          ImmutableList.<PluginProperty>copyOf(Iterables.transform(properties, new Function<PluginPropertyModelDao, PluginProperty>() {
                 @Nullable
                 @Override
                 public PluginProperty apply(final PluginPropertyModelDao input) {
