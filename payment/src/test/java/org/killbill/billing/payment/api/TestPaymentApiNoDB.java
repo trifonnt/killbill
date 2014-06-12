@@ -23,7 +23,6 @@ import java.util.List;
 import java.util.UUID;
 
 import org.joda.time.LocalDate;
-import org.killbill.billing.ErrorCode;
 import org.killbill.billing.account.api.Account;
 import org.killbill.billing.catalog.api.Currency;
 import org.killbill.billing.invoice.api.Invoice;
@@ -115,7 +114,7 @@ public class TestPaymentApiNoDB extends PaymentTestSuiteNoDB {
 
     private void testSimplePayment(final BigDecimal invoiceAmount, final BigDecimal requestedAmount, final BigDecimal expectedAmount) throws Exception {
         final LocalDate now = clock.getUTCToday();
-        final Invoice invoice = testHelper.createTestInvoice(account, now, Currency.USD, callContext);
+        final Invoice invoice = testHelper.createTestInvoice(account, now, Currency.USD);
 
         final UUID subscriptionId = UUID.randomUUID();
         final UUID bundleId = UUID.randomUUID();

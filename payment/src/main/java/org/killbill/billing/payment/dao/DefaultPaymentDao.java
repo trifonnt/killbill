@@ -228,7 +228,6 @@ public class DefaultPaymentDao implements PaymentDao {
 
     @Override
     public DirectPaymentTransactionModelDao getDirectPaymentTransaction(final UUID directTransactionId, final InternalTenantContext context) {
-        // getByAccountRecordId
         return transactionalSqlDao.execute(new EntitySqlDaoTransactionWrapper<DirectPaymentTransactionModelDao>() {
             @Override
             public DirectPaymentTransactionModelDao inTransaction(final EntitySqlDaoWrapperFactory<EntitySqlDao> entitySqlDaoWrapperFactory) throws Exception {
@@ -261,7 +260,6 @@ public class DefaultPaymentDao implements PaymentDao {
 
     @Override
     public List<DirectPaymentTransactionModelDao> getDirectTransactionsForDirectPayment(final UUID directPaymentId, final InternalTenantContext context) {
-        Preconditions.checkArgument(context.getAccountRecordId() != null);
         return transactionalSqlDao.execute(new EntitySqlDaoTransactionWrapper<List<DirectPaymentTransactionModelDao>>() {
             @Override
             public List<DirectPaymentTransactionModelDao> inTransaction(final EntitySqlDaoWrapperFactory<EntitySqlDao> entitySqlDaoWrapperFactory) throws Exception {

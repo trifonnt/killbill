@@ -32,14 +32,10 @@ import org.killbill.billing.payment.api.DirectPayment;
 import org.killbill.billing.payment.api.PaymentApiException;
 import org.killbill.billing.payment.api.PaymentAttempt;
 import org.killbill.billing.payment.api.PaymentStatus;
-import org.killbill.billing.payment.api.PluginProperty;
-import org.killbill.billing.payment.glue.DefaultPaymentService;
 import org.killbill.billing.payment.provider.MockPaymentProviderPlugin;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
-
-import com.google.common.collect.ImmutableList;
 
 import static com.jayway.awaitility.Awaitility.await;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -107,7 +103,7 @@ public class TestRetryService extends PaymentTestSuiteNoDB {
     private void testSchedulesRetryInternal(final int maxTries, final FailureType failureType) throws Exception {
 
         final Account account = testHelper.createTestAccount("yiyi.gmail.com", true);
-        final Invoice invoice = testHelper.createTestInvoice(account, clock.getUTCToday(), Currency.USD, callContext);
+        final Invoice invoice = testHelper.createTestInvoice(account, clock.getUTCToday(), Currency.USD);
         final BigDecimal amount = new BigDecimal("10.00");
         final UUID subscriptionId = UUID.randomUUID();
         final UUID bundleId = UUID.randomUUID();
