@@ -56,21 +56,19 @@ public class TestPaymentHelper {
     protected DirectPaymentApi paymentApi;
     private final PersistentBus eventBus;
     private final Clock clock;
-    private final CacheControllerDispatcher cacheControllerDispatcher;
 
     private final CallContext context;
 
     @Inject
     public TestPaymentHelper(final AccountInternalApi AccountApi, final InvoiceInternalApi invoiceApi,
                              final DirectPaymentApi paymentApi, final PersistentBus eventBus,
-                             final CacheControllerDispatcher cacheControllerDispatcher, final Clock clock,
+                             final Clock clock,
                              final CallContext context) {
         this.eventBus = eventBus;
         this.AccountApi = AccountApi;
         this.invoiceApi = invoiceApi;
         this.paymentApi = paymentApi;
         this.clock = clock;
-        this.cacheControllerDispatcher = cacheControllerDispatcher;
         this.context = context;
     }
 
@@ -99,6 +97,8 @@ public class TestPaymentHelper {
         }
 
         Mockito.when(invoiceApi.getInvoiceById(Mockito.eq(invoice.getId()), Mockito.<InternalTenantContext>any())).thenReturn(invoice);
+        Mockito.when(invoiceApi.getInvoiceForPaymentId(Mockito.<UUID>any(), Mockito.<InternalCallContext>any())).thenReturn(invoice);
+
         final InvoiceCreationInternalEvent event = new MockInvoiceCreationEvent(invoice.getId(), invoice.getAccountId(),
                                                                                 invoice.getBalance(), invoice.getCurrency(),
                                                                                 invoice.getInvoiceDate(), 1L, 2L, null);

@@ -40,9 +40,10 @@ where transaction_external_key = :transactionExternalKey
 >>
 
 
-updateStateName() ::= <<
+updateAttempt() ::= <<
 update <tableName()>
 set state_name = :stateName
+, direct_transaction_id = :directTransactionId
 , updated_by = :updatedBy
 , updated_date = :createdDate
 where id = :id

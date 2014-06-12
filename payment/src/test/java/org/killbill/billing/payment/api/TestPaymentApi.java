@@ -19,6 +19,9 @@
 package org.killbill.billing.payment.api;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
 import java.util.UUID;
 
 import org.joda.time.LocalDate;
@@ -26,8 +29,14 @@ import org.killbill.billing.ErrorCode;
 import org.killbill.billing.account.api.Account;
 import org.killbill.billing.catalog.api.Currency;
 import org.killbill.billing.invoice.api.Invoice;
+import org.killbill.billing.invoice.api.InvoiceApiException;
+import org.killbill.billing.invoice.api.InvoiceItem;
 import org.killbill.billing.payment.MockRecurringInvoiceItem;
 import org.killbill.billing.payment.PaymentTestSuiteWithEmbeddedDB;
+import org.killbill.billing.payment.control.InvoicePaymentControlPluginApi;
+import org.killbill.billing.payment.dao.PluginPropertyModelDao;
+import org.killbill.billing.retry.plugin.api.PaymentControlApiException;
+import org.killbill.bus.api.PersistentBus.EventBusException;
 import org.testng.Assert;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
@@ -36,8 +45,21 @@ import com.google.common.collect.ImmutableList;
 
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNull;
+import static org.testng.Assert.assertTrue;
 
 public class TestPaymentApi extends PaymentTestSuiteWithEmbeddedDB {
+
+    final PaymentOptions INVOICE_PAYMENT = new PaymentOptions() {
+        @Override
+        public boolean isExternalPayment() {
+            return false;
+        }
+
+        @Override
+        public String getPaymentControlPluginName() {
+            return InvoicePaymentControlPluginApi.PLUGIN_NAME;
+        }
+    };
 
     private Account account;
 
@@ -80,7 +102,6 @@ public class TestPaymentApi extends PaymentTestSuiteWithEmbeddedDB {
         assertNull(payment.getTransactions().get(0).getGatewayErrorMsg());
         assertNull(payment.getTransactions().get(0).getGatewayErrorCode());
     }
-
 
     @Test(groups = "slow")
     public void testCreateSuccessAuthCapture() throws PaymentApiException {
@@ -143,7 +164,6 @@ public class TestPaymentApi extends PaymentTestSuiteWithEmbeddedDB {
         assertNull(payment2.getTransactions().get(1).getGatewayErrorCode());
     }
 
-
     @Test(groups = "slow")
     public void testCreateSuccessAuthMultipleCaptureAndRefund() throws PaymentApiException {
 
@@ -160,7 +180,7 @@ public class TestPaymentApi extends PaymentTestSuiteWithEmbeddedDB {
                                                                      ImmutableList.<PluginProperty>of(), callContext);
 
         paymentApi.createCapture(account, payment.getId(), captureAmount, Currency.USD, transactionExternalKey2,
-                                                                ImmutableList.<PluginProperty>of(), callContext);
+                                 ImmutableList.<PluginProperty>of(), callContext);
 
         final DirectPayment payment3 = paymentApi.createCapture(account, payment.getId(), captureAmount, Currency.USD, transactionExternalKey3,
                                                                 ImmutableList.<PluginProperty>of(), callContext);
@@ -192,6 +212,216 @@ public class TestPaymentApi extends PaymentTestSuiteWithEmbeddedDB {
         assertEquals(payment4.getTransactions().get(3).getTransactionType(), TransactionType.REFUND);
         assertNull(payment4.getTransactions().get(3).getGatewayErrorMsg());
         assertNull(payment4.getTransactions().get(3).getGatewayErrorCode());
+    }
+
+    @Test(groups = "slow")
+    public void testCreateSuccessPurchaseWithPaymentControl() throws PaymentApiException, InvoiceApiException, EventBusException {
+
+        final BigDecimal requestedAmount = BigDecimal.TEN;
+        final UUID subscriptionId = UUID.randomUUID();
+        final UUID bundleId = UUID.randomUUID();
+        final LocalDate now = clock.getUTCToday();
+
+        final Invoice invoice = testHelper.createTestInvoice(account, now, Currency.USD);
+
+        final String paymentExternalKey = invoice.getId().toString();
+        final String transactionExternalKey = "brrrrrr";
+
+        invoice.addInvoiceItem(new MockRecurringInvoiceItem(invoice.getId(), account.getId(),
+                                                            subscriptionId,
+                                                            bundleId,
+                                                            "test plan", "test phase", null,
+                                                            now,
+                                                            now.plusMonths(1),
+                                                            requestedAmount,
+                                                            new BigDecimal("1.0"),
+                                                            Currency.USD));
+
+        final DirectPayment payment = paymentApi.createPurchaseWithPaymentControl(account, account.getPaymentMethodId(), null, requestedAmount, Currency.USD, paymentExternalKey, transactionExternalKey,
+                                                                                  ImmutableList.<PluginProperty>of(), INVOICE_PAYMENT, callContext);
+
+        assertEquals(payment.getExternalKey(), paymentExternalKey);
+        assertEquals(payment.getPaymentMethodId(), account.getPaymentMethodId());
+        assertEquals(payment.getAccountId(), account.getId());
+        assertEquals(payment.getAuthAmount().compareTo(BigDecimal.ZERO), 0);
+        assertEquals(payment.getCapturedAmount().compareTo(BigDecimal.ZERO), 0);
+        assertEquals(payment.getPurchasedAmount().compareTo(requestedAmount), 0);
+        assertEquals(payment.getRefundedAmount().compareTo(BigDecimal.ZERO), 0);
+        assertEquals(payment.getCurrency(), Currency.USD);
+
+        assertEquals(payment.getTransactions().size(), 1);
+        assertEquals(payment.getTransactions().get(0).getExternalKey(), transactionExternalKey);
+        assertEquals(payment.getTransactions().get(0).getDirectPaymentId(), payment.getId());
+        assertEquals(payment.getTransactions().get(0).getAmount().compareTo(requestedAmount), 0);
+        assertEquals(payment.getTransactions().get(0).getCurrency(), Currency.USD);
+        assertEquals(payment.getTransactions().get(0).getProcessedAmount().compareTo(requestedAmount), 0);
+        assertEquals(payment.getTransactions().get(0).getProcessedCurrency(), Currency.USD);
+
+        assertEquals(payment.getTransactions().get(0).getPaymentStatus(), PaymentStatus.SUCCESS);
+        assertEquals(payment.getTransactions().get(0).getTransactionType(), TransactionType.PURCHASE);
+        assertNull(payment.getTransactions().get(0).getGatewayErrorMsg());
+        assertNull(payment.getTransactions().get(0).getGatewayErrorCode());
+    }
+
+    @Test(groups = "slow")
+    public void testCreateAbortedPurchaseWithPaymentControl() throws InvoiceApiException, EventBusException {
+
+        final BigDecimal requestedAmount = BigDecimal.TEN;
+        final UUID subscriptionId = UUID.randomUUID();
+        final UUID bundleId = UUID.randomUUID();
+        final LocalDate now = clock.getUTCToday();
+
+        final Invoice invoice = testHelper.createTestInvoice(account, now, Currency.USD);
+
+        final String paymentExternalKey = invoice.getId().toString();
+        final String transactionExternalKey = "brrrrrr";
+
+        invoice.addInvoiceItem(new MockRecurringInvoiceItem(invoice.getId(), account.getId(),
+                                                            subscriptionId,
+                                                            bundleId,
+                                                            "test plan", "test phase", null,
+                                                            now,
+                                                            now.plusMonths(1),
+                                                            BigDecimal.ONE,
+                                                            new BigDecimal("1.0"),
+                                                            Currency.USD));
+
+        try {
+            paymentApi.createPurchaseWithPaymentControl(account, account.getPaymentMethodId(), null, requestedAmount, Currency.USD, paymentExternalKey, transactionExternalKey,
+                                                        ImmutableList.<PluginProperty>of(), INVOICE_PAYMENT, callContext);
+            Assert.fail("Unexpected success");
+        } catch (PaymentApiException e) {
+            assertTrue(e.getCause() instanceof PaymentControlApiException);
+        }
+    }
+
+    @Test(groups = "slow")
+    public void testCreateSuccessRefundWithPaymentControl() throws PaymentApiException, InvoiceApiException, EventBusException {
+
+        final BigDecimal requestedAmount = BigDecimal.TEN;
+        final UUID subscriptionId = UUID.randomUUID();
+        final UUID bundleId = UUID.randomUUID();
+        final LocalDate now = clock.getUTCToday();
+
+        final Invoice invoice = testHelper.createTestInvoice(account, now, Currency.USD);
+
+        final String paymentExternalKey = invoice.getId().toString();
+        final String transactionExternalKey = "payment";
+        final String transactionExternalKey2 = "refund";
+
+        final InvoiceItem invoiceItem = new MockRecurringInvoiceItem(invoice.getId(), account.getId(),
+                                                                     subscriptionId,
+                                                                     bundleId,
+                                                                     "test plan", "test phase", null,
+                                                                     now,
+                                                                     now.plusMonths(1),
+                                                                     requestedAmount,
+                                                                     new BigDecimal("1.0"),
+                                                                     Currency.USD);
+        invoice.addInvoiceItem(invoiceItem);
+
+        final DirectPayment payment = paymentApi.createPurchaseWithPaymentControl(account, account.getPaymentMethodId(), null, requestedAmount, Currency.USD, paymentExternalKey, transactionExternalKey,
+                                                                                  ImmutableList.<PluginProperty>of(), INVOICE_PAYMENT, callContext);
+
+        final List<PluginProperty> refundProperties = ImmutableList.<PluginProperty>of();
+        final DirectPayment payment2 = paymentApi.createRefundWithPaymentControl(account, payment.getId(), requestedAmount, Currency.USD, transactionExternalKey2,
+                                                                                 refundProperties, INVOICE_PAYMENT, callContext);
+
+        assertEquals(payment2.getTransactions().size(), 2);
+        assertEquals(payment2.getExternalKey(), paymentExternalKey);
+        assertEquals(payment2.getPaymentMethodId(), account.getPaymentMethodId());
+        assertEquals(payment2.getAccountId(), account.getId());
+        assertEquals(payment2.getAuthAmount().compareTo(BigDecimal.ZERO), 0);
+        assertEquals(payment2.getCapturedAmount().compareTo(BigDecimal.ZERO), 0);
+        assertEquals(payment2.getPurchasedAmount().compareTo(requestedAmount), 0);
+        assertEquals(payment2.getRefundedAmount().compareTo(requestedAmount), 0);
+        assertEquals(payment2.getCurrency(), Currency.USD);
+    }
+
+    @Test(groups = "slow")
+    public void testCreateAbortedRefundWithPaymentControl() throws PaymentApiException, InvoiceApiException, EventBusException {
+
+        final BigDecimal requestedAmount = BigDecimal.ONE;
+        final UUID subscriptionId = UUID.randomUUID();
+        final UUID bundleId = UUID.randomUUID();
+        final LocalDate now = clock.getUTCToday();
+
+        final Invoice invoice = testHelper.createTestInvoice(account, now, Currency.USD);
+
+        final String paymentExternalKey = invoice.getId().toString();
+        final String transactionExternalKey = "payment";
+        final String transactionExternalKey2 = "refund";
+
+        final InvoiceItem invoiceItem = new MockRecurringInvoiceItem(invoice.getId(), account.getId(),
+                                                                     subscriptionId,
+                                                                     bundleId,
+                                                                     "test plan", "test phase", null,
+                                                                     now,
+                                                                     now.plusMonths(1),
+                                                                     requestedAmount,
+                                                                     new BigDecimal("1.0"),
+                                                                     Currency.USD);
+        invoice.addInvoiceItem(invoiceItem);
+
+        final DirectPayment payment = paymentApi.createPurchaseWithPaymentControl(account, account.getPaymentMethodId(), null, requestedAmount, Currency.USD, paymentExternalKey, transactionExternalKey,
+                                                                                  ImmutableList.<PluginProperty>of(), INVOICE_PAYMENT, callContext);
+
+        final List<PluginProperty> refundProperties = ImmutableList.<PluginProperty>of();
+
+        try {
+            paymentApi.createRefundWithPaymentControl(account, payment.getId(), BigDecimal.TEN, Currency.USD, transactionExternalKey2,
+                                                      refundProperties, INVOICE_PAYMENT, callContext);
+        } catch (PaymentApiException e) {
+            assertTrue(e.getCause() instanceof PaymentControlApiException);
+        }
+    }
+
+    @Test(groups = "slow")
+    public void testCreateSuccessRefundPaymentControlWithItemAdjustments() throws PaymentApiException, InvoiceApiException, EventBusException {
+
+        final BigDecimal requestedAmount = BigDecimal.TEN;
+        final UUID subscriptionId = UUID.randomUUID();
+        final UUID bundleId = UUID.randomUUID();
+        final LocalDate now = clock.getUTCToday();
+
+        final Invoice invoice = testHelper.createTestInvoice(account, now, Currency.USD);
+
+        final String paymentExternalKey = invoice.getId().toString();
+        final String transactionExternalKey = "payment";
+        final String transactionExternalKey2 = "refund";
+
+        final InvoiceItem invoiceItem = new MockRecurringInvoiceItem(invoice.getId(), account.getId(),
+                                                                     subscriptionId,
+                                                                     bundleId,
+                                                                     "test plan", "test phase", null,
+                                                                     now,
+                                                                     now.plusMonths(1),
+                                                                     requestedAmount,
+                                                                     new BigDecimal("1.0"),
+                                                                     Currency.USD);
+        invoice.addInvoiceItem(invoiceItem);
+
+        final DirectPayment payment = paymentApi.createPurchaseWithPaymentControl(account, account.getPaymentMethodId(), null, requestedAmount, Currency.USD, paymentExternalKey, transactionExternalKey,
+                                                                                  ImmutableList.<PluginProperty>of(), INVOICE_PAYMENT, callContext);
+
+        final List<PluginProperty> refundProperties = new ArrayList<PluginProperty>();
+        final HashMap<UUID, BigDecimal> uuidBigDecimalHashMap = new HashMap<UUID, BigDecimal>();
+        uuidBigDecimalHashMap.put(invoiceItem.getId(), null);
+        final PluginProperty refundIdsProp = new PluginProperty(InvoicePaymentControlPluginApi.IPCD_REFUND_IDS_WITH_AMOUNT_KEY, uuidBigDecimalHashMap, false);
+        refundProperties.add(refundIdsProp);
+
+        final DirectPayment payment2 = paymentApi.createRefundWithPaymentControl(account, payment.getId(), null, Currency.USD, transactionExternalKey2,
+                                                                                 refundProperties, INVOICE_PAYMENT, callContext);
+
+        assertEquals(payment2.getTransactions().size(), 2);
+        assertEquals(payment2.getExternalKey(), paymentExternalKey);
+        assertEquals(payment2.getPaymentMethodId(), account.getPaymentMethodId());
+        assertEquals(payment2.getAccountId(), account.getId());
+        assertEquals(payment2.getAuthAmount().compareTo(BigDecimal.ZERO), 0);
+        assertEquals(payment2.getCapturedAmount().compareTo(BigDecimal.ZERO), 0);
+        assertEquals(payment2.getPurchasedAmount().compareTo(requestedAmount), 0);
+        assertEquals(payment2.getRefundedAmount().compareTo(requestedAmount), 0);
+        assertEquals(payment2.getCurrency(), Currency.USD);
     }
 
 

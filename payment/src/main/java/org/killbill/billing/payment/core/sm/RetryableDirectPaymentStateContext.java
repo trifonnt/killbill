@@ -26,9 +26,13 @@ import org.killbill.billing.account.api.Account;
 import org.killbill.billing.callcontext.InternalCallContext;
 import org.killbill.billing.catalog.api.Currency;
 import org.killbill.billing.payment.api.DirectPayment;
+import org.killbill.billing.payment.api.DirectPaymentTransaction;
 import org.killbill.billing.payment.api.PluginProperty;
 import org.killbill.billing.payment.api.TransactionType;
 import org.killbill.billing.util.callcontext.CallContext;
+
+import com.google.common.base.Predicate;
+import com.google.common.collect.Iterables;
 
 public class RetryableDirectPaymentStateContext extends DirectPaymentStateContext {
 
@@ -74,5 +78,17 @@ public class RetryableDirectPaymentStateContext extends DirectPaymentStateContex
 
     public void setAmount(final BigDecimal adjustedAmount) {
         this.amount = adjustedAmount;
+    }
+
+    public DirectPaymentTransaction getCurrentTransaction() {
+        if (result == null) {
+            return null;
+        }
+        return Iterables.tryFind(result.getTransactions(), new Predicate<DirectPaymentTransaction>() {
+            @Override
+            public boolean apply(final DirectPaymentTransaction input) {
+                return input.getExternalKey().equals(directPaymentTransactionExternalKey);
+            }
+        }).orNull();
     }
 }

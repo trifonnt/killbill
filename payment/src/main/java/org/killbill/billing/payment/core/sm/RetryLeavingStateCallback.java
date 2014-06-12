@@ -54,11 +54,13 @@ public class RetryLeavingStateCallback implements LeavingStateCallback {
             final List<PluginPropertyModelDao> properties = ImmutableList.copyOf(Iterables.transform(stateContext.getProperties(), new Function<PluginProperty, PluginPropertyModelDao>() {
                 @Override
                 public PluginPropertyModelDao apply(final PluginProperty input) {
+                    // STEPH how to serialize more complex values such as item adjustments. json ?
+                    final String value = (input.getValue() instanceof String) ? (String) input.getValue() : "TODO: could not serialize";
                     return new PluginPropertyModelDao(stateContext.getDirectPaymentExternalKey(), stateContext.directPaymentTransactionExternalKey, stateContext.getAccount().getId(),
-                                                      stateContext.getPluginName(), input.getKey(), (String) input.getValue(), stateContext.getCallContext().getUserName(), stateContext.getCallContext().getCreatedDate());
+                                                      stateContext.getPluginName(), input.getKey(), value, stateContext.getCallContext().getUserName(), stateContext.getCallContext().getCreatedDate());
                 }
             }));
-            retryableDirectPaymentAutomatonRunner.paymentDao.insertPaymentAttemptWithProperties(new PaymentAttemptModelDao(utcNow, utcNow, null, stateContext.directPaymentTransactionExternalKey, state.getName(), transactionType.name(), null),
+            retryableDirectPaymentAutomatonRunner.paymentDao.insertPaymentAttemptWithProperties(new PaymentAttemptModelDao(utcNow, utcNow, null, stateContext.directPaymentTransactionExternalKey, state.getName(), transactionType.name(), stateContext.getPluginName()),
                                                                                                 properties, stateContext.internalCallContext);
         }
     }

@@ -102,21 +102,13 @@ public abstract class RetryOperationCallback extends PluginOperation implements 
 
         return dispatchWithTimeout(new WithAccountLockCallback<OperationResult>() {
 
-            private DirectPaymentTransaction getTransaction(final DirectPayment payment, final String transactionExternalKey) {
-                return Iterables.tryFind(payment.getTransactions(), new Predicate<DirectPaymentTransaction>() {
-                    @Override
-                    public boolean apply(final DirectPaymentTransaction input) {
-                        return input.getExternalKey().equals(transactionExternalKey);
-                    }
-                }).get();
-            }
-
             @Override
             public OperationResult doOperation() throws OperationException {
 
                 final RetryableDirectPaymentStateContext retryableDirectPaymentStateContext = (RetryableDirectPaymentStateContext) directPaymentStateContext;
                 final PaymentControlContext paymentControlContext = new DefaultPaymentControlContext(directPaymentStateContext.account,
                                                                                                      directPaymentStateContext.paymentMethodId,
+                                                                                                     directPaymentStateContext.directPaymentId,
                                                                                                      directPaymentStateContext.directPaymentExternalKey,
                                                                                                      directPaymentStateContext.directPaymentTransactionExternalKey,
                                                                                                      directPaymentStateContext.transactionType,
@@ -145,13 +137,13 @@ public abstract class RetryOperationCallback extends PluginOperation implements 
                     }
 
                     final DirectPayment result = doPluginOperation();
-                    final DirectPaymentTransaction transaction = getTransaction(result, directPaymentStateContext.directPaymentTransactionExternalKey);
                     ((RetryableDirectPaymentStateContext) directPaymentStateContext).setResult(result);
+                    final DirectPaymentTransaction transaction = ((RetryableDirectPaymentStateContext) directPaymentStateContext).getCurrentTransaction();
 
                     final PaymentControlContext updatedPaymentControlContext = new DefaultPaymentControlContext(directPaymentStateContext.account,
                                                                                                                 directPaymentStateContext.paymentMethodId,
                                                                                                                 result.getId(),
-                                                                                                                directPaymentStateContext.directPaymentExternalKey,
+                                                                                                                result.getExternalKey(),
                                                                                                                 directPaymentStateContext.directPaymentTransactionExternalKey,
                                                                                                                 directPaymentStateContext.transactionType,
                                                                                                                 transaction.getAmount(),
@@ -196,9 +188,9 @@ public abstract class RetryOperationCallback extends PluginOperation implements 
         private final boolean isApiPayment;
         private final Iterable<PluginProperty> properties;
 
-        public DefaultPaymentControlContext(final Account account, final UUID paymentMethodId, final String paymentExternalKey, final String transactionExternalKey, final TransactionType transactionType, final BigDecimal amount, final Currency currency,
+        public DefaultPaymentControlContext(final Account account, final UUID paymentMethodId, @Nullable final UUID paymentId, final String paymentExternalKey, final String transactionExternalKey, final TransactionType transactionType, final BigDecimal amount, final Currency currency,
                                             final Iterable<PluginProperty> properties, final boolean isApiPayment, final CallContext callContext) {
-            this(account, paymentMethodId, null, paymentExternalKey, transactionExternalKey, transactionType, amount, currency, null, null, properties, isApiPayment, callContext);
+            this(account, paymentMethodId, paymentId, paymentExternalKey, transactionExternalKey, transactionType, amount, currency, null, null, properties, isApiPayment, callContext);
         }
 
         public DefaultPaymentControlContext(final Account account, final UUID paymentMethodId, @Nullable final UUID paymentId, final String paymentExternalKey, final String transactionExternalKey, final TransactionType transactionType,

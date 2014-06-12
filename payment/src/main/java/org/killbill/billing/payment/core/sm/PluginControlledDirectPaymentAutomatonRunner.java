@@ -212,6 +212,9 @@ public class PluginControlledDirectPaymentAutomatonRunner extends DirectPaymentA
             case CREDIT:
                 callback = new RetryCreditOperationCallback(locker, paymentPluginDispatcher, directPaymentStateContext, directPaymentProcessor, paymentControlPluginRegistry);
                 break;
+            case REFUND:
+                callback = new RetryRefundOperationCallback(locker, paymentPluginDispatcher, directPaymentStateContext, directPaymentProcessor, paymentControlPluginRegistry);
+                break;
             default:
                 throw new IllegalStateException("Unsupported transaction type " + transactionType);
         }

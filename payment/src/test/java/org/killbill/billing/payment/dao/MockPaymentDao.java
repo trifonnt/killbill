@@ -65,12 +65,13 @@ public class MockPaymentDao implements PaymentDao {
     }
 
     @Override
-    public void updatePaymentAttempt(final UUID paymentAttemptId, final String state, final InternalCallContext context) {
+    public void updatePaymentAttempt(final UUID paymentAttemptId, final UUID transactionId, final String state, final InternalCallContext context) {
         boolean success = false;
         synchronized (this) {
             for (PaymentAttemptModelDao cur : attempts.values()) {
                 if (cur.getId().equals(paymentAttemptId)) {
                     cur.setStateName(state);
+                    cur.setDirectTransactionId(transactionId);
                     success = true;
                 }
             }

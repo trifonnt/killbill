@@ -16,6 +16,8 @@
 
 package org.killbill.billing.payment.core.sm;
 
+import java.util.UUID;
+
 import org.killbill.automaton.Operation.OperationCallback;
 import org.killbill.automaton.OperationResult;
 import org.killbill.automaton.State;
@@ -30,8 +32,8 @@ public class RetryEnteringStateCallback implements EnteringStateCallback {
     private final RetryableDirectPaymentStateContext directPaymentStateContext;
     private final RetryServiceScheduler retryServiceScheduler;
 
-
-    public RetryEnteringStateCallback(final PluginControlledDirectPaymentAutomatonRunner retryableDirectPaymentAutomatonRunner, final RetryableDirectPaymentStateContext directPaymentStateContext, final RetryServiceScheduler retryServiceScheduler) {
+    public RetryEnteringStateCallback(final PluginControlledDirectPaymentAutomatonRunner retryableDirectPaymentAutomatonRunner, final RetryableDirectPaymentStateContext directPaymentStateContext,
+                                      final RetryServiceScheduler retryServiceScheduler) {
         this.retryableDirectPaymentAutomatonRunner = retryableDirectPaymentAutomatonRunner;
         this.directPaymentStateContext = directPaymentStateContext;
         this.retryServiceScheduler = retryServiceScheduler;
@@ -39,9 +41,13 @@ public class RetryEnteringStateCallback implements EnteringStateCallback {
 
     @Override
     public void enteringState(final State state, final OperationCallback operationCallback, final OperationResult operationResult, final LeavingStateCallback leavingStateCallback) {
+
         final PaymentAttemptModelDao attempt = retryableDirectPaymentAutomatonRunner.paymentDao.getPaymentAttemptByExternalKey(directPaymentStateContext.getDirectPaymentTransactionExternalKey(), directPaymentStateContext.internalCallContext);
-        // STEPH should probably also update direct_payment_id now that it is available.
-        retryableDirectPaymentAutomatonRunner.paymentDao.updatePaymentAttempt(attempt.getId(), state.getName(), directPaymentStateContext.internalCallContext);
+        final UUID transactionId = directPaymentStateContext.getCurrentTransaction() != null ?
+                                   directPaymentStateContext.getCurrentTransaction().getId() :
+                                   null;
+
+        retryableDirectPaymentAutomatonRunner.paymentDao.updatePaymentAttempt(attempt.getId(), transactionId, state.getName(), directPaymentStateContext.internalCallContext);
 
         if ("RETRIED".equals(state.getName())) {
             retryServiceScheduler.scheduleRetry(directPaymentStateContext.directPaymentId, directPaymentStateContext.directPaymentTransactionExternalKey,

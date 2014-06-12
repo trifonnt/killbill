@@ -74,7 +74,7 @@ public final class InvoicePaymentControlPluginApi implements PaymentControlPlugi
     public final static String PLUGIN_NAME = "__INVOICE_PAYMENT_CONTROL_PLUGIN__";
     public final static String CREATED_BY = "InvoicePaymentControlPluginApi";
 
-    private static final String IPCD_REFUND_IDS_WITH_AMOUNT_KEY = "IPCD_REF_IDS_AMOUNTS";
+    public static final String IPCD_REFUND_IDS_WITH_AMOUNT_KEY = "IPCD_REF_IDS_AMOUNTS";
 
     private final PaymentConfig paymentConfig;
     private final InvoiceInternalApi invoiceApi;
@@ -190,7 +190,7 @@ public final class InvoicePaymentControlPluginApi implements PaymentControlPlugi
                                                  " aborted: requested refund amount is = " + paymentControlPluginContext.getAmount());
         }
 
-        final DirectPaymentModelDao directPayment = paymentDao.getDirectPaymentByExternalKey(paymentControlPluginContext.getPaymentExternalKey(), internalContext);
+        final DirectPaymentModelDao directPayment = paymentDao.getDirectPayment(paymentControlPluginContext.getPaymentId(), internalContext);
         if (directPayment == null) {
             throw new UnknownEntryException();
         }

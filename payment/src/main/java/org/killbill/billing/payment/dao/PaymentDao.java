@@ -33,7 +33,7 @@ public interface PaymentDao {
 
     public PaymentAttemptModelDao insertPaymentAttemptWithProperties(PaymentAttemptModelDao attempt, List<PluginPropertyModelDao> properties, InternalCallContext context);
 
-    public void updatePaymentAttempt(UUID paymentAttemptId, String state, InternalCallContext context);
+    public void updatePaymentAttempt(UUID paymentAttemptId, UUID transactionId, String state, InternalCallContext context);
 
     public PaymentAttemptModelDao getPaymentAttemptByExternalKey(String externalKey, InternalTenantContext context);
 
