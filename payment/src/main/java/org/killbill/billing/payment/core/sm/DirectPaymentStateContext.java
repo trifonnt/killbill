@@ -28,7 +28,7 @@ import org.killbill.billing.catalog.api.Currency;
 import org.killbill.billing.payment.api.PluginProperty;
 import org.killbill.billing.payment.api.TransactionType;
 import org.killbill.billing.payment.dao.DirectPaymentTransactionModelDao;
-import org.killbill.billing.payment.plugin.api.PaymentInfoPlugin;
+import org.killbill.billing.payment.plugin.api.PaymentTransactionInfoPlugin;
 import org.killbill.billing.util.callcontext.CallContext;
 
 public class DirectPaymentStateContext {
@@ -38,8 +38,9 @@ public class DirectPaymentStateContext {
 
     // Stateful objects created by the callbacks and passed to the other following callbacks in the automaton
     protected DirectPaymentTransactionModelDao directPaymentTransactionModelDao;
-    protected PaymentInfoPlugin paymentInfoPlugin;
+    protected PaymentTransactionInfoPlugin paymentInfoPlugin;
     protected BigDecimal amount;
+    protected UUID transactionPaymentId;
 
     // Can be updated later via directPaymentTransactionModelDao (e.g. for auth or purchase)
     protected final UUID directPaymentId;
@@ -57,7 +58,7 @@ public class DirectPaymentStateContext {
     public DirectPaymentStateContext(@Nullable final UUID directPaymentId, @Nullable final String directPaymentTransactionExternalKey, final TransactionType transactionType,
                                      final Account account, @Nullable final UUID paymentMethodId, final BigDecimal amount, final Currency currency,
                                      final boolean shouldLockAccountAndDispatch, final Iterable<PluginProperty> properties,
-                                     final InternalCallContext internalCallContext, final CallContext callContext)  {
+                                     final InternalCallContext internalCallContext, final CallContext callContext) {
         this(directPaymentId, null, directPaymentTransactionExternalKey, transactionType, account, paymentMethodId,
              amount, currency, shouldLockAccountAndDispatch, properties, internalCallContext, callContext);
     }
@@ -94,16 +95,24 @@ public class DirectPaymentStateContext {
         this.directPaymentTransactionModelDao = directPaymentTransactionModelDao;
     }
 
-    public PaymentInfoPlugin getPaymentInfoPlugin() {
+    public PaymentTransactionInfoPlugin getPaymentInfoPlugin() {
         return paymentInfoPlugin;
     }
 
-    public void setPaymentInfoPlugin(final PaymentInfoPlugin paymentInfoPlugin) {
+    public void setPaymentInfoPlugin(final PaymentTransactionInfoPlugin paymentInfoPlugin) {
         this.paymentInfoPlugin = paymentInfoPlugin;
     }
 
     public UUID getDirectPaymentId() {
         return directPaymentId != null ? directPaymentId : (directPaymentTransactionModelDao != null ? directPaymentTransactionModelDao.getDirectPaymentId() : null);
+    }
+
+    public UUID getTransactionPaymentId() {
+        return transactionPaymentId;
+    }
+
+    public void setTransactionPaymentId(final UUID transactionPaymentId) {
+        this.transactionPaymentId = transactionPaymentId;
     }
 
     public String getDirectPaymentExternalKey() {

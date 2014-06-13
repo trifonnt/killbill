@@ -22,7 +22,7 @@ import java.util.UUID;
 import org.joda.time.DateTime;
 import org.killbill.billing.catalog.api.Currency;
 import org.killbill.billing.entity.EntityBase;
-import org.killbill.billing.payment.plugin.api.PaymentInfoPlugin;
+import org.killbill.billing.payment.plugin.api.PaymentTransactionInfoPlugin;
 
 public class DefaultDirectPaymentTransaction extends EntityBase implements DirectPaymentTransaction {
 
@@ -37,11 +37,11 @@ public class DefaultDirectPaymentTransaction extends EntityBase implements Direc
     private final Currency processedCurrency;
     private final String gatewayErrorCode;
     private final String gatewayErrorMsg;
-    private final PaymentInfoPlugin infoPlugin;
+    private final PaymentTransactionInfoPlugin infoPlugin;
 
     public DefaultDirectPaymentTransaction(final UUID id, final String externalKey, final DateTime createdDate, final DateTime updatedDate, final UUID directPaymentId, final TransactionType transactionType,
                                            final DateTime effectiveDate, final PaymentStatus status, final BigDecimal amount, final Currency currency, final BigDecimal processedAmount, final Currency processedCurrency,
-                                           final String gatewayErrorCode, final String gatewayErrorMsg, final PaymentInfoPlugin infoPlugin) {
+                                           final String gatewayErrorCode, final String gatewayErrorMsg, final PaymentTransactionInfoPlugin infoPlugin) {
         super(id, createdDate, updatedDate);
         this.externalKey = externalKey;
         this.directPaymentId = directPaymentId;
@@ -113,7 +113,7 @@ public class DefaultDirectPaymentTransaction extends EntityBase implements Direc
     }
 
     @Override
-    public PaymentInfoPlugin getPaymentInfoPlugin() {
+    public PaymentTransactionInfoPlugin getPaymentInfoPlugin() {
         return infoPlugin;
     }
 

@@ -26,7 +26,7 @@ import org.killbill.automaton.State.EnteringStateCallback;
 import org.killbill.automaton.State.LeavingStateCallback;
 import org.killbill.billing.payment.api.PaymentApiException;
 import org.killbill.billing.payment.api.PaymentStatus;
-import org.killbill.billing.payment.plugin.api.PaymentInfoPlugin;
+import org.killbill.billing.payment.plugin.api.PaymentTransactionInfoPlugin;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -51,13 +51,13 @@ public abstract class DirectPaymentEnteringStateCallback implements EnteringStat
         // Check for illegal state (should never happen)
         Preconditions.checkState(directPaymentStateContext.getDirectPaymentTransactionModelDao() != null && directPaymentStateContext.getDirectPaymentTransactionModelDao().getId() != null);
 
-        final PaymentInfoPlugin paymentInfoPlugin = directPaymentStateContext.getPaymentInfoPlugin();
+        final PaymentTransactionInfoPlugin paymentInfoPlugin = directPaymentStateContext.getPaymentInfoPlugin();
         final PaymentStatus paymentStatus = paymentPluginStatusToPaymentStatus(paymentInfoPlugin, operationResult);
 
         daoHelper.processPaymentInfoPlugin(paymentStatus, paymentInfoPlugin, newState.getName());
     }
 
-    private PaymentStatus paymentPluginStatusToPaymentStatus(@Nullable final PaymentInfoPlugin paymentInfoPlugin, final OperationResult operationResult) {
+    private PaymentStatus paymentPluginStatusToPaymentStatus(@Nullable final PaymentTransactionInfoPlugin paymentInfoPlugin, final OperationResult operationResult) {
         if (paymentInfoPlugin == null) {
             if (OperationResult.EXCEPTION.equals(operationResult)) {
                 // We got an exception during the plugin call

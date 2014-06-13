@@ -38,7 +38,10 @@ public class DefaultDirectPayment extends EntityBase implements DirectPayment {
     private final BigDecimal authAmount;
     private final BigDecimal captureAmount;
     private final BigDecimal purchasedAmount;
+    private final BigDecimal creditAmount;
     private final BigDecimal refundAmount;
+    private final boolean isVoided;
+
     private final Currency currency;
     private final List<DirectPaymentTransaction> transactions;
 
@@ -56,7 +59,14 @@ public class DefaultDirectPayment extends EntityBase implements DirectPayment {
         this.authAmount = getAmountForType(transactions, TransactionType.AUTHORIZE);
         this.captureAmount = getAmountForType(transactions, TransactionType.CAPTURE);
         this.purchasedAmount = getAmountForType(transactions, TransactionType.PURCHASE);
+        this.creditAmount = getAmountForType(transactions, TransactionType.CREDIT);
         this.refundAmount = getAmountForType(transactions, TransactionType.REFUND);
+        this.isVoided = Iterables.filter(transactions, new Predicate<DirectPaymentTransaction>() {
+            @Override
+            public boolean apply(final DirectPaymentTransaction input) {
+                return input.getTransactionType() == TransactionType.VOID && PaymentStatus.SUCCESS.equals(input.getPaymentStatus());
+            }
+        }).iterator().hasNext();
         this.currency = (transactions != null && !transactions.isEmpty()) ? transactions.get(0).getCurrency() : null;
     }
 
@@ -115,8 +125,18 @@ public class DefaultDirectPayment extends EntityBase implements DirectPayment {
     }
 
     @Override
+    public BigDecimal getCreditedAmount() {
+        return creditAmount;
+    }
+
+    @Override
     public BigDecimal getRefundedAmount() {
         return refundAmount;
+    }
+
+    @Override
+    public boolean isAuthVoided() {
+        return false;
     }
 
     @Override

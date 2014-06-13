@@ -31,7 +31,7 @@ import org.killbill.billing.payment.api.PaymentStatus;
 import org.killbill.billing.payment.api.PluginProperty;
 import org.killbill.billing.payment.api.TransactionType;
 import org.killbill.billing.payment.dao.DirectPaymentModelDao;
-import org.killbill.billing.payment.plugin.api.PaymentInfoPlugin;
+import org.killbill.billing.payment.plugin.api.PaymentTransactionInfoPlugin;
 import org.killbill.billing.payment.plugin.api.PaymentPluginStatus;
 import org.mockito.Mockito;
 import org.testng.Assert;
@@ -74,7 +74,7 @@ public class TestDirectPaymentAutomatonDAOHelper extends PaymentTestSuiteWithEmb
         Assert.assertEquals(directPaymentStateContext.getDirectPaymentTransactionModelDao().getCurrency(), currency);
 
         // Verify we can update them
-        final PaymentInfoPlugin paymentInfoPlugin = Mockito.mock(PaymentInfoPlugin.class);
+        final PaymentTransactionInfoPlugin paymentInfoPlugin = Mockito.mock(PaymentTransactionInfoPlugin.class);
         Mockito.when(paymentInfoPlugin.getAmount()).thenReturn(new BigDecimal("82010.222"));
         Mockito.when(paymentInfoPlugin.getCurrency()).thenReturn(Currency.CAD);
         Mockito.when(paymentInfoPlugin.getStatus()).thenReturn(PaymentPluginStatus.PROCESSED);

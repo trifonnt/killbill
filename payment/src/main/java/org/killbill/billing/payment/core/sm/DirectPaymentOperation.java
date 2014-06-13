@@ -24,9 +24,9 @@ import org.killbill.billing.ErrorCode;
 import org.killbill.billing.payment.api.PaymentApiException;
 import org.killbill.billing.payment.core.ProcessorBase.WithAccountLockCallback;
 import org.killbill.billing.payment.dispatcher.PluginDispatcher;
-import org.killbill.billing.payment.plugin.api.PaymentInfoPlugin;
 import org.killbill.billing.payment.plugin.api.PaymentPluginApi;
 import org.killbill.billing.payment.plugin.api.PaymentPluginApiException;
+import org.killbill.billing.payment.plugin.api.PaymentTransactionInfoPlugin;
 import org.killbill.commons.locker.GlobalLocker;
 
 // Encapsulates the payment specific logic
@@ -41,7 +41,7 @@ public abstract class DirectPaymentOperation extends PluginOperation implements 
         this.plugin = daoHelper.getPaymentProviderPlugin();
     }
 
-    protected abstract PaymentInfoPlugin doPluginOperation() throws PaymentPluginApiException;
+    protected abstract PaymentTransactionInfoPlugin doPluginOperation() throws PaymentPluginApiException;
 
     @Override
     public OperationResult doOperationCallback() throws OperationException {
@@ -71,7 +71,7 @@ public abstract class DirectPaymentOperation extends PluginOperation implements 
 
     private OperationResult doOperation() throws PaymentApiException {
         try {
-            final PaymentInfoPlugin paymentInfoPlugin = doPluginOperation();
+            final PaymentTransactionInfoPlugin paymentInfoPlugin = doPluginOperation();
 
             directPaymentStateContext.setPaymentInfoPlugin(paymentInfoPlugin);
 
