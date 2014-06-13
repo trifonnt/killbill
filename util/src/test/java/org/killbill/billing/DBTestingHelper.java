@@ -24,7 +24,6 @@ import org.killbill.billing.platform.test.PlatformDBTestingHelper;
 import org.killbill.billing.util.dao.AuditLogModelDaoMapper;
 import org.killbill.billing.util.dao.RecordIdIdMappingsMapper;
 import org.killbill.billing.util.io.IOUtils;
-import org.killbill.commons.embeddeddb.EmbeddedDB;
 import org.skife.jdbi.v2.DBI;
 import org.skife.jdbi.v2.IDBI;
 
@@ -32,13 +31,18 @@ import com.google.common.io.Resources;
 
 public class DBTestingHelper extends PlatformDBTestingHelper {
 
-    private static final DBTestingHelper dbTestingHelper = new DBTestingHelper();
+    private static DBTestingHelper dbTestingHelper = null;
 
-    public static DBTestingHelper get() {
+    public static synchronized DBTestingHelper get() {
+        if (dbTestingHelper == null) {
+            dbTestingHelper = new DBTestingHelper();
+        }
         return dbTestingHelper;
     }
 
-    private DBTestingHelper() {}
+    protected DBTestingHelper() {
+        super();
+    }
 
     @Override
     public synchronized IDBI getDBI() throws IOException {

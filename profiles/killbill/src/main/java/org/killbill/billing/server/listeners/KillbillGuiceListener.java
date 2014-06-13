@@ -58,22 +58,24 @@ public class KillbillGuiceListener extends KillbillPlatformGuiceListener {
         return new KillbillServerModule(servletContext, config, configSource);
     }
 
-    protected void doLifecycle() {
+    @Override
+    protected void startLifecycleStage2() {
         killbilleventHandler = injector.getInstance(KillbillEventHandler.class);
 
         // Perform Bus registration
         try {
             killbillBusService.getBus().register(killbilleventHandler);
-        } catch (PersistentBus.EventBusException e) {
+        } catch (final PersistentBus.EventBusException e) {
             logger.error("Failed to register for event notifications, this is bad exiting!", e);
             System.exit(1);
         }
     }
 
-    protected void destroyed() {
+    @Override
+    protected void stopLifecycleStage2() {
         try {
             killbillBusService.getBus().unregister(killbilleventHandler);
-        } catch (PersistentBus.EventBusException e) {
+        } catch (final PersistentBus.EventBusException e) {
             logger.warn("Failed to unregister for event notifications", e);
         }
     }

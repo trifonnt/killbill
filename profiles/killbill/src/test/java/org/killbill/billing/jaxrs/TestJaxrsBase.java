@@ -29,56 +29,28 @@ import javax.servlet.ServletContext;
 import org.apache.shiro.web.servlet.ShiroFilter;
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.joda.time.LocalDate;
-import org.killbill.billing.DBTestingHelper;
 import org.killbill.billing.GuicyKillbillTestWithEmbeddedDBModule;
-import org.killbill.billing.account.glue.DefaultAccountModule;
 import org.killbill.billing.api.TestApiListener;
-import org.killbill.billing.beatrix.glue.BeatrixModule;
-import org.killbill.billing.catalog.glue.CatalogModule;
 import org.killbill.billing.client.KillBillClient;
 import org.killbill.billing.client.KillBillHttpClient;
 import org.killbill.billing.client.model.Tenant;
-import org.killbill.billing.currency.glue.CurrencyModule;
-import org.killbill.billing.entitlement.glue.DefaultEntitlementModule;
 import org.killbill.billing.invoice.api.InvoiceNotifier;
 import org.killbill.billing.invoice.glue.DefaultInvoiceModule;
 import org.killbill.billing.invoice.notification.NullInvoiceNotifier;
 import org.killbill.billing.jetty.HttpServer;
 import org.killbill.billing.jetty.HttpServerConfig;
-import org.killbill.billing.junction.glue.DefaultJunctionModule;
-import org.killbill.billing.osgi.api.ExternalBus;
+import org.killbill.billing.lifecycle.glue.BusModule;
 import org.killbill.billing.osgi.api.OSGIServiceRegistration;
-import org.killbill.billing.overdue.glue.DefaultOverdueModule;
 import org.killbill.billing.payment.glue.PaymentModule;
 import org.killbill.billing.payment.provider.MockPaymentProviderPluginModule;
 import org.killbill.billing.platform.api.KillbillConfigSource;
-import org.killbill.billing.platform.config.DefaultKillbillConfigSource;
-import org.killbill.billing.platform.test.glue.TestPlatformModuleWithEmbeddedDB;
 import org.killbill.billing.server.config.KillbillServerConfig;
 import org.killbill.billing.server.listeners.KillbillGuiceListener;
-import org.killbill.billing.server.modules.KillBillShiroWebModule;
 import org.killbill.billing.server.modules.KillbillServerModule;
-import org.killbill.billing.subscription.glue.DefaultSubscriptionModule;
-import org.killbill.billing.tenant.glue.TenantModule;
-import org.killbill.billing.usage.glue.UsageModule;
 import org.killbill.billing.util.cache.CacheControllerDispatcher;
 import org.killbill.billing.util.config.PaymentConfig;
-import org.killbill.billing.util.email.EmailModule;
-import org.killbill.billing.util.email.templates.TemplateModule;
-import org.killbill.billing.util.glue.AuditModule;
-import org.killbill.billing.util.glue.CacheModule;
-import org.killbill.billing.util.glue.CallContextModule;
-import org.killbill.billing.util.glue.CustomFieldModule;
-import org.killbill.billing.util.glue.ExportModule;
-import org.killbill.billing.util.glue.GlobalLockerModule;
-import org.killbill.billing.util.glue.KillBillShiroAopModule;
-import org.killbill.billing.util.glue.NonEntityDaoModule;
-import org.killbill.billing.util.glue.RecordIdModule;
-import org.killbill.billing.util.glue.SecurityModule;
-import org.killbill.billing.util.glue.TagStoreModule;
 import org.killbill.bus.api.PersistentBus;
 import org.killbill.commons.jdbi.guice.DaoConfig;
-import org.skife.config.ConfigSource;
 import org.skife.config.ConfigurationObjectFactory;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.AfterSuite;
@@ -89,6 +61,7 @@ import org.testng.annotations.BeforeSuite;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.inject.Module;
+import com.google.inject.util.Modules;
 
 public class TestJaxrsBase extends KillbillClient {
 
@@ -102,7 +75,7 @@ public class TestJaxrsBase extends KillbillClient {
 
     @Inject
     protected
-    @javax.inject.Named(ExternalBus.EXTERNAL_BUS)
+    @javax.inject.Named(BusModule.EXTERNAL_BUS_NAMED)
     PersistentBus externalBus;
 
     @Inject
@@ -137,7 +110,9 @@ public class TestJaxrsBase extends KillbillClient {
 
         @Override
         protected Module getModule(final ServletContext servletContext) {
-            return new TestKillbillServerModule(servletContext, serverConfig, configSource);
+            return Modules.override(new KillbillServerModule(servletContext, serverConfig, configSource)).with(new GuicyKillbillTestWithEmbeddedDBModule(configSource),
+                                                                                                               new InvoiceModuleWithMockSender(configSource),
+                                                                                                               new PaymentMockModule(configSource));
         }
 
     }
@@ -154,65 +129,15 @@ public class TestJaxrsBase extends KillbillClient {
         }
     }
 
-    public class TestKillbillServerModule extends KillbillServerModule {
+    private final class PaymentMockModule extends PaymentModule {
 
-        public TestKillbillServerModule(final ServletContext servletContext, final KillbillServerConfig serverConfig, final KillbillConfigSource configSource) {
-            super(servletContext, serverConfig, configSource);
-        }
-
-        private final class PaymentMockModule extends PaymentModule {
-
-            public PaymentMockModule(final KillbillConfigSource configSource) {
-                super(configSource);
-            }
-
-            @Override
-            protected void installPaymentProviderPlugins(final PaymentConfig config) {
-                install(new MockPaymentProviderPluginModule(PLUGIN_NAME, getClock(), configSource));
-            }
+        public PaymentMockModule(final KillbillConfigSource configSource) {
+            super(configSource);
         }
 
         @Override
-        protected void installKillbillModules() {
-            /*
-             * For a lack of getting module override working, copy all install modules from parent class...
-             *
-            super.installKillbillModules();
-            Modules.override(new org.killbill.billing.payment.setup.PaymentModule()).with(new PaymentMockModule());
-            */
-
-            bind(ConfigSource.class).toInstance(skifeConfigSource);
-            bind(KillbillServerConfig.class).toInstance(serverConfig);
-
-            install(new GuicyKillbillTestWithEmbeddedDBModule(configSource));
-
-            install(new EmailModule(configSource));
-            install(new CacheModule(configSource));
-            install(new NonEntityDaoModule(configSource));
-            install(new GlobalLockerModule(DBTestingHelper.get().getInstance().getDBEngine(), configSource));
-            install(new CustomFieldModule(configSource));
-            install(new TagStoreModule(configSource));
-            install(new AuditModule(configSource));
-            install(new CatalogModule(configSource));
-            install(new CallContextModule(configSource));
-            install(new DefaultAccountModule(configSource));
-            install(new InvoiceModuleWithMockSender(configSource));
-            install(new TemplateModule(configSource));
-            install(new DefaultSubscriptionModule(configSource));
-            install(new DefaultEntitlementModule(configSource));
-            install(new PaymentMockModule(configSource));
-            install(new BeatrixModule(configSource));
-            install(new DefaultJunctionModule(configSource));
-            install(new DefaultOverdueModule(configSource));
-            install(new TenantModule(configSource));
-            install(new CurrencyModule(configSource));
-            install(new ExportModule(configSource));
-            install(new UsageModule(configSource));
-            install(new RecordIdModule(configSource));
-            install(new KillBillShiroWebModule(servletContext, skifeConfigSource));
-            install(new KillBillShiroAopModule());
-            install(new SecurityModule(configSource));
-            install(new TestPlatformModuleWithEmbeddedDB(configSource, true, (DefaultKillbillConfigSource) configSource));
+        protected void installPaymentProviderPlugins(final PaymentConfig config) {
+            install(new MockPaymentProviderPluginModule(PLUGIN_NAME, getClock(), configSource));
         }
     }
 

@@ -66,8 +66,8 @@ import org.killbill.billing.invoice.api.InvoiceUserApi;
 import org.killbill.billing.junction.BlockingInternalApi;
 import org.killbill.billing.lifecycle.api.BusService;
 import org.killbill.billing.lifecycle.api.Lifecycle;
+import org.killbill.billing.lifecycle.glue.BusModule;
 import org.killbill.billing.mock.MockAccountBuilder;
-import org.killbill.billing.osgi.api.ExternalBus;
 import org.killbill.billing.osgi.config.OSGIConfig;
 import org.killbill.billing.overdue.OverdueUserApi;
 import org.killbill.billing.overdue.wrapper.OverdueWrapperFactory;
@@ -185,7 +185,7 @@ public class TestIntegrationBase extends BeatrixTestSuiteWithEmbeddedDB {
     protected AccountChecker accountChecker;
 
     @Inject
-    @Named(ExternalBus.EXTERNAL_BUS)
+    @Named(BusModule.EXTERNAL_BUS_NAMED)
     protected PersistentBus externalBus;
 
     @Inject

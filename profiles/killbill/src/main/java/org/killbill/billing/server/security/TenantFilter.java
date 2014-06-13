@@ -98,7 +98,7 @@ public class TenantFilter implements Filter {
         final AuthenticationToken token = new UsernamePasswordToken(apiKey, apiSecret);
         try {
             modularRealmAuthenticator.authenticate(token);
-        } catch (AuthenticationException e) {
+        } catch (final AuthenticationException e) {
             final String errorMessage = e.getLocalizedMessage();
             sendAuthError(response, errorMessage);
             return;
@@ -110,7 +110,7 @@ public class TenantFilter implements Filter {
             request.setAttribute(TENANT, tenant);
 
             chain.doFilter(request, response);
-        } catch (TenantApiException e) {
+        } catch (final TenantApiException e) {
             // Should never happen since Shiro validated the credentials?
             log.warn("Couldn't find the tenant?", e);
         }

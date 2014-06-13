@@ -76,7 +76,7 @@ public class TestKillbillJdbcRealm extends TestJaxrsBase {
         try {
             securityManager.login(subject, goodToken);
             Assert.assertTrue(true);
-        } catch (AuthenticationException e) {
+        } catch (final AuthenticationException e) {
             Assert.fail();
         }
 
@@ -85,7 +85,7 @@ public class TestKillbillJdbcRealm extends TestJaxrsBase {
         try {
             securityManager.login(subject, badPasswordToken);
             Assert.fail();
-        } catch (AuthenticationException e) {
+        } catch (final AuthenticationException e) {
             Assert.assertTrue(true);
         }
 
@@ -94,7 +94,7 @@ public class TestKillbillJdbcRealm extends TestJaxrsBase {
         try {
             securityManager.login(subject, badLoginToken);
             Assert.fail();
-        } catch (AuthenticationException e) {
+        } catch (final AuthenticationException e) {
             Assert.assertTrue(true);
         }
     }

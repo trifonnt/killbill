@@ -21,7 +21,7 @@ package org.killbill.billing.server;
 import javax.inject.Inject;
 import javax.inject.Named;
 
-import org.killbill.billing.osgi.api.ExternalBus;
+import org.killbill.billing.lifecycle.glue.BusModule;
 import org.killbill.billing.platform.api.LifecycleHandlerType;
 import org.killbill.billing.platform.api.LifecycleHandlerType.LifecycleLevel;
 import org.killbill.billing.server.notifications.PushNotificationListener;
@@ -40,7 +40,7 @@ public class DefaultServerService implements ServerService {
     private final PushNotificationListener pushNotificationListener;
 
     @Inject
-    public DefaultServerService(@Named(ExternalBus.EXTERNAL_BUS) final PersistentBus bus, final PushNotificationListener pushNotificationListener) {
+    public DefaultServerService(@Named(BusModule.EXTERNAL_BUS_NAMED) final PersistentBus bus, final PushNotificationListener pushNotificationListener) {
         this.bus = bus;
         this.pushNotificationListener = pushNotificationListener;
     }
@@ -54,7 +54,7 @@ public class DefaultServerService implements ServerService {
     public void registerForNotifications() {
         try {
             bus.register(pushNotificationListener);
-        } catch (EventBusException e) {
+        } catch (final EventBusException e) {
             log.warn("Failed to initialize Server service :", e);
         }
     }
@@ -63,7 +63,7 @@ public class DefaultServerService implements ServerService {
     public void unregisterForNotifications() {
         try {
             bus.unregister(pushNotificationListener);
-        } catch (EventBusException e) {
+        } catch (final EventBusException e) {
             log.warn("Failed to stop Server service :", e);
         }
     }
