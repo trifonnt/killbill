@@ -133,14 +133,18 @@ public class DefaultDirectPaymentApi implements DirectPaymentApi {
     }
 
     // STEPH API: should we only pass transactionExternalKey ? (notification may keep only one key; should we use kbTransactionId or externalKey ?)
+    // DO we need to pass account (i guess this helps for context)
     @Override
     public void notifyPendingPaymentOfStateChanged(final Account account, String transactionExternalKey, final boolean isSuccess, final CallContext callContext) throws PaymentApiException {
-        directPaymentProcessor.notifyPendingPaymentOfStateChanged(account, transactionExternalKey, isSuccess, callContext);
+        final InternalCallContext internalCallContext = internalCallContextFactory.createInternalCallContext(account.getId(), callContext);
+        directPaymentProcessor.notifyPendingPaymentOfStateChanged(account, transactionExternalKey, isSuccess, callContext, internalCallContext);
     }
 
+    // STEPH API Is chargeback against a payment or transaction?; do we want to provide a new transactionExternalKey (probably) ?
     @Override
-    public void notifyPaymentPaymentOfChargeback(final Account account, String transactionExternalKey, final boolean isSuccess, final CallContext context) throws PaymentApiException {
-
+    public void notifyPaymentPaymentOfChargeback(final Account account, String paymentExternalKey, String chargebackExternalKey, BigDecimal amount, Currency currency, final CallContext callContext) throws PaymentApiException {
+        final InternalCallContext internalCallContext = internalCallContextFactory.createInternalCallContext(account.getId(), callContext);
+        directPaymentProcessor.notifyPaymentPaymentOfChargeback(account, paymentExternalKey, chargebackExternalKey, amount, currency, callContext, internalCallContext);
     }
 
     @Override
@@ -168,8 +172,9 @@ public class DefaultDirectPaymentApi implements DirectPaymentApi {
     }
 
     @Override
-    public DirectPayment getPaymentByExternalKey(final String s, final boolean b, final Iterable<PluginProperty> pluginProperties, final TenantContext tenantContext) throws PaymentApiException {
-        return null;
+    public DirectPayment getPaymentByExternalKey(String paymentExternalKey, final boolean withPluginInfo, Iterable<PluginProperty> properties, TenantContext tenantContext)
+            throws PaymentApiException {
+        return directPaymentProcessor.getPaymentByExternalKey(paymentExternalKey, withPluginInfo, properties, tenantContext, internalCallContextFactory.createInternalTenantContext(tenantContext));
     }
 
     @Override

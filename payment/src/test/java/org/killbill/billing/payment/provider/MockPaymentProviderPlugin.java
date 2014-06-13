@@ -236,7 +236,7 @@ public class MockPaymentProviderPlugin implements NoOpPaymentPluginApi {
         }
         */
         // Can't be implemented because we did not keep transaction details.
-        throw new IllegalStateException("Not implemented");
+        return ImmutableList.<PaymentTransactionInfoPlugin>of();
     }
 
     @Override

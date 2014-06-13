@@ -180,7 +180,8 @@ public class TestRetryableDirectPayment extends PaymentTestSuiteNoDB {
                                                         eventBus,
                                                         locker,
                                                         executor,
-                                                        runner);
+                                                        runner,
+                                                        clock);
 
     }
 

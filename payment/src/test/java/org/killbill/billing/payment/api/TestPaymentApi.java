@@ -424,6 +424,54 @@ public class TestPaymentApi extends PaymentTestSuiteWithEmbeddedDB {
         assertEquals(payment2.getCurrency(), Currency.USD);
     }
 
+    @Test(groups = "slow")
+    public void testNotifyPaymentPaymentOfChargeback() throws PaymentApiException {
+        final BigDecimal requestedAmount = BigDecimal.TEN;
+
+        final String paymentExternalKey = "couic";
+        final String transactionExternalKey = "couac";
+        final String transactionExternalKey2 = "couyc";
+
+        final DirectPayment payment = paymentApi.createPurchase(account, account.getPaymentMethodId(), null, requestedAmount, Currency.AED, paymentExternalKey, transactionExternalKey,
+                                                                ImmutableList.<PluginProperty>of(), callContext);
+
+        paymentApi.notifyPaymentPaymentOfChargeback(account, payment.getExternalKey(), transactionExternalKey2, requestedAmount, Currency.AED, callContext);
+        final DirectPayment payment2 = paymentApi.getPayment(payment.getId(), false, ImmutableList.<PluginProperty>of(), callContext);
+
+
+        assertEquals(payment2.getExternalKey(), paymentExternalKey);
+        assertEquals(payment2.getPaymentMethodId(), account.getPaymentMethodId());
+        assertEquals(payment2.getAccountId(), account.getId());
+        assertEquals(payment2.getAuthAmount().compareTo(BigDecimal.ZERO), 0);
+        assertEquals(payment2.getCapturedAmount().compareTo(BigDecimal.ZERO), 0);
+        assertEquals(payment2.getPurchasedAmount().compareTo(requestedAmount), 0);
+        assertEquals(payment2.getRefundedAmount().compareTo(BigDecimal.ZERO), 0);
+        assertEquals(payment2.getCurrency(), Currency.AED);
+
+        assertEquals(payment2.getTransactions().size(), 2);
+        assertEquals(payment2.getTransactions().get(1).getExternalKey(), transactionExternalKey2);
+        assertEquals(payment2.getTransactions().get(1).getDirectPaymentId(), payment.getId());
+        assertEquals(payment2.getTransactions().get(1).getAmount().compareTo(requestedAmount), 0);
+        assertEquals(payment2.getTransactions().get(1).getCurrency(), Currency.AED);
+
+        assertEquals(payment2.getTransactions().get(1).getProcessedAmount().compareTo(requestedAmount), 0);
+        assertEquals(payment2.getTransactions().get(1).getProcessedCurrency(), Currency.AED);
+
+        assertEquals(payment2.getTransactions().get(1).getPaymentStatus(), PaymentStatus.SUCCESS);
+        assertEquals(payment2.getTransactions().get(1).getTransactionType(), TransactionType.CHARGEBACK);
+        assertNull(payment2.getTransactions().get(1).getGatewayErrorMsg());
+        assertNull(payment2.getTransactions().get(1).getGatewayErrorCode());
+
+        // Attempt to any other operation afterwards, that should fail
+        try {
+            paymentApi.createPurchase(account, account.getPaymentMethodId(), payment.getId(), requestedAmount, Currency.AED, paymentExternalKey, transactionExternalKey,
+                                      ImmutableList.<PluginProperty>of(), callContext);
+            Assert.fail("Purchase not succeed after a chargeback");
+        } catch (PaymentApiException e) {
+            Assert.assertTrue(true);
+        }
+    }
+
 
     @Test(groups = "slow")
     public void testCreatePaymentWithNoDefaultPaymentMethod() throws Exception {

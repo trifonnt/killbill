@@ -55,6 +55,7 @@ import org.killbill.billing.util.entity.Pagination;
 import org.killbill.billing.util.entity.dao.DefaultPaginationHelper.EntityPaginationBuilder;
 import org.killbill.billing.util.entity.dao.DefaultPaginationHelper.SourcePaginationBuilder;
 import org.killbill.bus.api.PersistentBus;
+import org.killbill.clock.Clock;
 import org.killbill.commons.locker.GlobalLocker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -82,8 +83,9 @@ public class PaymentMethodProcessor extends ProcessorBase {
                                   final NonEntityDao nonEntityDao,
                                   final TagInternalApi tagUserApi,
                                   final GlobalLocker locker,
-                                  @Named(PLUGIN_EXECUTOR_NAMED) final ExecutorService executor) {
-        super(pluginRegistry, accountInternalApi, eventBus, paymentDao, nonEntityDao, tagUserApi, locker, executor, invoiceApi);
+                                  @Named(PLUGIN_EXECUTOR_NAMED) final ExecutorService executor,
+                                 final Clock clock) {
+        super(pluginRegistry, accountInternalApi, eventBus, paymentDao, nonEntityDao, tagUserApi, locker, executor, invoiceApi, clock);
     }
 
     public UUID addPaymentMethod(final String paymentPluginServiceName, final Account account,
