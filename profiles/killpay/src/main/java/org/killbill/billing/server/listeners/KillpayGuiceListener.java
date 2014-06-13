@@ -19,8 +19,11 @@ package org.killbill.billing.server.listeners;
 
 import javax.servlet.ServletContext;
 
+import org.killbill.billing.platform.api.KillbillConfigSource;
+import org.killbill.billing.platform.config.DefaultKillbillConfigSource;
 import org.killbill.billing.server.modules.KillpayServerModule;
 
+import com.google.common.collect.ImmutableMap;
 import com.google.inject.Module;
 
 public class KillpayGuiceListener extends KillbillGuiceListener {
@@ -28,5 +31,12 @@ public class KillpayGuiceListener extends KillbillGuiceListener {
     @Override
     protected Module getModule(final ServletContext servletContext) {
         return new KillpayServerModule(servletContext, config, configSource);
+    }
+
+    @Override
+    protected KillbillConfigSource getConfigSource() {
+        final ImmutableMap<String, String> defaultProperties = ImmutableMap.<String, String>of("org.killbill.server.updateCheck.url",
+                                                                                               "https://raw.github.com/killbill/killbill/master/profiles/killpay/src/main/resources/update-checker/killbill-server-update-list.properties");
+        return new DefaultKillbillConfigSource(defaultProperties);
     }
 }

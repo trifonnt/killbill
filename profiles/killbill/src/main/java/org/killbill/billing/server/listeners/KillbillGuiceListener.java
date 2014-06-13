@@ -22,6 +22,8 @@ import javax.servlet.ServletContext;
 
 import org.killbill.billing.jaxrs.resources.JaxRsResourceBase;
 import org.killbill.billing.jaxrs.util.KillbillEventHandler;
+import org.killbill.billing.platform.api.KillbillConfigSource;
+import org.killbill.billing.platform.config.DefaultKillbillConfigSource;
 import org.killbill.billing.server.modules.KillbillServerModule;
 import org.killbill.billing.server.security.TenantFilter;
 import org.killbill.bus.api.PersistentBus;
@@ -29,6 +31,7 @@ import org.killbill.commons.skeleton.modules.BaseServerModuleBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.collect.ImmutableMap;
 import com.google.inject.Module;
 import com.google.inject.servlet.ServletModule;
 
@@ -56,6 +59,13 @@ public class KillbillGuiceListener extends KillbillPlatformGuiceListener {
     @Override
     protected Module getModule(final ServletContext servletContext) {
         return new KillbillServerModule(servletContext, config, configSource);
+    }
+
+    @Override
+    protected KillbillConfigSource getConfigSource() {
+        final ImmutableMap<String, String> defaultProperties = ImmutableMap.<String, String>of("org.killbill.server.updateCheck.url",
+                                                                                               "https://raw.github.com/killbill/killbill/master/profiles/killbill/src/main/resources/update-checker/killbill-server-update-list.properties");
+        return new DefaultKillbillConfigSource(defaultProperties);
     }
 
     @Override
