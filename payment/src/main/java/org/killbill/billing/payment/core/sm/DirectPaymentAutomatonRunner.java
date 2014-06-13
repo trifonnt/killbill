@@ -36,6 +36,7 @@ import org.killbill.automaton.State.EnteringStateCallback;
 import org.killbill.automaton.State.LeavingStateCallback;
 import org.killbill.automaton.StateMachine;
 import org.killbill.automaton.StateMachineConfig;
+import org.killbill.automaton.Transition;
 import org.killbill.billing.ErrorCode;
 import org.killbill.billing.account.api.Account;
 import org.killbill.billing.callcontext.InternalCallContext;
@@ -56,6 +57,9 @@ import org.killbill.commons.locker.GlobalLocker;
 
 import com.google.common.base.Objects;
 import com.google.common.base.Preconditions;
+import com.google.common.base.Predicate;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterables;
 import com.google.inject.name.Named;
 
 import static org.killbill.billing.payment.glue.PaymentModule.PLUGIN_EXECUTOR_NAMED;
@@ -209,12 +213,33 @@ public class DirectPaymentAutomatonRunner {
         return directPaymentStateContext.getDirectPaymentId();
     }
 
+    public final State fetchNextState(final String prevStateName, final boolean isSuccess) {
+        final StateMachine stateMachine = getStateMachine(prevStateName);
+        final Transition transition = Iterables.tryFind(ImmutableList.copyOf(stateMachine.getTransitions()), new Predicate<Transition>() {
+            @Override
+            public boolean apply(final Transition input) {
+                // STEPH this only works if there is only one operation defined for a given state machine, which is our model for PaymentStates.xml
+                return input.getInitialState().getName().equals(prevStateName) &&
+                       input.getOperationResult().equals(isSuccess ? OperationResult.SUCCESS : OperationResult.FAILURE);
+            }
+        }).orNull();
+        return transition != null ? transition.getFinalState() : null;
+    }
+
     // Hack for now
     protected String getStateMachineName(final String currentStateName) {
+        final StateMachine stateMachine = getStateMachine(currentStateName);
+        if (stateMachine == null) {
+            return null;
+        }
+        return stateMachine.getName();
+    }
+
+    private StateMachine getStateMachine(final String currentStateName) {
         for (final StateMachine stateMachine : stateMachineConfig.getStateMachines()) {
             for (final State state : stateMachine.getStates()) {
                 if (state.getName().equals(currentStateName)) {
-                    return stateMachine.getName();
+                    return stateMachine;
                 }
             }
         }

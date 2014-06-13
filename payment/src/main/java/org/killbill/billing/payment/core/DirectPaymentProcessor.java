@@ -27,6 +27,7 @@ import java.util.concurrent.ExecutorService;
 import javax.annotation.Nullable;
 import javax.inject.Inject;
 
+import org.killbill.automaton.State;
 import org.killbill.billing.ErrorCode;
 import org.killbill.billing.account.api.Account;
 import org.killbill.billing.account.api.AccountInternalApi;
@@ -44,6 +45,7 @@ import org.killbill.billing.payment.api.DefaultPaymentPluginErrorEvent;
 import org.killbill.billing.payment.api.DirectPayment;
 import org.killbill.billing.payment.api.DirectPaymentTransaction;
 import org.killbill.billing.payment.api.PaymentApiException;
+import org.killbill.billing.payment.api.PaymentStatus;
 import org.killbill.billing.payment.api.PluginProperty;
 import org.killbill.billing.payment.api.TransactionType;
 import org.killbill.billing.payment.core.sm.DirectPaymentAutomatonRunner;
@@ -67,6 +69,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Function;
+import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
@@ -228,6 +231,26 @@ public class DirectPaymentProcessor extends ProcessorBase {
                                                                     );
     }
 
+    public void notifyPendingPaymentOfStateChanged(final Account account, String transactionExternalKey, final boolean isSuccess, final CallContext callContext) throws PaymentApiException {
+        final InternalCallContext internalCallContext = internalCallContextFactory.createInternalCallContext(account.getId(), callContext);
+
+        final DirectPaymentTransactionModelDao transactionModelDao = paymentDao.getDirectPaymentTransactionByExternalKey(transactionExternalKey, internalCallContext);
+        if (transactionModelDao.getPaymentStatus() != PaymentStatus.PENDING) {
+            throw new PaymentApiException(ErrorCode.PAYMENT_NO_SUCH_SUCCESS_PAYMENT, transactionModelDao.getDirectPaymentId());
+
+        }
+        final DirectPaymentModelDao paymentModelDao = paymentDao.getDirectPayment(transactionModelDao.getDirectPaymentId(), internalCallContext);
+        Preconditions.checkState(paymentModelDao != null);
+
+        final PaymentStatus newStatus = isSuccess ? PaymentStatus.SUCCESS : PaymentStatus.PAYMENT_FAILURE_ABORTED;
+        // STEPH This works if the pending transaction we are trying to update matches is the one that gave the state to the payment. Also can we have multiple PENDING for a given payment?
+        final State currentPaymentState = directPaymentAutomatonRunner.fetchNextState(paymentModelDao.getCurrentStateName(), isSuccess);
+        // STEPH : should we insert a new transaction row to keep the PENDING one?
+        paymentDao.updateDirectPaymentAndTransactionOnCompletion(transactionModelDao.getDirectPaymentId(), currentPaymentState.getName(), transactionModelDao.getId(), newStatus,
+                                                                 transactionModelDao.getProcessedAmount(), transactionModelDao.getProcessedCurrency(),
+                                                                 transactionModelDao.getGatewayErrorCode(), transactionModelDao.getGatewayErrorMsg(), internalCallContext);
+    }
+
     public DirectPayment getPayment(final UUID directPaymentId, final boolean withPluginInfo, final Iterable<PluginProperty> properties, final TenantContext context, final InternalTenantContext tenantContext) throws PaymentApiException {
         final DirectPaymentModelDao paymentModelDao = paymentDao.getDirectPayment(directPaymentId, tenantContext);
         if (paymentModelDao == null) {
@@ -326,10 +349,10 @@ public class DirectPaymentProcessor extends ProcessorBase {
                                                throw new PaymentApiException(e, ErrorCode.PAYMENT_PLUGIN_SEARCH_PAYMENTS, pluginName, searchKey);
                                            }
 */
-                                       return null;
+                                           return null;
                                        }
 
-                                       },
+                                   },
                                    new Function<List<PaymentTransactionInfoPlugin>, DirectPayment>() {
                                        @Override
                                        public DirectPayment apply(final List<PaymentTransactionInfoPlugin> pluginTransactions) {
@@ -378,7 +401,7 @@ public class DirectPaymentProcessor extends ProcessorBase {
             @Override
             public DirectPaymentTransaction apply(final DirectPaymentTransactionModelDao input) {
 
-                final PaymentTransactionInfoPlugin info  = Iterables.tryFind(pluginTransactions, new Predicate<PaymentTransactionInfoPlugin>() {
+                final PaymentTransactionInfoPlugin info = Iterables.tryFind(pluginTransactions, new Predicate<PaymentTransactionInfoPlugin>() {
                     @Override
                     public boolean apply(final PaymentTransactionInfoPlugin input) {
                         return input.getKbTransactionPaymentId().equals(input.getKbTransactionPaymentId());

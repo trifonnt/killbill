@@ -132,13 +132,14 @@ public class DefaultDirectPaymentApi implements DirectPaymentApi {
 
     }
 
+    // STEPH API: should we only pass transactionExternalKey ? (notification may keep only one key; should we use kbTransactionId or externalKey ?)
     @Override
-    public void notifyPendingPaymentOfStateChanged(final Account account, final UUID uuid, final String s, final boolean b, final CallContext callContext) throws PaymentApiException {
-
+    public void notifyPendingPaymentOfStateChanged(final Account account, String transactionExternalKey, final boolean isSuccess, final CallContext callContext) throws PaymentApiException {
+        directPaymentProcessor.notifyPendingPaymentOfStateChanged(account, transactionExternalKey, isSuccess, callContext);
     }
 
     @Override
-    public void notifyPaymentPaymentOfChargeback(final Account account, final UUID uuid, final String s, final boolean b, final CallContext callContext) throws PaymentApiException {
+    public void notifyPaymentPaymentOfChargeback(final Account account, String transactionExternalKey, final boolean isSuccess, final CallContext context) throws PaymentApiException {
 
     }
 

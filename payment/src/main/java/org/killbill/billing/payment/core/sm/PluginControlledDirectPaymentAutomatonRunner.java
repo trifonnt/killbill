@@ -152,6 +152,7 @@ public class PluginControlledDirectPaymentAutomatonRunner extends DirectPaymentA
         return directPaymentStateContext.getResult();
     }
 
+    // STEPH to be moved
     public final State fetchState(final String stateName) {
         try {
             return retryStateMachine.getState(stateName);
@@ -170,18 +171,6 @@ public class PluginControlledDirectPaymentAutomatonRunner extends DirectPaymentA
         } catch (MissingEntryException e) {
             throw new RuntimeException(e);
         }
-    }
-
-    private boolean isAccountAutoPayOff(final UUID accountId, final InternalTenantContext context) {
-        final List<Tag> accountTags = tagApi.getTags(accountId, ObjectType.ACCOUNT, context);
-
-        return ControlTagType.isAutoPayOff(Collections2.transform(accountTags, new Function<Tag, UUID>() {
-            @Nullable
-            @Override
-            public UUID apply(@Nullable final Tag tag) {
-                return tag.getTagDefinitionId();
-            }
-        }));
     }
 
     @VisibleForTesting

@@ -45,7 +45,7 @@ public interface PaymentDao {
 
     public DirectPaymentModelDao insertDirectPaymentWithFirstTransaction(DirectPaymentModelDao directPayment, DirectPaymentTransactionModelDao directPaymentTransaction, InternalCallContext context);
 
-    public DirectPaymentTransactionModelDao updateDirectPaymentWithNewTransaction(UUID dirctPaymentId, DirectPaymentTransactionModelDao directPaymentTransaction, InternalCallContext context);
+    public DirectPaymentTransactionModelDao updateDirectPaymentWithNewTransaction(UUID directPaymentId, DirectPaymentTransactionModelDao directPaymentTransaction, InternalCallContext context);
 
     public void updateDirectPaymentAndTransactionOnCompletion(UUID directPaymentId, String currentPaymentStateName,
                                                               UUID directTransactionId, PaymentStatus paymentStatus,
