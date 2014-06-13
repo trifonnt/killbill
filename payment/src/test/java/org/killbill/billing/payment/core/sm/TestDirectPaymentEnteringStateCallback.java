@@ -32,7 +32,7 @@ import org.killbill.billing.payment.api.PaymentStatus;
 import org.killbill.billing.payment.api.PluginProperty;
 import org.killbill.billing.payment.api.TransactionType;
 import org.killbill.billing.payment.dao.DirectPaymentTransactionModelDao;
-import org.killbill.billing.payment.plugin.api.PaymentInfoPlugin;
+import org.killbill.billing.payment.plugin.api.PaymentTransactionInfoPlugin;
 import org.killbill.billing.payment.plugin.api.PaymentPluginStatus;
 import org.mockito.Mockito;
 import org.testng.Assert;
@@ -75,13 +75,13 @@ public class TestDirectPaymentEnteringStateCallback extends PaymentTestSuiteWith
     }
 
     @Test(groups = "slow")
-    public void testEnterStateAndProcessPaymentInfoPlugin() throws Exception {
+    public void testEnterStateAndProcessPaymentTransactionInfoPlugin() throws Exception {
         // Create the payment and first transaction (would be done by DirectPaymentLeavingStateCallback)
         daoHelper.createNewDirectPaymentTransaction();
         Assert.assertEquals(paymentDao.getDirectPaymentTransaction(directPaymentStateContext.getDirectPaymentTransactionModelDao().getId(), internalCallContext).getPaymentStatus(), PaymentStatus.UNKNOWN);
 
         // Mock the plugin result
-        final PaymentInfoPlugin paymentInfoPlugin = Mockito.mock(PaymentInfoPlugin.class);
+        final PaymentTransactionInfoPlugin paymentInfoPlugin = Mockito.mock(PaymentTransactionInfoPlugin.class);
         Mockito.when(paymentInfoPlugin.getAmount()).thenReturn(new BigDecimal("82010.222"));
         Mockito.when(paymentInfoPlugin.getCurrency()).thenReturn(Currency.CAD);
         Mockito.when(paymentInfoPlugin.getStatus()).thenReturn(PaymentPluginStatus.PENDING);
@@ -118,7 +118,7 @@ public class TestDirectPaymentEnteringStateCallback extends PaymentTestSuiteWith
     @Test(groups = "slow", expectedExceptions = IllegalStateException.class)
     public void testEnterStateWithNoDirectPaymentTransactionId() throws Exception {
         directPaymentStateContext.setDirectPaymentTransactionModelDao(null);
-        directPaymentStateContext.setPaymentInfoPlugin(Mockito.mock(PaymentInfoPlugin.class));
+        directPaymentStateContext.setPaymentInfoPlugin(Mockito.mock(PaymentTransactionInfoPlugin.class));
 
         callback.enteringState(state, operationCallback, operationResult, leavingStateCallback);
     }

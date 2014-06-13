@@ -177,8 +177,7 @@ public abstract class ProcessorBase {
 
     // TODO Rename - there is no lock!
     public interface WithAccountLockCallback<T> {
-
-        public T doOperation() throws PaymentApiException;
+        public T doOperation() throws Exception;
     }
 
     public static class CallableWithAccountLock<T> implements Callable<T> {
@@ -218,7 +217,7 @@ public abstract class ProcessorBase {
     public static class WithAccountLock<T> {
 
         public T processAccountWithLock(final GlobalLocker locker, final String accountExternalKey, final WithAccountLockCallback<T> callback)
-                throws PaymentApiException {
+                throws Exception {
             GlobalLock lock = null;
             try {
                 lock = locker.lockWithNumberOfTries(LockerType.ACCOUNT_FOR_INVOICE_PAYMENTS.toString(), accountExternalKey, NB_LOCK_TRY);

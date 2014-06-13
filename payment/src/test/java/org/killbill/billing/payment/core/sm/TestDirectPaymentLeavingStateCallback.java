@@ -82,7 +82,7 @@ public class TestDirectPaymentLeavingStateCallback extends PaymentTestSuiteWithE
 
     private void verifyDirectPaymentTransaction() {
         Assert.assertNotNull(directPaymentStateContext.getDirectPaymentTransactionModelDao().getDirectPaymentId());
-        Assert.assertEquals(directPaymentStateContext.getDirectPaymentTransactionModelDao().getExternalKey(), directPaymentStateContext.getDirectPaymentTransactionExternalKey());
+        Assert.assertEquals(directPaymentStateContext.getDirectPaymentTransactionModelDao().getTransactionExternalKey(), directPaymentStateContext.getDirectPaymentTransactionExternalKey());
         Assert.assertEquals(directPaymentStateContext.getDirectPaymentTransactionModelDao().getPaymentStatus(), PaymentStatus.UNKNOWN);
         Assert.assertEquals(directPaymentStateContext.getDirectPaymentTransactionModelDao().getAmount().compareTo(directPaymentStateContext.getAmount()), 0);
         Assert.assertEquals(directPaymentStateContext.getDirectPaymentTransactionModelDao().getCurrency(), directPaymentStateContext.getCurrency());
@@ -116,7 +116,8 @@ public class TestDirectPaymentLeavingStateCallback extends PaymentTestSuiteWithE
                                                                                        directPaymentStateContext.getAccount().getId(),
                                                                                        directPaymentStateContext.getPaymentMethodId(),
                                                                                        1,
-                                                                                       directPaymentStateContext.getDirectPaymentExternalKey());
+                                                                                       directPaymentStateContext.getDirectPaymentExternalKey(),
+                                                                                       null, null);
             final DirectPaymentTransactionModelDao newPaymentTransactionModelDao = new DirectPaymentTransactionModelDao(clock.getUTCNow(),
                                                                                                                         clock.getUTCNow(),
                                                                                                                         directPaymentStateContext.getDirectPaymentTransactionExternalKey(),

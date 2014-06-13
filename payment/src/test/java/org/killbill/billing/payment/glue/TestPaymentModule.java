@@ -30,6 +30,7 @@ import org.killbill.billing.payment.provider.MockPaymentProviderPlugin;
 import org.killbill.billing.payment.provider.MockPaymentProviderPluginModule;
 import org.killbill.billing.platform.api.KillbillConfigSource;
 import org.killbill.billing.tag.TagInternalApi;
+import org.killbill.billing.util.api.TagUserApi;
 import org.killbill.billing.util.config.PaymentConfig;
 import org.killbill.billing.util.glue.CacheModule;
 import org.killbill.billing.util.glue.MemoryGlobalLockerModule;
@@ -54,9 +55,12 @@ public class TestPaymentModule extends PaymentModule {
     }
 
     private void installExternalApis() {
-        final TagInternalApi tagUserApi = Mockito.mock(TagInternalApi.class);
-        bind(TagInternalApi.class).toInstance(tagUserApi);
-        Mockito.when(tagUserApi.getTags(Mockito.<UUID>any(), Mockito.<ObjectType>any(), Mockito.<InternalTenantContext>any())).thenReturn(ImmutableList.<Tag>of());
+        final TagInternalApi tagInternalApi = Mockito.mock(TagInternalApi.class);
+        bind(TagInternalApi.class).toInstance(tagInternalApi);
+        Mockito.when(tagInternalApi.getTags(Mockito.<UUID>any(), Mockito.<ObjectType>any(), Mockito.<InternalTenantContext>any())).thenReturn(ImmutableList.<Tag>of());
+
+        final TagUserApi tagUserApi = Mockito.mock(TagUserApi.class);
+        bind(TagUserApi.class).toInstance(tagUserApi);
     }
 
     @Override

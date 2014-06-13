@@ -20,8 +20,8 @@ package org.killbill.billing.payment.core.sm;
 import org.killbill.automaton.OperationResult;
 import org.killbill.billing.payment.api.PaymentApiException;
 import org.killbill.billing.payment.dispatcher.PluginDispatcher;
-import org.killbill.billing.payment.plugin.api.PaymentInfoPlugin;
 import org.killbill.billing.payment.plugin.api.PaymentPluginApiException;
+import org.killbill.billing.payment.plugin.api.PaymentTransactionInfoPlugin;
 import org.killbill.commons.locker.GlobalLocker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,10 +37,11 @@ public class PurchaseOperation extends DirectPaymentOperation {
     }
 
     @Override
-    protected PaymentInfoPlugin doPluginOperation() throws PaymentPluginApiException {
+    protected PaymentTransactionInfoPlugin doPluginOperation() throws PaymentPluginApiException {
         logger.debug("Starting PURCHASE for payment {} ({} {})", directPaymentStateContext.getDirectPaymentId(), directPaymentStateContext.getAmount(), directPaymentStateContext.getCurrency());
         return plugin.processPayment(directPaymentStateContext.getAccount().getId(),
                                      directPaymentStateContext.getDirectPaymentId(),
+                                     directPaymentStateContext.getTransactionPaymentId(),
                                      directPaymentStateContext.getPaymentMethodId(),
                                      directPaymentStateContext.getAmount(),
                                      directPaymentStateContext.getCurrency(),

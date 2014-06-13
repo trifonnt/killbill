@@ -21,6 +21,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+import org.killbill.automaton.OperationException;
 import org.killbill.billing.ErrorCode;
 import org.killbill.billing.payment.PaymentTestSuiteNoDB;
 import org.killbill.billing.payment.api.PaymentApiException;
@@ -47,6 +48,8 @@ public class TestPluginDispatcher extends PaymentTestSuiteNoDB {
             gotIt = true;
         } catch (final PaymentApiException e) {
             Assert.fail("Failed : should have had Timeout exception");
+        } catch (OperationException e) {
+            Assert.fail("Failed : should have had OperationException exception");
         }
         Assert.assertTrue(gotIt);
     }
@@ -66,6 +69,8 @@ public class TestPluginDispatcher extends PaymentTestSuiteNoDB {
             Assert.fail("Failed : should have had PaymentApiException exception");
         } catch (final PaymentApiException e) {
             gotIt = true;
+        } catch (OperationException e) {
+            Assert.fail("Failed : should have had OperationException exception");
         }
         Assert.assertTrue(gotIt);
     }
@@ -87,6 +92,8 @@ public class TestPluginDispatcher extends PaymentTestSuiteNoDB {
             Assert.fail("Failed : should have had RuntimeException exception");
         } catch (final RuntimeException e) {
             gotIt = true;
+        } catch (OperationException e) {
+            Assert.fail("Failed : should have had OperationException exception");
         }
         Assert.assertTrue(gotIt);
     }

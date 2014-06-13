@@ -129,7 +129,8 @@ public class TestDefaultPaymentDao extends PaymentTestSuiteWithEmbeddedDB {
                                                     new BigDecimal("192.32910002"),
                                                     Currency.EUR,
                                                     UUID.randomUUID().toString().substring(0, 5),
-                                                    UUID.randomUUID().toString());
+                                                    UUID.randomUUID().toString(),
+                                                    null, null);
     }
 
     private DirectPaymentModelDao generateDirectPaymentModelDao(final UUID accountId) {
@@ -139,7 +140,8 @@ public class TestDefaultPaymentDao extends PaymentTestSuiteWithEmbeddedDB {
                                          accountId,
                                          UUID.randomUUID(),
                                          -1,
-                                         UUID.randomUUID().toString());
+                                         UUID.randomUUID().toString(),
+                                         null, null);
     }
 
     private void verifyDirectPayment(final DirectPaymentModelDao loadedDirectPaymentModelDao, final DirectPaymentModelDao specifiedDirectPaymentModelDao) {
@@ -151,7 +153,7 @@ public class TestDefaultPaymentDao extends PaymentTestSuiteWithEmbeddedDB {
 
     private void verifyDirectPaymentTransaction(final DirectPaymentTransactionModelDao loadedDirectPaymentTransactionModelDao, final DirectPaymentTransactionModelDao specifiedDirectPaymentTransactionModelDao) {
         Assert.assertEquals(loadedDirectPaymentTransactionModelDao.getDirectPaymentId(), specifiedDirectPaymentTransactionModelDao.getDirectPaymentId());
-        Assert.assertEquals(loadedDirectPaymentTransactionModelDao.getExternalKey(), specifiedDirectPaymentTransactionModelDao.getExternalKey());
+        Assert.assertEquals(loadedDirectPaymentTransactionModelDao.getTransactionExternalKey(), specifiedDirectPaymentTransactionModelDao.getTransactionExternalKey());
         Assert.assertEquals(loadedDirectPaymentTransactionModelDao.getTransactionType(), specifiedDirectPaymentTransactionModelDao.getTransactionType());
         Assert.assertEquals(loadedDirectPaymentTransactionModelDao.getEffectiveDate().compareTo(specifiedDirectPaymentTransactionModelDao.getEffectiveDate()), 0);
         Assert.assertEquals(loadedDirectPaymentTransactionModelDao.getPaymentStatus(), specifiedDirectPaymentTransactionModelDao.getPaymentStatus());

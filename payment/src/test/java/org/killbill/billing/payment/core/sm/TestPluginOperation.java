@@ -284,5 +284,10 @@ public class TestPluginOperation extends PaymentTestSuiteNoDB {
         protected PluginOperationTest(final GlobalLocker locker, final PluginDispatcher<OperationResult> paymentPluginDispatcher, final DirectPaymentStateContext directPaymentStateContext) {
             super(locker, paymentPluginDispatcher, directPaymentStateContext);
         }
+
+        @Override
+        protected <PluginResult> PluginResult doPluginOperation() throws Exception {
+            return null;
+        }
     }
 }

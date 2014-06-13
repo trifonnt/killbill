@@ -22,16 +22,13 @@ import org.killbill.billing.GuicyKillbillTestSuiteWithEmbeddedDB;
 import org.killbill.billing.account.api.AccountInternalApi;
 import org.killbill.billing.invoice.api.InvoiceInternalApi;
 import org.killbill.billing.osgi.api.OSGIServiceRegistration;
-import org.killbill.billing.payment.api.PaymentApi;
+import org.killbill.billing.payment.api.DirectPaymentApi;
 import org.killbill.billing.payment.core.DirectPaymentProcessor;
 import org.killbill.billing.payment.core.PaymentMethodProcessor;
-import org.killbill.billing.payment.core.PaymentProcessor;
 import org.killbill.billing.payment.dao.PaymentDao;
 import org.killbill.billing.payment.glue.TestPaymentModuleWithEmbeddedDB;
 import org.killbill.billing.payment.plugin.api.PaymentPluginApi;
 import org.killbill.billing.payment.provider.MockPaymentProviderPlugin;
-import org.killbill.billing.payment.retry.FailedPaymentRetryService;
-import org.killbill.billing.payment.retry.PluginFailureRetryService;
 import org.killbill.billing.platform.api.KillbillConfigSource;
 import org.killbill.billing.util.config.PaymentConfig;
 import org.killbill.bus.api.PersistentBus;
@@ -49,8 +46,6 @@ public abstract class PaymentTestSuiteWithEmbeddedDB extends GuicyKillbillTestSu
     @Inject
     protected PaymentConfig paymentConfig;
     @Inject
-    protected PaymentProcessor paymentProcessor;
-    @Inject
     protected PaymentMethodProcessor paymentMethodProcessor;
     @Inject
     protected DirectPaymentProcessor directPaymentProcessor;
@@ -59,13 +54,9 @@ public abstract class PaymentTestSuiteWithEmbeddedDB extends GuicyKillbillTestSu
     @Inject
     protected OSGIServiceRegistration<PaymentPluginApi> registry;
     @Inject
-    protected FailedPaymentRetryService retryService;
-    @Inject
-    protected PluginFailureRetryService pluginRetryService;
-    @Inject
     protected PersistentBus eventBus;
     @Inject
-    protected PaymentApi paymentApi;
+    protected DirectPaymentApi paymentApi;
     @Inject
     protected AccountInternalApi accountApi;
     @Inject

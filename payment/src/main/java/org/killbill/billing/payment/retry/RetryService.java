@@ -35,5 +35,8 @@ public interface RetryService {
 
     public String getQueueName();
 
+    // STEPH_RETRY API disappear
     public void retry(UUID paymentId, final Iterable<PluginProperty> properties, final InternalCallContext context);
+
+    public void retryPaymentTransaction(String externalKey, final InternalCallContext context);
 }

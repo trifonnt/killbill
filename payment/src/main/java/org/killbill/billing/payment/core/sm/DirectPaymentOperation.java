@@ -24,44 +24,62 @@ import org.killbill.billing.ErrorCode;
 import org.killbill.billing.payment.api.PaymentApiException;
 import org.killbill.billing.payment.core.ProcessorBase.WithAccountLockCallback;
 import org.killbill.billing.payment.dispatcher.PluginDispatcher;
-import org.killbill.billing.payment.plugin.api.PaymentInfoPlugin;
 import org.killbill.billing.payment.plugin.api.PaymentPluginApi;
 import org.killbill.billing.payment.plugin.api.PaymentPluginApiException;
+import org.killbill.billing.payment.plugin.api.PaymentTransactionInfoPlugin;
 import org.killbill.commons.locker.GlobalLocker;
 
 // Encapsulates the payment specific logic
 public abstract class DirectPaymentOperation extends PluginOperation implements OperationCallback {
 
-    protected final DirectPaymentStateContext directPaymentStateContext;
     protected final PaymentPluginApi plugin;
 
     protected DirectPaymentOperation(final DirectPaymentAutomatonDAOHelper daoHelper, final GlobalLocker locker,
                                      final PluginDispatcher<OperationResult> paymentPluginDispatcher,
                                      final DirectPaymentStateContext directPaymentStateContext) throws PaymentApiException {
         super(locker, paymentPluginDispatcher, directPaymentStateContext);
-        this.directPaymentStateContext = directPaymentStateContext;
         this.plugin = daoHelper.getPaymentProviderPlugin();
     }
 
-    protected abstract PaymentInfoPlugin doPluginOperation() throws PaymentPluginApiException;
+    protected abstract PaymentTransactionInfoPlugin doPluginOperation() throws PaymentPluginApiException;
 
     @Override
     public OperationResult doOperationCallback() throws OperationException {
+        if (directPaymentStateContext.shouldLockAccountAndDispatch()) {
+            return doOperationCallbackWithDispatchAndAccountLock();
+        } else {
+            return doSimpleOperationCallback();
+        }
+    }
+
+    private OperationResult doOperationCallbackWithDispatchAndAccountLock() throws OperationException {
         return dispatchWithTimeout(new WithAccountLockCallback<OperationResult>() {
             @Override
-            public OperationResult doOperation() throws PaymentApiException {
-                try {
-                    final PaymentInfoPlugin paymentInfoPlugin = doPluginOperation();
-
-                    directPaymentStateContext.setPaymentInfoPlugin(paymentInfoPlugin);
-
-                    return processPaymentInfoPlugin();
-                } catch (final PaymentPluginApiException e) {
-                    // We don't care about the ErrorCode since it will be unwrapped
-                    throw new PaymentApiException(e, ErrorCode.__UNKNOWN_ERROR_CODE);
-                }
+            public OperationResult doOperation() throws Exception {
+                return doSimpleOperationCallback();
             }
         });
+    }
+
+    private OperationResult doSimpleOperationCallback() throws OperationException {
+        try {
+            return doOperation();
+        } catch (PaymentApiException e) {
+            throw new OperationException(e, OperationResult.FAILURE);
+        }
+    }
+
+    private OperationResult doOperation() throws PaymentApiException {
+        try {
+            final PaymentTransactionInfoPlugin paymentInfoPlugin = doPluginOperation();
+
+            directPaymentStateContext.setPaymentInfoPlugin(paymentInfoPlugin);
+
+            return processPaymentInfoPlugin();
+        } catch (final PaymentPluginApiException e) {
+            // We don't care about the ErrorCode since it will be unwrapped
+            throw new PaymentApiException(e, ErrorCode.__UNKNOWN_ERROR_CODE);
+        }
     }
 
     private OperationResult processPaymentInfoPlugin() {

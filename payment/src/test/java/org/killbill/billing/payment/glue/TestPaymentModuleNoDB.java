@@ -20,6 +20,8 @@ package org.killbill.billing.payment.glue;
 
 import org.killbill.billing.GuicyKillbillTestNoDBModule;
 import org.killbill.billing.mock.glue.MockNonEntityDaoModule;
+import org.killbill.billing.payment.core.sm.MockRetryableDirectPaymentAutomatonRunner;
+import org.killbill.billing.payment.core.sm.PluginControlledDirectPaymentAutomatonRunner;
 import org.killbill.billing.payment.dao.MockPaymentDao;
 import org.killbill.billing.payment.dao.PaymentDao;
 import org.killbill.billing.platform.api.KillbillConfigSource;
@@ -41,5 +43,9 @@ public class TestPaymentModuleNoDB extends TestPaymentModule {
         install(new GuicyKillbillTestNoDBModule(configSource));
         install(new MockNonEntityDaoModule(configSource));
         super.configure();
+    }
+
+    protected void installAutomatonRunner() {
+        bind(PluginControlledDirectPaymentAutomatonRunner.class).to(MockRetryableDirectPaymentAutomatonRunner.class).asEagerSingleton();
     }
 }

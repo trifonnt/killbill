@@ -46,6 +46,12 @@ public interface DirectTransactionSqlDao extends EntitySqlDao<DirectPaymentTrans
                                  @BindBean final InternalCallContext context);
 
     @SqlQuery
+    DirectPaymentTransactionModelDao getDirectPaymentTransactionByExternalKey(@Bind("transactionExternalKey") final String transactionExternalKey,
+                                                                              @BindBean final InternalTenantContext context);
+
+    @SqlQuery
     public List<DirectPaymentTransactionModelDao> getByDirectPaymentId(@Bind("directPaymentId") final UUID directPaymentId,
                                                                        @BindBean final InternalTenantContext context);
 }
+
+

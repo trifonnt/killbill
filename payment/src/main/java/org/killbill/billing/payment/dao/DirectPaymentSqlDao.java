@@ -45,6 +45,10 @@ public interface DirectPaymentSqlDao extends EntitySqlDao<DirectPaymentModelDao,
                                        @Bind("currentStateName") final String currentStateName,
                                        @BindBean final InternalCallContext context);
 
+
+    @SqlQuery
+    public DirectPaymentModelDao getDirectPaymentByExternalKey(@Bind("externalKey") final String externalKey,
+                                                               @BindBean final InternalTenantContext context);
     @SqlQuery
     @SmartFetchSize(shouldStream = true)
     public Iterator<DirectPaymentModelDao> getByPluginName(@Bind("pluginName") final String pluginName,

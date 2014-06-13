@@ -31,7 +31,7 @@ import org.killbill.billing.payment.api.PaymentStatus;
 import org.killbill.billing.payment.api.PluginProperty;
 import org.killbill.billing.payment.api.TransactionType;
 import org.killbill.billing.payment.dao.DirectPaymentModelDao;
-import org.killbill.billing.payment.plugin.api.PaymentInfoPlugin;
+import org.killbill.billing.payment.plugin.api.PaymentTransactionInfoPlugin;
 import org.killbill.billing.payment.plugin.api.PaymentPluginStatus;
 import org.mockito.Mockito;
 import org.testng.Assert;
@@ -69,12 +69,12 @@ public class TestDirectPaymentAutomatonDAOHelper extends PaymentTestSuiteWithEmb
         final DirectPaymentModelDao directPayment1 = daoHelper.getDirectPayment();
         Assert.assertEquals(directPayment1.getExternalKey(), directPaymentExternalKey);
         Assert.assertNull(directPayment1.getCurrentStateName());
-        Assert.assertEquals(directPaymentStateContext.getDirectPaymentTransactionModelDao().getExternalKey(), directPaymentTransactionExternalKey);
+        Assert.assertEquals(directPaymentStateContext.getDirectPaymentTransactionModelDao().getTransactionExternalKey(), directPaymentTransactionExternalKey);
         Assert.assertEquals(directPaymentStateContext.getDirectPaymentTransactionModelDao().getAmount().compareTo(amount), 0);
         Assert.assertEquals(directPaymentStateContext.getDirectPaymentTransactionModelDao().getCurrency(), currency);
 
         // Verify we can update them
-        final PaymentInfoPlugin paymentInfoPlugin = Mockito.mock(PaymentInfoPlugin.class);
+        final PaymentTransactionInfoPlugin paymentInfoPlugin = Mockito.mock(PaymentTransactionInfoPlugin.class);
         Mockito.when(paymentInfoPlugin.getAmount()).thenReturn(new BigDecimal("82010.222"));
         Mockito.when(paymentInfoPlugin.getCurrency()).thenReturn(Currency.CAD);
         Mockito.when(paymentInfoPlugin.getStatus()).thenReturn(PaymentPluginStatus.PROCESSED);
@@ -86,7 +86,7 @@ public class TestDirectPaymentAutomatonDAOHelper extends PaymentTestSuiteWithEmb
         Assert.assertEquals(directPayment2.getExternalKey(), directPaymentExternalKey);
         Assert.assertEquals(directPayment2.getCurrentStateName(), "SOME_STATE");
         Assert.assertEquals(directPaymentStateContext.getDirectPaymentTransactionModelDao().getDirectPaymentId(), directPayment2.getId());
-        Assert.assertEquals(directPaymentStateContext.getDirectPaymentTransactionModelDao().getExternalKey(), directPaymentTransactionExternalKey);
+        Assert.assertEquals(directPaymentStateContext.getDirectPaymentTransactionModelDao().getTransactionExternalKey(), directPaymentTransactionExternalKey);
         Assert.assertEquals(directPaymentStateContext.getDirectPaymentTransactionModelDao().getPaymentStatus(), PaymentStatus.SUCCESS);
         Assert.assertEquals(directPaymentStateContext.getDirectPaymentTransactionModelDao().getAmount().compareTo(amount), 0);
         Assert.assertEquals(directPaymentStateContext.getDirectPaymentTransactionModelDao().getCurrency(), currency);

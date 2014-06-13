@@ -33,8 +33,8 @@ import org.killbill.billing.payment.dao.DirectPaymentModelDao;
 import org.killbill.billing.payment.dao.DirectPaymentTransactionModelDao;
 import org.killbill.billing.payment.dao.PaymentDao;
 import org.killbill.billing.payment.dao.PaymentMethodModelDao;
-import org.killbill.billing.payment.plugin.api.PaymentInfoPlugin;
 import org.killbill.billing.payment.plugin.api.PaymentPluginApi;
+import org.killbill.billing.payment.plugin.api.PaymentTransactionInfoPlugin;
 
 public class DirectPaymentAutomatonDAOHelper {
 
@@ -75,7 +75,7 @@ public class DirectPaymentAutomatonDAOHelper {
         directPaymentStateContext.setDirectPaymentTransactionModelDao(paymentTransactionModelDao);
     }
 
-    public void processPaymentInfoPlugin(final PaymentStatus paymentStatus, @Nullable final PaymentInfoPlugin paymentInfoPlugin,
+    public void processPaymentInfoPlugin(final PaymentStatus paymentStatus, @Nullable final PaymentTransactionInfoPlugin paymentInfoPlugin,
                                          final String currentPaymentStateName) {
         final BigDecimal processedAmount = paymentInfoPlugin == null ? null : paymentInfoPlugin.getAmount();
         final Currency processedCurrency = paymentInfoPlugin == null ? null : paymentInfoPlugin.getCurrency();
@@ -105,6 +105,7 @@ public class DirectPaymentAutomatonDAOHelper {
     }
 
     public PaymentPluginApi getPaymentProviderPlugin() throws PaymentApiException {
+
         final UUID paymentMethodId = directPaymentStateContext.getPaymentMethodId();
         final PaymentMethodModelDao methodDao = paymentDao.getPaymentMethodIncludedDeleted(paymentMethodId, internalCallContext);
         if (methodDao == null) {

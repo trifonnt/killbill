@@ -53,6 +53,15 @@ where id = :id
 ;
 >>
 
+getDirectPaymentByExternalKey() ::= <<
+select
+<allTableFields("")>
+from <tableName()>
+where external_key = :externalKey
+;
+>>
+
+
 getByPluginName() ::= <<
 select
 <allTableFields("t.")>

@@ -24,6 +24,7 @@ import java.util.concurrent.TimeoutException;
 
 import javax.inject.Inject;
 
+import org.killbill.automaton.OperationException;
 import org.killbill.billing.ErrorCode;
 import org.killbill.billing.account.api.Account;
 import org.killbill.billing.account.api.AccountInternalApi;
@@ -99,6 +100,8 @@ public class PaymentGatewayProcessor extends ProcessorBase {
             throw new PaymentApiException(ErrorCode.PAYMENT_PLUGIN_TIMEOUT, account.getId(), null);
         } catch (final RuntimeException e) {
             throw new PaymentApiException(e, ErrorCode.PAYMENT_INTERNAL_ERROR, e.getMessage());
+        } catch (OperationException e) {
+            throw new PaymentApiException(e, ErrorCode.PAYMENT_INTERNAL_ERROR, e.getMessage());
         }
     }
 
@@ -115,6 +118,8 @@ public class PaymentGatewayProcessor extends ProcessorBase {
         } catch (final TimeoutException e) {
             throw new PaymentApiException(ErrorCode.PAYMENT_PLUGIN_TIMEOUT, null, null);
         } catch (final RuntimeException e) {
+            throw new PaymentApiException(e, ErrorCode.PAYMENT_INTERNAL_ERROR, e.getMessage());
+        } catch (OperationException e) {
             throw new PaymentApiException(e, ErrorCode.PAYMENT_INTERNAL_ERROR, e.getMessage());
         }
     }

@@ -34,7 +34,7 @@ import org.killbill.billing.payment.api.TransactionType;
 import org.killbill.billing.payment.dao.PaymentDao;
 import org.killbill.billing.payment.dao.PaymentMethodModelDao;
 import org.killbill.billing.payment.dispatcher.PluginDispatcher;
-import org.killbill.billing.payment.plugin.api.PaymentInfoPlugin;
+import org.killbill.billing.payment.plugin.api.PaymentTransactionInfoPlugin;
 import org.killbill.billing.payment.plugin.api.PaymentPluginApiException;
 import org.killbill.billing.payment.plugin.api.PaymentPluginStatus;
 import org.killbill.billing.payment.provider.MockPaymentProviderPlugin;
@@ -127,7 +127,7 @@ public class TestDirectPaymentOperation extends PaymentTestSuiteNoDB {
 
     private static final class DirectPaymentOperationTest extends DirectPaymentOperation {
 
-        private final PaymentInfoPlugin paymentInfoPlugin;
+        private final PaymentTransactionInfoPlugin paymentInfoPlugin;
 
         public DirectPaymentOperationTest(@Nullable final PaymentPluginStatus paymentPluginStatus,
                                           final DirectPaymentAutomatonDAOHelper daoHelper, final GlobalLocker locker,
@@ -137,7 +137,7 @@ public class TestDirectPaymentOperation extends PaymentTestSuiteNoDB {
         }
 
         @Override
-        protected PaymentInfoPlugin doPluginOperation() throws PaymentPluginApiException {
+        protected PaymentTransactionInfoPlugin doPluginOperation() throws PaymentPluginApiException {
             if (paymentInfoPlugin == null) {
                 throw new RuntimeException("Exception expected by test");
             } else {
@@ -145,8 +145,8 @@ public class TestDirectPaymentOperation extends PaymentTestSuiteNoDB {
             }
         }
 
-        private PaymentInfoPlugin getPaymentInfoPlugin(final PaymentPluginStatus paymentPluginStatus) {
-            final PaymentInfoPlugin paymentInfoPlugin = Mockito.mock(PaymentInfoPlugin.class);
+        private PaymentTransactionInfoPlugin getPaymentInfoPlugin(final PaymentPluginStatus paymentPluginStatus) {
+            final PaymentTransactionInfoPlugin paymentInfoPlugin = Mockito.mock(PaymentTransactionInfoPlugin.class);
             Mockito.when(paymentInfoPlugin.getStatus()).thenReturn(paymentPluginStatus);
             return paymentInfoPlugin;
         }

@@ -19,8 +19,11 @@ package org.killbill.billing.payment.core.sm;
 
 import java.math.BigDecimal;
 import java.util.UUID;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.TimeUnit;
 
 import javax.annotation.Nullable;
+import javax.inject.Inject;
 
 import org.joda.time.DateTime;
 import org.killbill.automaton.MissingEntryException;
@@ -33,6 +36,7 @@ import org.killbill.automaton.State.EnteringStateCallback;
 import org.killbill.automaton.State.LeavingStateCallback;
 import org.killbill.automaton.StateMachine;
 import org.killbill.automaton.StateMachineConfig;
+import org.killbill.automaton.Transition;
 import org.killbill.billing.ErrorCode;
 import org.killbill.billing.account.api.Account;
 import org.killbill.billing.callcontext.InternalCallContext;
@@ -42,60 +46,73 @@ import org.killbill.billing.payment.api.PaymentApiException;
 import org.killbill.billing.payment.api.PluginProperty;
 import org.killbill.billing.payment.api.TransactionType;
 import org.killbill.billing.payment.dao.DirectPaymentModelDao;
-import org.killbill.billing.payment.dao.DirectPaymentTransactionModelDao;
 import org.killbill.billing.payment.dao.PaymentDao;
 import org.killbill.billing.payment.dispatcher.PluginDispatcher;
+import org.killbill.billing.payment.glue.PaymentModule;
 import org.killbill.billing.payment.plugin.api.PaymentPluginApi;
 import org.killbill.billing.util.callcontext.CallContext;
+import org.killbill.billing.util.config.PaymentConfig;
 import org.killbill.clock.Clock;
 import org.killbill.commons.locker.GlobalLocker;
 
 import com.google.common.base.Objects;
 import com.google.common.base.Preconditions;
+import com.google.common.base.Predicate;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterables;
+import com.google.inject.name.Named;
+
+import static org.killbill.billing.payment.glue.PaymentModule.PLUGIN_EXECUTOR_NAMED;
 
 public class DirectPaymentAutomatonRunner {
 
-    private final StateMachineConfig stateMachineConfig;
-    private final PaymentDao paymentDao;
-    private final GlobalLocker locker;
-    private final PluginDispatcher<OperationResult> paymentPluginDispatcher;
-    private final OSGIServiceRegistration<PaymentPluginApi> pluginRegistry;
-    private final Clock clock;
+    protected final StateMachineConfig stateMachineConfig;
+    protected final PaymentDao paymentDao;
+    protected final GlobalLocker locker;
+    protected final PluginDispatcher<OperationResult> paymentPluginDispatcher;
+    protected final OSGIServiceRegistration<PaymentPluginApi> pluginRegistry;
+    protected final Clock clock;
 
-    public DirectPaymentAutomatonRunner(final StateMachineConfig stateMachineConfig,
+    @Inject
+    public DirectPaymentAutomatonRunner(@javax.inject.Named(PaymentModule.STATE_MACHINE_PAYMENT) final StateMachineConfig stateMachineConfig,
+                                        final PaymentConfig paymentConfig,
                                         final PaymentDao paymentDao,
                                         final GlobalLocker locker,
-                                        final PluginDispatcher<OperationResult> paymentPluginDispatcher,
                                         final OSGIServiceRegistration<PaymentPluginApi> pluginRegistry,
-                                        final Clock clock) {
+                                        final Clock clock,
+                                        @Named(PLUGIN_EXECUTOR_NAMED) final ExecutorService executor) {
         this.stateMachineConfig = stateMachineConfig;
         this.paymentDao = paymentDao;
         this.locker = locker;
-        this.paymentPluginDispatcher = paymentPluginDispatcher;
         this.pluginRegistry = pluginRegistry;
         this.clock = clock;
+
+        final long paymentPluginTimeoutSec = TimeUnit.SECONDS.convert(paymentConfig.getPaymentPluginTimeout().getPeriod(), paymentConfig.getPaymentPluginTimeout().getUnit());
+        this.paymentPluginDispatcher = new PluginDispatcher<OperationResult>(paymentPluginTimeoutSec, executor);
+
     }
 
-    public DirectPaymentTransactionModelDao run(final TransactionType transactionType, final Account account,
-                                                @Nullable final UUID directPaymentId, final String directPaymentTransactionExternalKey,
-                                                final boolean shouldLockAccount, final Iterable<PluginProperty> properties,
-                                                final CallContext callContext, final InternalCallContext internalCallContext) throws PaymentApiException {
+    public UUID run(final TransactionType transactionType, final Account account,
+                    @Nullable final UUID directPaymentId, final String directPaymentTransactionExternalKey,
+                    final boolean shouldLockAccount, final Iterable<PluginProperty> properties,
+                    final CallContext callContext, final InternalCallContext internalCallContext) throws PaymentApiException {
         return run(transactionType, account, null, directPaymentId, null, directPaymentTransactionExternalKey, null, null, shouldLockAccount, properties, callContext, internalCallContext);
     }
 
-    public DirectPaymentTransactionModelDao run(final TransactionType transactionType, final Account account,
-                                                @Nullable final UUID directPaymentId, final String directPaymentTransactionExternalKey,
-                                                final BigDecimal amount, final Currency currency,
-                                                final boolean shouldLockAccount, final Iterable<PluginProperty> properties,
-                                                final CallContext callContext, final InternalCallContext internalCallContext) throws PaymentApiException {
+    public UUID run(final TransactionType transactionType, final Account account,
+                    @Nullable final UUID directPaymentId, final String directPaymentTransactionExternalKey,
+                    final BigDecimal amount, final Currency currency,
+                    final boolean shouldLockAccount, final Iterable<PluginProperty> properties,
+                    final CallContext callContext, final InternalCallContext internalCallContext) throws PaymentApiException {
         return run(transactionType, account, null, directPaymentId, null, directPaymentTransactionExternalKey, amount, currency, shouldLockAccount, properties, callContext, internalCallContext);
     }
 
-    public DirectPaymentTransactionModelDao run(final TransactionType transactionType, final Account account, @Nullable final UUID paymentMethodId,
-                                                @Nullable final UUID directPaymentId, @Nullable final String directPaymentExternalKey, final String directPaymentTransactionExternalKey,
-                                                @Nullable final BigDecimal amount, @Nullable final Currency currency,
-                                                final boolean shouldLockAccount, final Iterable<PluginProperty> properties,
-                                                final CallContext callContext, final InternalCallContext internalCallContext) throws PaymentApiException {
+    public UUID run(final TransactionType transactionType, final Account account, @Nullable final UUID paymentMethodId,
+                    @Nullable final UUID directPaymentId, @Nullable final String directPaymentExternalKey, final String directPaymentTransactionExternalKey,
+                    @Nullable final BigDecimal amount, @Nullable final Currency currency,
+                    final boolean shouldLockAccount, final Iterable<PluginProperty> properties,
+                    final CallContext callContext, final InternalCallContext internalCallContext) throws PaymentApiException {
+
         final DateTime utcNow = clock.getUTCNow();
 
         final DirectPaymentStateContext directPaymentStateContext = new DirectPaymentStateContext(directPaymentId, directPaymentExternalKey, directPaymentTransactionExternalKey, transactionType,
@@ -193,24 +210,45 @@ public class DirectPaymentAutomatonRunner {
 
         runStateMachineOperation(currentStateMachineName, currentStateName, operationStateMachineName, operationName, leavingStateCallback, operationCallback, enteringStateCallback);
 
-        return directPaymentStateContext.getDirectPaymentTransactionModelDao();
+        return directPaymentStateContext.getDirectPaymentId();
+    }
+
+    public final State fetchNextState(final String prevStateName, final boolean isSuccess) {
+        final StateMachine stateMachine = getStateMachine(prevStateName);
+        final Transition transition = Iterables.tryFind(ImmutableList.copyOf(stateMachine.getTransitions()), new Predicate<Transition>() {
+            @Override
+            public boolean apply(final Transition input) {
+                // STEPH this only works if there is only one operation defined for a given state machine, which is our model for PaymentStates.xml
+                return input.getInitialState().getName().equals(prevStateName) &&
+                       input.getOperationResult().equals(isSuccess ? OperationResult.SUCCESS : OperationResult.FAILURE);
+            }
+        }).orNull();
+        return transition != null ? transition.getFinalState() : null;
     }
 
     // Hack for now
-    private String getStateMachineName(final String currentStateName) {
+    protected String getStateMachineName(final String currentStateName) {
+        final StateMachine stateMachine = getStateMachine(currentStateName);
+        if (stateMachine == null) {
+            return null;
+        }
+        return stateMachine.getName();
+    }
+
+    private StateMachine getStateMachine(final String currentStateName) {
         for (final StateMachine stateMachine : stateMachineConfig.getStateMachines()) {
             for (final State state : stateMachine.getStates()) {
                 if (state.getName().equals(currentStateName)) {
-                    return stateMachine.getName();
+                    return stateMachine;
                 }
             }
         }
         return null;
     }
 
-    private void runStateMachineOperation(final String initialStateMachineName, final String initialStateName,
-                                          final String operationStateMachineName, final String operationName,
-                                          final LeavingStateCallback leavingStateCallback, final OperationCallback operationCallback, final EnteringStateCallback enteringStateCallback) throws PaymentApiException {
+    protected void runStateMachineOperation(final String initialStateMachineName, final String initialStateName,
+                                            final String operationStateMachineName, final String operationName,
+                                            final LeavingStateCallback leavingStateCallback, final OperationCallback operationCallback, final EnteringStateCallback enteringStateCallback) throws PaymentApiException {
         try {
             final StateMachine initialStateMachine = stateMachineConfig.getStateMachine(initialStateMachineName);
             final State initialState = initialStateMachine.getState(initialStateName);

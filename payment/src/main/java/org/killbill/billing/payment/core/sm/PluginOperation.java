@@ -41,7 +41,8 @@ public abstract class PluginOperation {
 
     private final GlobalLocker locker;
     private final PluginDispatcher<OperationResult> paymentPluginDispatcher;
-    private final DirectPaymentStateContext directPaymentStateContext;
+
+    protected final DirectPaymentStateContext directPaymentStateContext;
 
     protected PluginOperation(final GlobalLocker locker,
                               final PluginDispatcher<OperationResult> paymentPluginDispatcher,
@@ -51,19 +52,16 @@ public abstract class PluginOperation {
         this.directPaymentStateContext = directPaymentStateContext;
     }
 
+    protected abstract <PluginResult> PluginResult  doPluginOperation() throws Exception;
+
     protected OperationResult dispatchWithTimeout(final WithAccountLockCallback<OperationResult> callback) throws OperationException {
         final Account account = directPaymentStateContext.getAccount();
         logger.debug("Dispatching plugin call for account {}", account.getExternalKey());
 
         try {
-            final Callable<OperationResult> task;
-            if (directPaymentStateContext.shouldLockAccount()) {
-                task = new CallableWithAccountLock<OperationResult>(locker,
-                                                                    account.getExternalKey(),
-                                                                    callback);
-            } else {
-                task = new CallableWithoutAccountLock<OperationResult>(callback);
-            }
+            final Callable<OperationResult> task = new CallableWithAccountLock<OperationResult>(locker,
+                                                                                                account.getExternalKey(),
+                                                                                                callback);
 
             final OperationResult operationResult = paymentPluginDispatcher.dispatchWithTimeout(task);
             logger.debug("Successful plugin call for account {} with result {}", account.getExternalKey(), operationResult);

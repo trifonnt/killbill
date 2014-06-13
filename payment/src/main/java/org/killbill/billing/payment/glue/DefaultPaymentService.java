@@ -18,13 +18,10 @@
 
 package org.killbill.billing.payment.glue;
 
-import org.killbill.billing.payment.api.PaymentApi;
+import org.killbill.billing.payment.api.DirectPaymentApi;
 import org.killbill.billing.payment.api.PaymentService;
 import org.killbill.billing.payment.bus.InvoiceHandler;
-import org.killbill.billing.payment.bus.PaymentTagHandler;
-import org.killbill.billing.payment.retry.AutoPayRetryService;
-import org.killbill.billing.payment.retry.FailedPaymentRetryService;
-import org.killbill.billing.payment.retry.PluginFailureRetryService;
+import org.killbill.billing.payment.control.PaymentTagHandler;
 import org.killbill.billing.platform.api.LifecycleHandlerType;
 import org.killbill.billing.platform.api.LifecycleHandlerType.LifecycleLevel;
 import org.killbill.bus.api.PersistentBus;
@@ -44,25 +41,16 @@ public class DefaultPaymentService implements PaymentService {
     private final InvoiceHandler invoiceHandler;
     private final PaymentTagHandler tagHandler;
     private final PersistentBus eventBus;
-    private final PaymentApi api;
-    private final FailedPaymentRetryService failedRetryService;
-    private final PluginFailureRetryService timedoutRetryService;
-    private final AutoPayRetryService autoPayoffRetryService;
+    private final DirectPaymentApi api;
 
     @Inject
     public DefaultPaymentService(final InvoiceHandler invoiceHandler,
                                  final PaymentTagHandler tagHandler,
-                                 final PaymentApi api, final PersistentBus eventBus,
-                                 final FailedPaymentRetryService failedRetryService,
-                                 final PluginFailureRetryService timedoutRetryService,
-                                 final AutoPayRetryService autoPayoffRetryService) {
+                                 final DirectPaymentApi api, final PersistentBus eventBus) {
         this.invoiceHandler = invoiceHandler;
         this.tagHandler = tagHandler;
         this.eventBus = eventBus;
         this.api = api;
-        this.failedRetryService = failedRetryService;
-        this.timedoutRetryService = timedoutRetryService;
-        this.autoPayoffRetryService = autoPayoffRetryService;
     }
 
     @Override
@@ -78,16 +66,10 @@ public class DefaultPaymentService implements PaymentService {
         } catch (PersistentBus.EventBusException e) {
             log.error("Unable to register with the EventBus!", e);
         }
-        failedRetryService.initialize(SERVICE_NAME);
-        timedoutRetryService.initialize(SERVICE_NAME);
-        autoPayoffRetryService.initialize(SERVICE_NAME);
     }
 
     @LifecycleHandlerType(LifecycleLevel.START_SERVICE)
     public void start() {
-        failedRetryService.start();
-        timedoutRetryService.start();
-        autoPayoffRetryService.start();
     }
 
     @LifecycleHandlerType(LifecycleLevel.STOP_SERVICE)
@@ -98,13 +80,10 @@ public class DefaultPaymentService implements PaymentService {
         } catch (PersistentBus.EventBusException e) {
             throw new RuntimeException("Unable to unregister to the EventBus!", e);
         }
-        failedRetryService.stop();
-        timedoutRetryService.stop();
-        autoPayoffRetryService.stop();
     }
 
     @Override
-    public PaymentApi getPaymentApi() {
+    public DirectPaymentApi getPaymentApi() {
         return api;
     }
 }
