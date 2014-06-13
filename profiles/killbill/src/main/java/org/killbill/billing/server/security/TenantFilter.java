@@ -56,10 +56,10 @@ public class TenantFilter implements Filter {
     private static final Logger log = LoggerFactory.getLogger(TenantFilter.class);
 
     @Inject
-    private TenantUserApi tenantUserApi;
+    protected TenantUserApi tenantUserApi;
 
     @Inject
-    private DaoConfig daoConfig;
+    protected DaoConfig daoConfig;
 
     private ModularRealmAuthenticator modularRealmAuthenticator;
 
