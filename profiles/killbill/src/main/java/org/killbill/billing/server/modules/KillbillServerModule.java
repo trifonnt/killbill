@@ -83,6 +83,8 @@ public class KillbillServerModule extends KillbillPlatformModule {
     protected void configure() {
         super.configure();
 
+        installKillbillModules();
+
         configureResources();
         configurePushNotification();
     }
@@ -112,56 +114,52 @@ public class KillbillServerModule extends KillbillPlatformModule {
         }
     }
 
-    @Override
     protected void installKillbillModules() {
-        super.installKillbillModules();
-
-        install(new EmailModule(configSource));
-        install(new CacheModule(configSource));
-        install(new GlobalLockerModule(embeddedDB.getDBEngine(), configSource));
-        install(new CustomFieldModule(configSource));
         install(new AuditModule(configSource));
-        install(new CatalogModule(configSource));
-        install(new CallContextModule(configSource));
-        install(new DefaultAccountModule(configSource));
-        install(new DefaultInvoiceModule(configSource));
-        install(new TemplateModule(configSource));
-        install(new DefaultSubscriptionModule(configSource));
-        install(new DefaultEntitlementModule(configSource));
-        install(new PaymentModule(configSource));
         install(new BeatrixModule(configSource));
+        install(new CacheModule(configSource));
+        install(new CallContextModule(configSource));
+        install(new CatalogModule(configSource));
+        install(new CurrencyModule(configSource));
+        install(new CustomFieldModule(configSource));
+        install(new DefaultAccountModule(configSource));
+        install(new DefaultEntitlementModule(configSource));
+        install(new DefaultInvoiceModule(configSource));
         install(new DefaultJunctionModule(configSource));
         install(new DefaultOverdueModule(configSource));
-        install(new CurrencyModule(configSource));
-        install(new TenantModule(configSource));
+        install(new DefaultSubscriptionModule(configSource));
+        install(new EmailModule(configSource));
         install(new ExportModule(configSource));
-        install(new TagStoreModule(configSource));
-        install(new NonEntityDaoModule(configSource));
-        install(new UsageModule(configSource));
-        install(new RecordIdModule(configSource));
-        install(new KillBillShiroWebModule(servletContext, skifeConfigSource));
+        install(new GlobalLockerModule(embeddedDB.getDBEngine(), configSource));
         install(new KillBillShiroAopModule());
+        install(new KillBillShiroWebModule(servletContext, skifeConfigSource));
+        install(new NonEntityDaoModule(configSource));
+        install(new PaymentModule(configSource));
+        install(new RecordIdModule(configSource));
         install(new SecurityModule(configSource));
+        install(new TagStoreModule(configSource));
+        install(new TemplateModule(configSource));
+        install(new TenantModule(configSource));
+        install(new UsageModule(configSource));
     }
 
     protected void configureResources() {
         bind(AccountResource.class).asEagerSingleton();
         bind(BundleResource.class).asEagerSingleton();
-        bind(SubscriptionResource.class).asEagerSingleton();
-        bind(InvoiceResource.class).asEagerSingleton();
-        bind(CustomFieldResource.class).asEagerSingleton();
-        bind(TagResource.class).asEagerSingleton();
-        bind(TagDefinitionResource.class).asEagerSingleton();
         bind(CatalogResource.class).asEagerSingleton();
+        bind(CustomFieldResource.class).asEagerSingleton();
+        bind(ExportResource.class).asEagerSingleton();
+        bind(InvoiceResource.class).asEagerSingleton();
+        bind(KillbillEventHandler.class).asEagerSingleton();
         bind(PaymentMethodResource.class).asEagerSingleton();
         bind(PaymentResource.class).asEagerSingleton();
         bind(PluginResource.class).asEagerSingleton();
-        bind(RefundResource.class).asEagerSingleton();
-        bind(TenantResource.class).asEagerSingleton();
-        bind(ExportResource.class).asEagerSingleton();
         bind(PluginResource.class).asEagerSingleton();
+        bind(RefundResource.class).asEagerSingleton();
+        bind(SubscriptionResource.class).asEagerSingleton();
+        bind(TagDefinitionResource.class).asEagerSingleton();
+        bind(TagResource.class).asEagerSingleton();
         bind(TenantResource.class).asEagerSingleton();
-        bind(KillbillEventHandler.class).asEagerSingleton();
     }
 
     protected void configurePushNotification() {
