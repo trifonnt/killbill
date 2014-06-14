@@ -41,10 +41,10 @@ public class DirectPaymentStateContext {
     protected PaymentTransactionInfoPlugin paymentInfoPlugin;
     protected BigDecimal amount;
     protected UUID transactionPaymentId;
+    protected String directPaymentExternalKey;
 
     // Can be updated later via directPaymentTransactionModelDao (e.g. for auth or purchase)
     protected final UUID directPaymentId;
-    protected final String directPaymentExternalKey;
     protected final String directPaymentTransactionExternalKey;
     protected final Account account;
     protected final Currency currency;
@@ -117,6 +117,10 @@ public class DirectPaymentStateContext {
 
     public String getDirectPaymentExternalKey() {
         return directPaymentExternalKey;
+    }
+
+    public void setDirectPaymentExternalKey(final String directPaymentExternalKey) {
+        this.directPaymentExternalKey = directPaymentExternalKey;
     }
 
     public String getDirectPaymentTransactionExternalKey() {

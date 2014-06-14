@@ -22,6 +22,7 @@ import org.killbill.billing.payment.api.DirectPaymentApi;
 import org.killbill.billing.payment.api.PaymentService;
 import org.killbill.billing.payment.bus.InvoiceHandler;
 import org.killbill.billing.payment.control.PaymentTagHandler;
+import org.killbill.billing.payment.retry.DefaultRetryService;
 import org.killbill.bus.api.PersistentBus;
 import org.killbill.notificationq.api.NotificationQueueService.NoSuchNotificationQueue;
 import org.killbill.notificationq.api.NotificationQueueService.NotificationQueueAlreadyExists;
@@ -40,15 +41,19 @@ public class DefaultPaymentService implements PaymentService {
     private final PaymentTagHandler tagHandler;
     private final PersistentBus eventBus;
     private final DirectPaymentApi api;
+    private final DefaultRetryService retryService;
 
     @Inject
     public DefaultPaymentService(final InvoiceHandler invoiceHandler,
                                  final PaymentTagHandler tagHandler,
-                                 final DirectPaymentApi api, final PersistentBus eventBus) {
+                                 final DirectPaymentApi api,
+                                 final DefaultRetryService retryService,
+                                 final PersistentBus eventBus) {
         this.invoiceHandler = invoiceHandler;
         this.tagHandler = tagHandler;
         this.eventBus = eventBus;
         this.api = api;
+        this.retryService = retryService;
     }
 
     @Override
@@ -64,6 +69,7 @@ public class DefaultPaymentService implements PaymentService {
         } catch (PersistentBus.EventBusException e) {
             log.error("Unable to register with the EventBus!", e);
         }
+        retryService.initialize(SERVICE_NAME);
     }
 
     @LifecycleHandlerType(LifecycleLevel.START_SERVICE)
@@ -78,6 +84,7 @@ public class DefaultPaymentService implements PaymentService {
         } catch (PersistentBus.EventBusException e) {
             throw new RuntimeException("Unable to unregister to the EventBus!", e);
         }
+        retryService.stop();
     }
 
     @Override

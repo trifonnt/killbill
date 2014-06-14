@@ -46,7 +46,6 @@ import org.killbill.billing.util.entity.dao.EntitySqlDaoWrapperFactory;
 import org.killbill.clock.Clock;
 import org.skife.jdbi.v2.IDBI;
 
-import com.google.common.base.Objects;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
 import com.google.common.collect.Collections2;
@@ -111,6 +110,18 @@ public class DefaultPaymentDao implements PaymentDao {
                 final PaymentAttemptSqlDao transactional = entitySqlDaoWrapperFactory.become(PaymentAttemptSqlDao.class);
                 transactional.updateAttempt(paymentAttemptId.toString(), transactionIdStr, state, context);
                 return null;
+            }
+        });
+    }
+
+    @Override
+    public List<PaymentAttemptModelDao> getPaymentAttempts(final String paymentExternalKey, final InternalTenantContext context) {
+        return transactionalSqlDao.execute(new EntitySqlDaoTransactionWrapper<List<PaymentAttemptModelDao>>() {
+
+            @Override
+            public List<PaymentAttemptModelDao> inTransaction(final EntitySqlDaoWrapperFactory<EntitySqlDao> entitySqlDaoWrapperFactory) throws Exception {
+                final PaymentAttemptSqlDao transactional = entitySqlDaoWrapperFactory.become(PaymentAttemptSqlDao.class);
+                return transactional.getByPaymentExternalKey(paymentExternalKey, context);
             }
         });
     }

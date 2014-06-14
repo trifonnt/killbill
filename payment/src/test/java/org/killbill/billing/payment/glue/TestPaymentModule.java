@@ -70,15 +70,12 @@ public class TestPaymentModule extends PaymentModule {
     @Override
     protected void configure() {
         super.configure();
-        install(new InMemoryBusModule(configSource));
-        install(new MockNotificationQueueModule(configSource));
         install(new MockInvoiceModule());
         install(new MockAccountModule());
         install(new MockSubscriptionModule());
         install(new MemoryGlobalLockerModule());
         install(new CacheModule(configSource));
         installExternalApis();
-
         bind(TestPaymentHelper.class).asEagerSingleton();
     }
 }

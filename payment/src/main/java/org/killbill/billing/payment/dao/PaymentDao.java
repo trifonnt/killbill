@@ -35,6 +35,8 @@ public interface PaymentDao {
 
     public void updatePaymentAttempt(UUID paymentAttemptId, UUID transactionId, String state, InternalCallContext context);
 
+    public List<PaymentAttemptModelDao> getPaymentAttempts(String paymentExternalKey, InternalTenantContext context);
+
     public PaymentAttemptModelDao getPaymentAttemptByExternalKey(String externalKey, InternalTenantContext context);
 
     public DirectPaymentTransactionModelDao getDirectPaymentTransactionByExternalKey(String transactionExternalKey, InternalTenantContext context);

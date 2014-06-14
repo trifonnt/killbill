@@ -171,7 +171,7 @@ public class PluginControlledPaymentProcessor extends ProcessorBase {
                                                          callContext, internalCallContext);
     }
 
-    public void retryPaymentTransaction(final String transactionExternalKey, final InternalCallContext internalCallContext) {
+    public void retryPaymentTransaction(final String transactionExternalKey, final String pluginName, final InternalCallContext internalCallContext) {
         try {
 
             final PaymentAttemptModelDao attempt = paymentDao.getPaymentAttemptByExternalKey(transactionExternalKey, internalCallContext);
@@ -194,6 +194,9 @@ public class PluginControlledPaymentProcessor extends ProcessorBase {
             final UUID tenantId = nonEntityDao.retrieveIdFromObject(internalCallContext.getTenantRecordId(), ObjectType.TENANT);
             final CallContext callContext = internalCallContext.toCallContext(tenantId);
 
+
+            // STEPH
+            final String newTransactionExternalKey = UUID.randomUUID().toString();
             final State state = pluginControlledDirectPaymentAutomatonRunner.fetchState(attempt.getStateName());
             pluginControlledDirectPaymentAutomatonRunner.run(state,
                                                       false,
@@ -202,11 +205,11 @@ public class PluginControlledPaymentProcessor extends ProcessorBase {
                                                       payment.getPaymentMethodId(),
                                                       payment.getId(),
                                                       payment.getExternalKey(),
-                                                      transactionExternalKey,
+                                                      newTransactionExternalKey,
                                                       transaction.getAmount(),
                                                       transaction.getCurrency(),
                                                       pluginProperties,
-                                                      null,
+                                                      pluginName,
                                                       callContext,
                                                       internalCallContext);
 

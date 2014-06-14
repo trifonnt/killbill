@@ -16,11 +16,12 @@
 
 package org.killbill.billing.payment.glue;
 
-import org.skife.config.ConfigSource;
-
 import org.killbill.billing.GuicyKillbillTestWithEmbeddedDBModule;
-import org.killbill.clock.Clock;
+import org.killbill.billing.util.glue.BusModule;
 import org.killbill.billing.util.glue.NonEntityDaoModule;
+import org.killbill.billing.util.glue.NotificationQueueModule;
+import org.killbill.clock.Clock;
+import org.skife.config.ConfigSource;
 
 public class TestPaymentModuleWithEmbeddedDB extends TestPaymentModule {
 
@@ -32,6 +33,9 @@ public class TestPaymentModuleWithEmbeddedDB extends TestPaymentModule {
     protected void configure() {
         install(new GuicyKillbillTestWithEmbeddedDBModule());
         install(new NonEntityDaoModule());
+        install(new BusModule(configSource));
+        install(new NotificationQueueModule(configSource));
+
         super.configure();
     }
 }

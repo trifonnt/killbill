@@ -17,7 +17,6 @@
 package org.killbill.billing.payment.core.sm;
 
 import java.math.BigDecimal;
-import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 
@@ -35,10 +34,8 @@ import org.killbill.automaton.State.LeavingStateCallback;
 import org.killbill.automaton.StateMachine;
 import org.killbill.automaton.StateMachineConfig;
 import org.killbill.billing.ErrorCode;
-import org.killbill.billing.ObjectType;
 import org.killbill.billing.account.api.Account;
 import org.killbill.billing.callcontext.InternalCallContext;
-import org.killbill.billing.callcontext.InternalTenantContext;
 import org.killbill.billing.catalog.api.Currency;
 import org.killbill.billing.osgi.api.OSGIServiceRegistration;
 import org.killbill.billing.payment.api.DirectPayment;
@@ -54,26 +51,21 @@ import org.killbill.billing.retry.plugin.api.PaymentControlPluginApi;
 import org.killbill.billing.tag.TagInternalApi;
 import org.killbill.billing.util.callcontext.CallContext;
 import org.killbill.billing.util.config.PaymentConfig;
-import org.killbill.billing.util.tag.ControlTagType;
-import org.killbill.billing.util.tag.Tag;
 import org.killbill.clock.Clock;
 import org.killbill.commons.locker.GlobalLocker;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.Function;
-import com.google.common.collect.Collections2;
 
 import static org.killbill.billing.payment.glue.PaymentModule.PLUGIN_EXECUTOR_NAMED;
 import static org.killbill.billing.payment.glue.PaymentModule.RETRYABLE_NAMED;
 
 public class PluginControlledDirectPaymentAutomatonRunner extends DirectPaymentAutomatonRunner {
 
-    private final TagInternalApi tagApi;
-
     private final StateMachine retryStateMachine;
 
     private final DirectPaymentProcessor directPaymentProcessor;
     private final State initialState;
+    private final State retriedState;
     private final Operation retryOperation;
     private final RetryServiceScheduler retryServiceScheduler;
 
@@ -84,12 +76,12 @@ public class PluginControlledDirectPaymentAutomatonRunner extends DirectPaymentA
                                                         final OSGIServiceRegistration<PaymentControlPluginApi> retryPluginRegistry, final Clock clock, final TagInternalApi tagApi, final DirectPaymentProcessor directPaymentProcessor, @Named(RETRYABLE_NAMED) final RetryServiceScheduler retryServiceScheduler, final PaymentConfig paymentConfig,
                                                         @com.google.inject.name.Named(PLUGIN_EXECUTOR_NAMED) final ExecutorService executor) {
         super(stateMachineConfig, paymentConfig, paymentDao, locker, pluginRegistry, clock, executor);
-        this.tagApi = tagApi;
         this.directPaymentProcessor = directPaymentProcessor;
         this.paymentControlPluginRegistry = retryPluginRegistry;
         this.retryServiceScheduler = retryServiceScheduler;
         this.retryStateMachine = retryStateMachine.getStateMachines()[0];
-        this.initialState = fetchInitialState();
+        this.initialState = fetchState("INIT");
+        this.retriedState = fetchState("RETRIED");
         this.retryOperation = fetchRetryOperation();
     }
 
@@ -133,7 +125,7 @@ public class PluginControlledDirectPaymentAutomatonRunner extends DirectPaymentA
         try {
 
             final OperationCallback callback = createOperationCallback(transactionType, directPaymentStateContext);
-            final LeavingStateCallback leavingStateCallback = new RetryLeavingStateCallback(this, directPaymentStateContext, initialState, transactionType);
+            final LeavingStateCallback leavingStateCallback = new RetryLeavingStateCallback(this, directPaymentStateContext, paymentDao, initialState, retriedState, transactionType);
             final EnteringStateCallback enteringStateCallback = new RetryEnteringStateCallback(this, directPaymentStateContext, retryServiceScheduler);
 
             state.runOperation(retryOperation, callback, enteringStateCallback, leavingStateCallback);
@@ -159,10 +151,6 @@ public class PluginControlledDirectPaymentAutomatonRunner extends DirectPaymentA
         } catch (MissingEntryException e) {
             throw new RuntimeException(e);
         }
-    }
-
-    private final State fetchInitialState() {
-        return fetchState("INIT");
     }
 
     private final Operation fetchRetryOperation() {

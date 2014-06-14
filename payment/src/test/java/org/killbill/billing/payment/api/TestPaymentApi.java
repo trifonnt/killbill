@@ -34,6 +34,7 @@ import org.killbill.billing.invoice.api.InvoiceItem;
 import org.killbill.billing.payment.MockRecurringInvoiceItem;
 import org.killbill.billing.payment.PaymentTestSuiteWithEmbeddedDB;
 import org.killbill.billing.payment.control.InvoicePaymentControlPluginApi;
+import org.killbill.billing.payment.dao.PaymentAttemptModelDao;
 import org.killbill.billing.payment.dao.PluginPropertyModelDao;
 import org.killbill.billing.retry.plugin.api.PaymentControlApiException;
 import org.killbill.bus.api.PersistentBus.EventBusException;
@@ -261,6 +262,10 @@ public class TestPaymentApi extends PaymentTestSuiteWithEmbeddedDB {
         assertEquals(payment.getTransactions().get(0).getTransactionType(), TransactionType.PURCHASE);
         assertNull(payment.getTransactions().get(0).getGatewayErrorMsg());
         assertNull(payment.getTransactions().get(0).getGatewayErrorCode());
+
+        // Not stricly an API test but interesting to verify that we indeed went through the attempt logic
+        final List<PaymentAttemptModelDao> attempts = paymentDao.getPaymentAttempts(payment.getExternalKey(), internalCallContext);
+        assertEquals(attempts.size(), 1);
     }
 
     @Test(groups = "slow")
@@ -306,8 +311,8 @@ public class TestPaymentApi extends PaymentTestSuiteWithEmbeddedDB {
         final Invoice invoice = testHelper.createTestInvoice(account, now, Currency.USD);
 
         final String paymentExternalKey = invoice.getId().toString();
-        final String transactionExternalKey = "payment";
-        final String transactionExternalKey2 = "refund";
+        final String transactionExternalKey = "sacrebleu";
+        final String transactionExternalKey2 = "maisenfin";
 
         final InvoiceItem invoiceItem = new MockRecurringInvoiceItem(invoice.getId(), account.getId(),
                                                                      subscriptionId,
@@ -387,8 +392,8 @@ public class TestPaymentApi extends PaymentTestSuiteWithEmbeddedDB {
         final Invoice invoice = testHelper.createTestInvoice(account, now, Currency.USD);
 
         final String paymentExternalKey = invoice.getId().toString();
-        final String transactionExternalKey = "payment";
-        final String transactionExternalKey2 = "refund";
+        final String transactionExternalKey = "hopla";
+        final String transactionExternalKey2 = "chouette";
 
         final InvoiceItem invoiceItem = new MockRecurringInvoiceItem(invoice.getId(), account.getId(),
                                                                      subscriptionId,

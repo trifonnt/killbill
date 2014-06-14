@@ -18,7 +18,6 @@ package org.killbill.billing.payment.dao;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -26,13 +25,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-import javax.annotation.Nullable;
-
 import org.killbill.billing.callcontext.InternalCallContext;
 import org.killbill.billing.callcontext.InternalTenantContext;
 import org.killbill.billing.catalog.api.Currency;
 import org.killbill.billing.payment.api.PaymentStatus;
-import org.killbill.billing.payment.api.RefundStatus;
 import org.killbill.billing.util.entity.Pagination;
 
 import com.google.common.base.Predicate;
@@ -73,18 +69,30 @@ public class MockPaymentDao implements PaymentDao {
                     cur.setStateName(state);
                     cur.setDirectTransactionId(transactionId);
                     success = true;
+                    break;
                 }
             }
         }
         if (!success) {
-            throw new RuntimeException("Counld not find attempt " + paymentAttemptId);
+            throw new RuntimeException("Could not find attempt " + paymentAttemptId);
         }
     }
 
     @Override
-    public PaymentAttemptModelDao getPaymentAttemptByExternalKey(final String externalKey, final InternalTenantContext context) {
+    public List<PaymentAttemptModelDao> getPaymentAttempts(final String paymentExternalKey, final InternalTenantContext context) {
+        final List<PaymentAttemptModelDao> result = new ArrayList<PaymentAttemptModelDao>();
+        for (PaymentAttemptModelDao cur : attempts.values()) {
+            if (cur.getPaymentExternalKey().equals(paymentExternalKey)) {
+                result.add(cur);
+            }
+        }
+        return result;
+    }
+
+    @Override
+    public PaymentAttemptModelDao getPaymentAttemptByExternalKey(final String transactionExternalKey, final InternalTenantContext context) {
         synchronized (this) {
-            return attempts.get(externalKey);
+            return attempts.get(transactionExternalKey);
         }
     }
 
@@ -201,18 +209,16 @@ public class MockPaymentDao implements PaymentDao {
             return ImmutableList.copyOf(Iterables.filter(transactions.values(), new Predicate<DirectPaymentTransactionModelDao>() {
                 @Override
                 public boolean apply(final DirectPaymentTransactionModelDao input) {
-                        return input.getDirectPaymentId().equals(directPaymentId);
+                    return input.getDirectPaymentId().equals(directPaymentId);
                 }
             }));
         }
     }
 
-
     @Override
     public PaymentAttemptModelDao getPaymentAttempt(final UUID attemptId, final InternalTenantContext context) {
         return attempts.get(attemptId);
     }
-
 
     private final List<PaymentMethodModelDao> paymentMethods = new LinkedList<PaymentMethodModelDao>();
 

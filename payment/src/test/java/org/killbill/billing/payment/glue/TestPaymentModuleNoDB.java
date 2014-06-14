@@ -16,8 +16,10 @@
 
 package org.killbill.billing.payment.glue;
 
+import org.killbill.billing.mock.glue.MockNotificationQueueModule;
 import org.killbill.billing.payment.core.sm.MockRetryableDirectPaymentAutomatonRunner;
 import org.killbill.billing.payment.core.sm.PluginControlledDirectPaymentAutomatonRunner;
+import org.killbill.billing.util.bus.InMemoryBusModule;
 import org.skife.config.ConfigSource;
 
 import org.killbill.billing.GuicyKillbillTestNoDBModule;
@@ -41,6 +43,8 @@ public class TestPaymentModuleNoDB extends TestPaymentModule {
     protected void configure() {
         install(new GuicyKillbillTestNoDBModule());
         install(new MockNonEntityDaoModule());
+        install(new InMemoryBusModule(configSource));
+        install(new MockNotificationQueueModule(configSource));
         super.configure();
     }
 
