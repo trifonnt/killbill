@@ -70,7 +70,7 @@ public abstract class BaseRetryService implements RetryService {
                                                                               }
                                                                               final PaymentRetryNotificationKey key = (PaymentRetryNotificationKey) notificationKey;
                                                                               final InternalCallContext callContext = internalCallContextFactory.createInternalCallContext(tenantRecordId, accountRecordId, PAYMENT_RETRY_SERVICE, CallOrigin.INTERNAL, UserType.SYSTEM, userToken);
-                                                                              retryPaymentTransaction(key.getTransactionExternalKey(), callContext);
+                                                                              retryPaymentTransaction(key.getTransactionExternalKey(), key.getPluginName(), callContext);
                                                                           }
                                                                       }
                                                                      );

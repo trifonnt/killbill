@@ -265,11 +265,11 @@ public final class InvoicePaymentControlPluginApi implements PaymentControlPlugi
         }
         final DirectPaymentTransactionModelDao lastTransaction = purchasedTransactions.get(purchasedTransactions.size() - 1);
         switch (lastTransaction.getPaymentStatus()) {
-            case PAYMENT_FAILURE:
+            case PAYMENT_FAILURE_ABORTED:
                 return getNextRetryDateForPaymentFailure(purchasedTransactions);
 
             case UNKNOWN:
-            case PLUGIN_FAILURE:
+            case PLUGIN_FAILURE_ABORTED:
                 return getNextRetryDateForPluginFailure(purchasedTransactions);
 
             default:
@@ -281,7 +281,8 @@ public final class InvoicePaymentControlPluginApi implements PaymentControlPlugi
 
         DateTime result = null;
         final List<Integer> retryDays = paymentConfig.getPaymentRetryDays();
-        final int retryCount = getNumberAttemptsInState(purchasedTransactions, PaymentStatus.PAYMENT_FAILURE);
+        final int attemptsInState = getNumberAttemptsInState(purchasedTransactions, PaymentStatus.PAYMENT_FAILURE_ABORTED);
+        final int retryCount  = (attemptsInState - 1) >= 0 ?  (attemptsInState - 1) : 0;
         if (retryCount < retryDays.size()) {
             int retryInDays;
             final DateTime nextRetryDate = clock.getUTCNow();
@@ -297,16 +298,19 @@ public final class InvoicePaymentControlPluginApi implements PaymentControlPlugi
 
     private DateTime getNextRetryDateForPluginFailure(final List<DirectPaymentTransactionModelDao> purchasedTransactions) {
 
-        final int retryAttempt = getNumberAttemptsInState(purchasedTransactions, PaymentStatus.PAYMENT_FAILURE);
-        if (retryAttempt > paymentConfig.getPluginFailureRetryMaxAttempts()) {
-            return null;
+        DateTime result = null;
+        final int attemptsInState = getNumberAttemptsInState(purchasedTransactions, PaymentStatus.PLUGIN_FAILURE_ABORTED);
+        final int retryAttempt  = (attemptsInState - 1) >= 0 ?  (attemptsInState - 1) : 0;
+
+        if (retryAttempt < paymentConfig.getPluginFailureRetryMaxAttempts()) {
+            int nbSec = paymentConfig.getPluginFailureRetryStart();
+            int remainingAttempts = retryAttempt;
+            while (--remainingAttempts > 0) {
+                nbSec = nbSec * paymentConfig.getPluginFailureRetryMultiplier();
+            }
+            result = clock.getUTCNow().plusSeconds(nbSec);
         }
-        int nbSec = paymentConfig.getPluginFailureRetryStart();
-        int remainingAttempts = retryAttempt;
-        while (--remainingAttempts > 0) {
-            nbSec = nbSec * paymentConfig.getPluginFailureRetryMultiplier();
-        }
-        return clock.getUTCNow().plusSeconds(nbSec);
+        return result;
     }
 
     private int getNumberAttemptsInState(final Collection<DirectPaymentTransactionModelDao> allTransactions, final PaymentStatus... statuses) {

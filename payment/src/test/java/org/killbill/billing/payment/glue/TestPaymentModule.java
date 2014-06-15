@@ -72,7 +72,6 @@ public class TestPaymentModule extends PaymentModule {
         install(new MemoryGlobalLockerModule(configSource));
         install(new CacheModule(configSource));
         installExternalApis();
-
         bind(TestPaymentHelper.class).asEagerSingleton();
     }
 }

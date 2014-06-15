@@ -235,6 +235,26 @@
                 <operation name="OP_VOID"/>
             </operations>
         </stateMachine>
+        <!-- The transition to the state CHARGEBACK_SUCCESS occurs outside of the state machine engine (at least for now).
+             It needs to exist but there is no need for a linkStateMachine Transition to reach that state.
+         -->
+        <stateMachine name="CHARGEBACK">
+        <states>
+            <state name="CHARGEBACK_INIT"/>
+            <state name="CHARGEBACK_SUCCESS"/>
+        </states>
+            <transitions>
+            <transition>
+                <initialState>CHARGEBACK_INIT</initialState>
+                <operation>OP_CHARGEBACK</operation>
+                <operationResult>SUCCESS</operationResult>
+                <finalState>CHARGEBACK_SUCCESS</finalState>
+            </transition>
+            </transitions>
+            <operations>
+                <operation name="OP_CHARGEBACK"/>
+            </operations>
+        </stateMachine>
     </stateMachines>
 
     <linkStateMachines>

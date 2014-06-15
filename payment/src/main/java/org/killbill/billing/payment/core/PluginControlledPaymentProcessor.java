@@ -48,6 +48,7 @@ import org.killbill.billing.tag.TagInternalApi;
 import org.killbill.billing.util.callcontext.CallContext;
 import org.killbill.billing.util.dao.NonEntityDao;
 import org.killbill.bus.api.PersistentBus;
+import org.killbill.clock.Clock;
 import org.killbill.commons.locker.GlobalLocker;
 
 import com.google.common.base.Function;
@@ -71,8 +72,9 @@ public class PluginControlledPaymentProcessor extends ProcessorBase {
                                             final PersistentBus eventBus,
                                             final GlobalLocker locker,
                                             @Named(PLUGIN_EXECUTOR_NAMED) final ExecutorService executor,
-                                            final PluginControlledDirectPaymentAutomatonRunner pluginControlledDirectPaymentAutomatonRunner) {
-        super(pluginRegistry, accountInternalApi, eventBus, paymentDao, nonEntityDao, tagUserApi, locker, executor, invoiceApi);
+                                            final PluginControlledDirectPaymentAutomatonRunner pluginControlledDirectPaymentAutomatonRunner,
+                                            final Clock clock) {
+        super(pluginRegistry, accountInternalApi, eventBus, paymentDao, nonEntityDao, tagUserApi, locker, executor, invoiceApi, clock);
 
         this.pluginControlledDirectPaymentAutomatonRunner = pluginControlledDirectPaymentAutomatonRunner;
     }
@@ -169,7 +171,7 @@ public class PluginControlledPaymentProcessor extends ProcessorBase {
                                                          callContext, internalCallContext);
     }
 
-    public void retryPaymentTransaction(final String transactionExternalKey, final InternalCallContext internalCallContext) {
+    public void retryPaymentTransaction(final String transactionExternalKey, final String pluginName, final InternalCallContext internalCallContext) {
         try {
 
             final PaymentAttemptModelDao attempt = paymentDao.getPaymentAttemptByExternalKey(transactionExternalKey, internalCallContext);
@@ -192,6 +194,9 @@ public class PluginControlledPaymentProcessor extends ProcessorBase {
             final UUID tenantId = nonEntityDao.retrieveIdFromObject(internalCallContext.getTenantRecordId(), ObjectType.TENANT);
             final CallContext callContext = internalCallContext.toCallContext(tenantId);
 
+
+            // STEPH
+            final String newTransactionExternalKey = UUID.randomUUID().toString();
             final State state = pluginControlledDirectPaymentAutomatonRunner.fetchState(attempt.getStateName());
             pluginControlledDirectPaymentAutomatonRunner.run(state,
                                                       false,
@@ -200,11 +205,11 @@ public class PluginControlledPaymentProcessor extends ProcessorBase {
                                                       payment.getPaymentMethodId(),
                                                       payment.getId(),
                                                       payment.getExternalKey(),
-                                                      transactionExternalKey,
+                                                      newTransactionExternalKey,
                                                       transaction.getAmount(),
                                                       transaction.getCurrency(),
                                                       pluginProperties,
-                                                      null,
+                                                      pluginName,
                                                       callContext,
                                                       internalCallContext);
 

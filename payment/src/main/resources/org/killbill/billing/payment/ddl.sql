@@ -5,6 +5,7 @@ DROP TABLE IF EXISTS payment_attempts;
 CREATE TABLE payment_attempts (
     record_id int(11) unsigned NOT NULL AUTO_INCREMENT,
     id char(36) NOT NULL,
+    payment_external_key char(128) NOT NULL,
     direct_transaction_id char(36),
     transaction_external_key char(128) NOT NULL,
     state_name varchar(32) NOT NULL,
@@ -20,7 +21,8 @@ CREATE TABLE payment_attempts (
 ) /*! CHARACTER SET utf8 COLLATE utf8_bin */;
 CREATE UNIQUE INDEX payment_attempts_id ON payment_attempts(id);
 CREATE INDEX payment_attempts_payment ON payment_attempts(direct_transaction_id);
-CREATE INDEX payment_attempts_payment_key ON payment_attempts(transaction_external_key);
+CREATE INDEX payment_attempts_payment_key ON payment_attempts(payment_external_key);
+CREATE INDEX payment_attempts_payment_transaction_key ON payment_attempts(transaction_external_key);
 CREATE INDEX payment_attempts_tenant_account_record_id ON payment_attempts(tenant_record_id, account_record_id);
 
 DROP TABLE IF EXISTS payment_attempt_history;
@@ -28,6 +30,7 @@ CREATE TABLE payment_attempt_history (
     record_id int(11) unsigned NOT NULL AUTO_INCREMENT,
     id char(36) NOT NULL,
     target_record_id int(11) unsigned NOT NULL,
+    payment_external_key char(128) NOT NULL,
     direct_transaction_id char(36),
     transaction_external_key char(128) NOT NULL,
     state_name varchar(32) NOT NULL,

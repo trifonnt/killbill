@@ -78,7 +78,7 @@ public abstract class DirectPaymentOperation extends PluginOperation implements 
             return processPaymentInfoPlugin();
         } catch (final PaymentPluginApiException e) {
             // We don't care about the ErrorCode since it will be unwrapped
-            throw new PaymentApiException(e, ErrorCode.__UNKNOWN_ERROR_CODE);
+            throw new PaymentApiException(e, ErrorCode.__UNKNOWN_ERROR_CODE, "");
         }
     }
 

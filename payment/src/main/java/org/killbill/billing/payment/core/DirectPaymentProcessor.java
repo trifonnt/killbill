@@ -27,6 +27,7 @@ import java.util.concurrent.ExecutorService;
 import javax.annotation.Nullable;
 import javax.inject.Inject;
 
+import org.joda.time.DateTime;
 import org.killbill.automaton.State;
 import org.killbill.billing.ErrorCode;
 import org.killbill.billing.account.api.Account;
@@ -64,6 +65,7 @@ import org.killbill.billing.util.entity.Pagination;
 import org.killbill.billing.util.entity.dao.DefaultPaginationHelper.EntityPaginationBuilder;
 import org.killbill.billing.util.entity.dao.DefaultPaginationHelper.SourcePaginationBuilder;
 import org.killbill.bus.api.PersistentBus;
+import org.killbill.clock.Clock;
 import org.killbill.commons.locker.GlobalLocker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -98,8 +100,9 @@ public class DirectPaymentProcessor extends ProcessorBase {
                                   final InternalCallContextFactory internalCallContextFactory,
                                   final GlobalLocker locker,
                                   @Named(PLUGIN_EXECUTOR_NAMED) final ExecutorService executor,
-                                  final DirectPaymentAutomatonRunner directPaymentAutomatonRunner) {
-        super(pluginRegistry, accountUserApi, eventBus, paymentDao, nonEntityDao, tagUserApi, locker, executor, invoiceApi);
+                                  final DirectPaymentAutomatonRunner directPaymentAutomatonRunner,
+                                  final Clock clock) {
+        super(pluginRegistry, accountUserApi, eventBus, paymentDao, nonEntityDao, tagUserApi, locker, executor, invoiceApi, clock);
         this.internalCallContextFactory = internalCallContextFactory;
         this.directPaymentAutomatonRunner = directPaymentAutomatonRunner;
     }
@@ -231,8 +234,7 @@ public class DirectPaymentProcessor extends ProcessorBase {
                                                                     );
     }
 
-    public void notifyPendingPaymentOfStateChanged(final Account account, String transactionExternalKey, final boolean isSuccess, final CallContext callContext) throws PaymentApiException {
-        final InternalCallContext internalCallContext = internalCallContextFactory.createInternalCallContext(account.getId(), callContext);
+    public void notifyPendingPaymentOfStateChanged(final Account account, String transactionExternalKey, final boolean isSuccess, final CallContext callContext, final InternalCallContext internalCallContext) throws PaymentApiException {
 
         final DirectPaymentTransactionModelDao transactionModelDao = paymentDao.getDirectPaymentTransactionByExternalKey(transactionExternalKey, internalCallContext);
         if (transactionModelDao.getPaymentStatus() != PaymentStatus.PENDING) {
@@ -251,32 +253,44 @@ public class DirectPaymentProcessor extends ProcessorBase {
                                                                  transactionModelDao.getGatewayErrorCode(), transactionModelDao.getGatewayErrorMsg(), internalCallContext);
     }
 
-    public DirectPayment getPayment(final UUID directPaymentId, final boolean withPluginInfo, final Iterable<PluginProperty> properties, final TenantContext context, final InternalTenantContext tenantContext) throws PaymentApiException {
-        final DirectPaymentModelDao paymentModelDao = paymentDao.getDirectPayment(directPaymentId, tenantContext);
+    public void notifyPaymentPaymentOfChargeback(final Account account, final String paymentExternalKey, final String chargebackExternalKey, BigDecimal amount, Currency currency, final CallContext callContext, final InternalCallContext internalCallContext) throws PaymentApiException {
+        final DirectPaymentModelDao paymentModelDao = paymentDao.getDirectPaymentByExternalKey(paymentExternalKey, internalCallContext);
+        Preconditions.checkState(paymentModelDao != null);
+
+        final DateTime utcNow = clock.getUTCNow();
+
+        final DirectPaymentTransactionModelDao chargebackTransaction = new DirectPaymentTransactionModelDao(utcNow, utcNow, chargebackExternalKey, paymentModelDao.getId(),
+
+                                                                                                            TransactionType.CHARGEBACK, utcNow, PaymentStatus.SUCCESS, amount, currency, null, null);
+        final State currentPaymentState = directPaymentAutomatonRunner.fetchNextState("CHARGEBACK_INIT", true);
+
+        // TODO STEPH we could create a DAO operation to do both steps at once
+        paymentDao.updateDirectPaymentWithNewTransaction(paymentModelDao.getId(), chargebackTransaction, internalCallContext);
+        paymentDao.updateDirectPaymentAndTransactionOnCompletion(paymentModelDao.getId(), currentPaymentState.getName(), chargebackTransaction.getId(), PaymentStatus.SUCCESS,
+                                                                 chargebackTransaction.getAmount(), chargebackTransaction.getCurrency(),
+                                                                 chargebackTransaction.getGatewayErrorCode(), chargebackTransaction.getGatewayErrorMsg(), internalCallContext);
+
+    }
+
+    public DirectPayment getPayment(final UUID directPaymentId, final boolean withPluginInfo, final Iterable<PluginProperty> properties, final TenantContext tenantContext, final InternalTenantContext internalTenantContext) throws PaymentApiException {
+        final DirectPaymentModelDao paymentModelDao = paymentDao.getDirectPayment(directPaymentId, internalTenantContext);
         if (paymentModelDao == null) {
             return null;
         }
-
-        final InternalTenantContext tenantContextWithAccountRecordId;
-        if (tenantContext.getAccountRecordId() == null) {
-            tenantContextWithAccountRecordId = internalCallContextFactory.createInternalTenantContext(paymentModelDao.getAccountId(), tenantContext);
-        } else {
-            tenantContextWithAccountRecordId = tenantContext;
-        }
-        final List<DirectPaymentTransactionModelDao> transactionsForDirectPayment = paymentDao.getDirectTransactionsForDirectPayment(paymentModelDao.getId(), tenantContextWithAccountRecordId);
-
-        final PaymentPluginApi plugin = withPluginInfo ? getPaymentProviderPlugin(paymentModelDao.getPaymentMethodId(), tenantContext) : null;
-        List<PaymentTransactionInfoPlugin> pluginInfo = null;
-        if (plugin != null) {
-            try {
-                pluginInfo = plugin.getPaymentInfo(paymentModelDao.getAccountId(), directPaymentId, properties, context);
-            } catch (final PaymentPluginApiException e) {
-                throw new PaymentApiException(ErrorCode.PAYMENT_PLUGIN_GET_PAYMENT_INFO, directPaymentId, e.toString());
-            }
-        }
-
-        return toDirectPayment(paymentModelDao, transactionsForDirectPayment, pluginInfo);
+        return getDirectPayment(paymentModelDao, withPluginInfo, properties, tenantContext, internalTenantContext);
     }
+
+
+    public DirectPayment getPaymentByExternalKey(final String paymentExternalKey, final boolean withPluginInfo, final Iterable<PluginProperty> properties, final TenantContext tenantContext, final InternalTenantContext internalTenantContext) throws PaymentApiException {
+        final DirectPaymentModelDao paymentModelDao = paymentDao.getDirectPaymentByExternalKey(paymentExternalKey, internalTenantContext);
+        if (paymentModelDao == null) {
+            return null;
+        }
+        return getDirectPayment(paymentModelDao, withPluginInfo, properties, tenantContext, internalTenantContext);
+
+    }
+
+
 
     public Pagination<DirectPayment> getPayments(final Long offset, final Long limit, final Iterable<PluginProperty> properties,
                                                  final TenantContext tenantContext, final InternalTenantContext internalTenantContext) {
@@ -382,6 +396,27 @@ public class DirectPaymentProcessor extends ProcessorBase {
         return toDirectPayment(paymentModelDao, transactionsForAccount, pluginTransactions);
     }
 
+    private DirectPayment getDirectPayment(final DirectPaymentModelDao paymentModelDao, final boolean withPluginInfo, final Iterable<PluginProperty> properties, final TenantContext context, final InternalTenantContext tenantContext) throws PaymentApiException {
+        final InternalTenantContext tenantContextWithAccountRecordId;
+        if (tenantContext.getAccountRecordId() == null) {
+            tenantContextWithAccountRecordId = internalCallContextFactory.createInternalTenantContext(paymentModelDao.getAccountId(), tenantContext);
+        } else {
+            tenantContextWithAccountRecordId = tenantContext;
+        }
+        final List<DirectPaymentTransactionModelDao> transactionsForDirectPayment = paymentDao.getDirectTransactionsForDirectPayment(paymentModelDao.getId(), tenantContextWithAccountRecordId);
+
+        final PaymentPluginApi plugin = withPluginInfo ? getPaymentProviderPlugin(paymentModelDao.getPaymentMethodId(), tenantContext) : null;
+        List<PaymentTransactionInfoPlugin> pluginInfo = null;
+        if (plugin != null) {
+            try {
+                pluginInfo = plugin.getPaymentInfo(paymentModelDao.getAccountId(), paymentModelDao.getId(), properties, context);
+            } catch (final PaymentPluginApiException e) {
+                throw new PaymentApiException(ErrorCode.PAYMENT_PLUGIN_GET_PAYMENT_INFO, paymentModelDao.getId(), e.toString());
+            }
+        }
+        return toDirectPayment(paymentModelDao, transactionsForDirectPayment, pluginInfo);
+    }
+
     private DirectPayment toDirectPayment(final DirectPaymentModelDao curDirectPaymentModelDao, final Iterable<DirectPaymentTransactionModelDao> transactionsModelDao, @Nullable final List<PaymentTransactionInfoPlugin> pluginTransactions) {
         final Ordering<DirectPaymentTransaction> perPaymentTransactionOrdering = Ordering.<DirectPaymentTransaction>from(new Comparator<DirectPaymentTransaction>() {
             @Override
@@ -401,12 +436,14 @@ public class DirectPaymentProcessor extends ProcessorBase {
             @Override
             public DirectPaymentTransaction apply(final DirectPaymentTransactionModelDao input) {
 
-                final PaymentTransactionInfoPlugin info = Iterables.tryFind(pluginTransactions, new Predicate<PaymentTransactionInfoPlugin>() {
+                final PaymentTransactionInfoPlugin info = pluginTransactions != null ?
+                                                          Iterables.tryFind(pluginTransactions, new Predicate<PaymentTransactionInfoPlugin>() {
                     @Override
                     public boolean apply(final PaymentTransactionInfoPlugin input) {
                         return input.getKbTransactionPaymentId().equals(input.getKbTransactionPaymentId());
                     }
-                }).orNull();
+                }).orNull() : null;
+
                 return new DefaultDirectPaymentTransaction(input.getId(), input.getTransactionExternalKey(), input.getCreatedDate(), input.getUpdatedDate(), input.getDirectPaymentId(),
                                                            input.getTransactionType(), input.getEffectiveDate(), input.getPaymentStatus(), input.getAmount(), input.getCurrency(),
                                                            input.getProcessedAmount(), input.getProcessedCurrency(),
@@ -466,4 +503,5 @@ public class DirectPaymentProcessor extends ProcessorBase {
                                                           context.getUserToken());
         }
     }
+
 }

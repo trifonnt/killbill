@@ -6,7 +6,8 @@ historyTableName() ::= "payment_attempt_history"
 
 
 tableFields(prefix) ::= <<
-  <prefix>direct_transaction_id
+  <prefix>payment_external_key
+, <prefix>direct_transaction_id
 , <prefix>transaction_external_key
 , <prefix>state_name
 , <prefix>operation_name
@@ -18,7 +19,8 @@ tableFields(prefix) ::= <<
 >>
 
 tableValues() ::= <<
-  :directTransactionId
+  :paymentExternalKey
+, :directTransactionId
 , :transactionExternalKey
 , :stateName
 , :operationName
@@ -34,6 +36,16 @@ select
 <allTableFields("")>
 from <tableName()>
 where transaction_external_key = :transactionExternalKey
+<andCheckSoftDeletionWithComma("")>
+<AND_CHECK_TENANT("")>
+;
+>>
+
+getByPaymentExternalKey() ::= <<
+select
+<allTableFields("")>
+from <tableName()>
+where payment_external_key = :paymentExternalKey
 <andCheckSoftDeletionWithComma("")>
 <AND_CHECK_TENANT("")>
 ;

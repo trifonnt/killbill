@@ -23,12 +23,15 @@ import org.killbill.billing.account.api.AccountInternalApi;
 import org.killbill.billing.invoice.api.InvoiceInternalApi;
 import org.killbill.billing.osgi.api.OSGIServiceRegistration;
 import org.killbill.billing.payment.api.DirectPaymentApi;
+import org.killbill.billing.payment.core.DirectPaymentProcessor;
 import org.killbill.billing.payment.core.PaymentMethodProcessor;
+import org.killbill.billing.payment.core.PluginControlledPaymentProcessor;
 import org.killbill.billing.payment.core.sm.PluginControlledDirectPaymentAutomatonRunner;
 import org.killbill.billing.payment.dao.PaymentDao;
 import org.killbill.billing.payment.glue.TestPaymentModuleNoDB;
 import org.killbill.billing.payment.plugin.api.PaymentPluginApi;
 import org.killbill.billing.payment.provider.MockPaymentProviderPlugin;
+import org.killbill.billing.payment.retry.DefaultRetryService;
 import org.killbill.billing.platform.api.KillbillConfigSource;
 import org.killbill.billing.util.config.PaymentConfig;
 import org.killbill.bus.api.PersistentBus;
@@ -62,7 +65,13 @@ public abstract class PaymentTestSuiteNoDB extends GuicyKillbillTestSuiteNoDB {
     @Inject
     protected PaymentDao paymentDao;
     @Inject
+    protected DirectPaymentProcessor paymentProcessor;
+    @Inject
+    protected PluginControlledPaymentProcessor pluginControlledPaymentProcessor;
+    @Inject
     protected PluginControlledDirectPaymentAutomatonRunner retryableDirectPaymentAutomatonRunner;
+    @Inject
+    protected DefaultRetryService retryService;
 
     @Override
     protected KillbillConfigSource getConfigSource() {

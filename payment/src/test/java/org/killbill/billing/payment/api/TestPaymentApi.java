@@ -34,6 +34,7 @@ import org.killbill.billing.invoice.api.InvoiceItem;
 import org.killbill.billing.payment.MockRecurringInvoiceItem;
 import org.killbill.billing.payment.PaymentTestSuiteWithEmbeddedDB;
 import org.killbill.billing.payment.control.InvoicePaymentControlPluginApi;
+import org.killbill.billing.payment.dao.PaymentAttemptModelDao;
 import org.killbill.billing.payment.dao.PluginPropertyModelDao;
 import org.killbill.billing.retry.plugin.api.PaymentControlApiException;
 import org.killbill.bus.api.PersistentBus.EventBusException;
@@ -261,6 +262,10 @@ public class TestPaymentApi extends PaymentTestSuiteWithEmbeddedDB {
         assertEquals(payment.getTransactions().get(0).getTransactionType(), TransactionType.PURCHASE);
         assertNull(payment.getTransactions().get(0).getGatewayErrorMsg());
         assertNull(payment.getTransactions().get(0).getGatewayErrorCode());
+
+        // Not stricly an API test but interesting to verify that we indeed went through the attempt logic
+        final List<PaymentAttemptModelDao> attempts = paymentDao.getPaymentAttempts(payment.getExternalKey(), internalCallContext);
+        assertEquals(attempts.size(), 1);
     }
 
     @Test(groups = "slow")
@@ -306,8 +311,8 @@ public class TestPaymentApi extends PaymentTestSuiteWithEmbeddedDB {
         final Invoice invoice = testHelper.createTestInvoice(account, now, Currency.USD);
 
         final String paymentExternalKey = invoice.getId().toString();
-        final String transactionExternalKey = "payment";
-        final String transactionExternalKey2 = "refund";
+        final String transactionExternalKey = "sacrebleu";
+        final String transactionExternalKey2 = "maisenfin";
 
         final InvoiceItem invoiceItem = new MockRecurringInvoiceItem(invoice.getId(), account.getId(),
                                                                      subscriptionId,
@@ -387,8 +392,8 @@ public class TestPaymentApi extends PaymentTestSuiteWithEmbeddedDB {
         final Invoice invoice = testHelper.createTestInvoice(account, now, Currency.USD);
 
         final String paymentExternalKey = invoice.getId().toString();
-        final String transactionExternalKey = "payment";
-        final String transactionExternalKey2 = "refund";
+        final String transactionExternalKey = "hopla";
+        final String transactionExternalKey2 = "chouette";
 
         final InvoiceItem invoiceItem = new MockRecurringInvoiceItem(invoice.getId(), account.getId(),
                                                                      subscriptionId,
@@ -422,6 +427,54 @@ public class TestPaymentApi extends PaymentTestSuiteWithEmbeddedDB {
         assertEquals(payment2.getPurchasedAmount().compareTo(requestedAmount), 0);
         assertEquals(payment2.getRefundedAmount().compareTo(requestedAmount), 0);
         assertEquals(payment2.getCurrency(), Currency.USD);
+    }
+
+    @Test(groups = "slow")
+    public void testNotifyPaymentPaymentOfChargeback() throws PaymentApiException {
+        final BigDecimal requestedAmount = BigDecimal.TEN;
+
+        final String paymentExternalKey = "couic";
+        final String transactionExternalKey = "couac";
+        final String transactionExternalKey2 = "couyc";
+
+        final DirectPayment payment = paymentApi.createPurchase(account, account.getPaymentMethodId(), null, requestedAmount, Currency.AED, paymentExternalKey, transactionExternalKey,
+                                                                ImmutableList.<PluginProperty>of(), callContext);
+
+        paymentApi.notifyPaymentPaymentOfChargeback(account, payment.getExternalKey(), transactionExternalKey2, requestedAmount, Currency.AED, callContext);
+        final DirectPayment payment2 = paymentApi.getPayment(payment.getId(), false, ImmutableList.<PluginProperty>of(), callContext);
+
+
+        assertEquals(payment2.getExternalKey(), paymentExternalKey);
+        assertEquals(payment2.getPaymentMethodId(), account.getPaymentMethodId());
+        assertEquals(payment2.getAccountId(), account.getId());
+        assertEquals(payment2.getAuthAmount().compareTo(BigDecimal.ZERO), 0);
+        assertEquals(payment2.getCapturedAmount().compareTo(BigDecimal.ZERO), 0);
+        assertEquals(payment2.getPurchasedAmount().compareTo(requestedAmount), 0);
+        assertEquals(payment2.getRefundedAmount().compareTo(BigDecimal.ZERO), 0);
+        assertEquals(payment2.getCurrency(), Currency.AED);
+
+        assertEquals(payment2.getTransactions().size(), 2);
+        assertEquals(payment2.getTransactions().get(1).getExternalKey(), transactionExternalKey2);
+        assertEquals(payment2.getTransactions().get(1).getDirectPaymentId(), payment.getId());
+        assertEquals(payment2.getTransactions().get(1).getAmount().compareTo(requestedAmount), 0);
+        assertEquals(payment2.getTransactions().get(1).getCurrency(), Currency.AED);
+
+        assertEquals(payment2.getTransactions().get(1).getProcessedAmount().compareTo(requestedAmount), 0);
+        assertEquals(payment2.getTransactions().get(1).getProcessedCurrency(), Currency.AED);
+
+        assertEquals(payment2.getTransactions().get(1).getPaymentStatus(), PaymentStatus.SUCCESS);
+        assertEquals(payment2.getTransactions().get(1).getTransactionType(), TransactionType.CHARGEBACK);
+        assertNull(payment2.getTransactions().get(1).getGatewayErrorMsg());
+        assertNull(payment2.getTransactions().get(1).getGatewayErrorCode());
+
+        // Attempt to any other operation afterwards, that should fail
+        try {
+            paymentApi.createPurchase(account, account.getPaymentMethodId(), payment.getId(), requestedAmount, Currency.AED, paymentExternalKey, transactionExternalKey,
+                                      ImmutableList.<PluginProperty>of(), callContext);
+            Assert.fail("Purchase not succeed after a chargeback");
+        } catch (PaymentApiException e) {
+            Assert.assertTrue(true);
+        }
     }
 
 

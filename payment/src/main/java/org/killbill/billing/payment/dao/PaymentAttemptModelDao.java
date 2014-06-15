@@ -28,6 +28,7 @@ import org.killbill.billing.util.entity.dao.EntityModelDao;
 
 public class PaymentAttemptModelDao extends EntityBase implements EntityModelDao<PaymentAttempt> {
 
+    private String paymentExternalKey;
     private UUID directTransactionId;
     private String transactionExternalKey;
     private String stateName;
@@ -37,9 +38,10 @@ public class PaymentAttemptModelDao extends EntityBase implements EntityModelDao
     public PaymentAttemptModelDao() { /* For the DAO mapper */ }
 
     public PaymentAttemptModelDao(final UUID id, @Nullable final DateTime createdDate, @Nullable final DateTime updatedDate,
-                                  final UUID directTransactionId, final String externalKey, final String stateName, final String operationName,
+                                  final String paymentExternalKey, final UUID directTransactionId, final String externalKey, final String stateName, final String operationName,
                                   final String pluginName) {
         super(id, createdDate, updatedDate);
+        this.paymentExternalKey = paymentExternalKey;
         this.directTransactionId = directTransactionId;
         this.transactionExternalKey = externalKey;
         this.stateName = stateName;
@@ -48,9 +50,17 @@ public class PaymentAttemptModelDao extends EntityBase implements EntityModelDao
     }
 
     public PaymentAttemptModelDao(@Nullable final DateTime createdDate, @Nullable final DateTime updatedDate,
-                                  final UUID directTransactionId, final String externalKey, final String stateName, final String operationName,
+                                  final String paymentExternalKey, final UUID directTransactionId, final String externalKey, final String stateName, final String operationName,
                                   final String pluginName) {
-        this(UUID.randomUUID(), createdDate, updatedDate, directTransactionId, externalKey, stateName, operationName, pluginName);
+        this(UUID.randomUUID(), createdDate, updatedDate, paymentExternalKey, directTransactionId, externalKey, stateName, operationName, pluginName);
+    }
+
+    public String getPaymentExternalKey() {
+        return paymentExternalKey;
+    }
+
+    public void setPaymentExternalKey(final String paymentExternalKey) {
+        this.paymentExternalKey = paymentExternalKey;
     }
 
     public UUID getDirectTransactionId() {
@@ -110,6 +120,9 @@ public class PaymentAttemptModelDao extends EntityBase implements EntityModelDao
         if (directTransactionId != null ? !directTransactionId.equals(that.directTransactionId) : that.directTransactionId != null) {
             return false;
         }
+        if (paymentExternalKey != null ? !paymentExternalKey.equals(that.paymentExternalKey) : that.paymentExternalKey != null) {
+            return false;
+        }
         if (transactionExternalKey != null ? !transactionExternalKey.equals(that.transactionExternalKey) : that.transactionExternalKey != null) {
             return false;
         }
@@ -129,6 +142,7 @@ public class PaymentAttemptModelDao extends EntityBase implements EntityModelDao
     public int hashCode() {
         int result = super.hashCode();
         result = 31 * result + (directTransactionId != null ? directTransactionId.hashCode() : 0);
+        result = 31 * result + (paymentExternalKey != null ? paymentExternalKey.hashCode() : 0);
         result = 31 * result + (transactionExternalKey != null ? transactionExternalKey.hashCode() : 0);
         result = 31 * result + (stateName != null ? stateName.hashCode() : 0);
         result = 31 * result + (operationName != null ? operationName.hashCode() : 0);

@@ -46,7 +46,6 @@ public class RetryEnteringStateCallback implements EnteringStateCallback {
         final UUID transactionId = directPaymentStateContext.getCurrentTransaction() != null ?
                                    directPaymentStateContext.getCurrentTransaction().getId() :
                                    null;
-
         retryableDirectPaymentAutomatonRunner.paymentDao.updatePaymentAttempt(attempt.getId(), transactionId, state.getName(), directPaymentStateContext.internalCallContext);
 
         if ("RETRIED".equals(state.getName())) {

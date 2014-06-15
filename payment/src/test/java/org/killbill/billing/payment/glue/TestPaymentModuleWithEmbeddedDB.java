@@ -33,6 +33,7 @@ public class TestPaymentModuleWithEmbeddedDB extends TestPaymentModule {
     protected void configure() {
         install(new GuicyKillbillTestWithEmbeddedDBModule(configSource));
         install(new NonEntityDaoModule(configSource));
+
         super.configure();
     }
 }

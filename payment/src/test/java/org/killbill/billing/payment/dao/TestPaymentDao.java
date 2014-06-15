@@ -37,7 +37,9 @@ public class TestPaymentDao extends PaymentTestSuiteWithEmbeddedDB {
 
     @Test(groups = "slow")
     public void testPaymentAttempt() {
+        final UUID paymentId = UUID.randomUUID();
         final UUID directTransactionId = UUID.randomUUID();
+        final String paymentExternalKey = "vraiment?";
         final String transactionExternalKey = "tduteuqweq";
         final String stateName = "INIT";
         final String operationName = "AUTHORIZE";
@@ -52,7 +54,7 @@ public class TestPaymentDao extends PaymentTestSuiteWithEmbeddedDB {
         props.add(prop2);
         props.add(prop3);
 
-        final PaymentAttemptModelDao attempt = new PaymentAttemptModelDao(clock.getUTCNow(), clock.getUTCNow(), directTransactionId, transactionExternalKey, stateName, operationName, pluginName);
+        final PaymentAttemptModelDao attempt = new PaymentAttemptModelDao(clock.getUTCNow(), clock.getUTCNow(), paymentExternalKey, directTransactionId, transactionExternalKey, stateName, operationName, pluginName);
         PaymentAttemptModelDao savedAttempt = paymentDao.insertPaymentAttemptWithProperties(attempt, props, internalCallContext);
         assertEquals(savedAttempt.getTransactionExternalKey(), transactionExternalKey);
         assertEquals(savedAttempt.getOperationName(), operationName);
