@@ -82,7 +82,6 @@ import org.killbill.billing.overdue.OverdueUserApi;
 import org.killbill.billing.overdue.config.api.OverdueException;
 import org.killbill.billing.payment.api.DirectPayment;
 import org.killbill.billing.payment.api.DirectPaymentApi;
-import org.killbill.billing.payment.api.Payment;
 import org.killbill.billing.payment.api.PaymentApi;
 import org.killbill.billing.payment.api.PaymentApiException;
 import org.killbill.billing.payment.api.PaymentMethod;
@@ -336,13 +335,13 @@ public class AccountResource extends JaxRsResourceBase {
         final List<Invoice> invoices = invoiceApi.getInvoicesByAccount(account.getId(), tenantContext);
 
         // Get the payments
-        final List<Payment> payments = paymentApi.getAccountPayments(accountId, tenantContext);
+        final List<DirectPayment> payments = paymentApi.getAccountPayments(accountId, tenantContext);
 
         // Get the refunds
-        final List<Refund> refunds = paymentApi.getAccountRefunds(account, tenantContext);
-        final Multimap<UUID, Refund> refundsByPayment = ArrayListMultimap.<UUID, Refund>create();
-        for (final Refund refund : refunds) {
-            refundsByPayment.put(refund.getPaymentId(), refund);
+        final List<DirectPayment> refunds = paymentApi.getAccountRefunds(account, tenantContext);
+        final Multimap<UUID, DirectPayment> refundsByPayment = ArrayListMultimap.<UUID, DirectPayment>create();
+        for (final DirectPayment refund : refunds) {
+            refundsByPayment.put(refund.getId(), refund);
         }
 
         // Get the chargebacks
@@ -463,9 +462,9 @@ public class AccountResource extends JaxRsResourceBase {
     @Produces(APPLICATION_JSON)
     public Response getPayments(@PathParam("accountId") final String accountId,
                                 @javax.ws.rs.core.Context final HttpServletRequest request) throws PaymentApiException {
-        final List<Payment> payments = paymentApi.getAccountPayments(UUID.fromString(accountId), context.createContext(request));
+        final List<DirectPayment> payments = paymentApi.getAccountPayments(UUID.fromString(accountId), context.createContext(request));
         final List<PaymentJson> result = new ArrayList<PaymentJson>(payments.size());
-        for (final Payment payment : payments) {
+        for (final DirectPayment payment : payments) {
             result.add(new PaymentJson(payment, null));
         }
         return Response.status(Status.OK).entity(result).build();
@@ -704,10 +703,10 @@ public class AccountResource extends JaxRsResourceBase {
         final TenantContext tenantContext = context.createContext(request);
 
         final Account account = accountUserApi.getAccountById(UUID.fromString(accountId), tenantContext);
-        final List<Refund> refunds = paymentApi.getAccountRefunds(account, tenantContext);
-        final List<RefundJson> result = new ArrayList<RefundJson>(Collections2.transform(refunds, new Function<Refund, RefundJson>() {
+        final List<DirectPayment> refunds = paymentApi.getAccountRefunds(account, tenantContext);
+        final List<RefundJson> result = new ArrayList<RefundJson>(Collections2.transform(refunds, new Function<DirectPayment, RefundJson>() {
             @Override
-            public RefundJson apply(final Refund input) {
+            public RefundJson apply(final DirectPayment input) {
                 // TODO Return adjusted items and audits
                 return new RefundJson(input, null, null);
             }
