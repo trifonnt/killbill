@@ -74,7 +74,7 @@ public class InvoicePaymentControlDao {
                 final List<PluginAutoPayOffModelDao> result = new ArrayList<PluginAutoPayOffModelDao>(queryResult.size());
                 for (final Map<String, Object> row : queryResult) {
 
-                    final PluginAutoPayOffModelDao entry = new PluginAutoPayOffModelDao((Long) row.get("record_id"),
+                    final PluginAutoPayOffModelDao entry = new PluginAutoPayOffModelDao(Long.valueOf(row.get("record_id").toString()),
                                                                                         (String) row.get("payment_external_key"),
                                                                                         (String) row.get("transaction_external_key"),
                                                                                         UUID.fromString((String) row.get("account_id")),
