@@ -71,7 +71,7 @@ import org.killbill.billing.mock.MockAccountBuilder;
 import org.killbill.billing.osgi.config.OSGIConfig;
 import org.killbill.billing.overdue.OverdueUserApi;
 import org.killbill.billing.overdue.wrapper.OverdueWrapperFactory;
-import org.killbill.billing.payment.api.Payment;
+import org.killbill.billing.payment.api.DirectPayment;
 import org.killbill.billing.payment.api.PaymentApi;
 import org.killbill.billing.payment.api.PaymentApiException;
 import org.killbill.billing.payment.api.PaymentMethodPlugin;
@@ -405,12 +405,12 @@ public class TestIntegrationBase extends BeatrixTestSuiteWithEmbeddedDB {
         }, events);
     }
 
-    protected void refundPaymentAndCheckForCompletion(final Account account, final Payment payment, final NextEvent... events) {
+    protected void refundPaymentAndCheckForCompletion(final Account account, final DirectPayment payment, final NextEvent... events) {
         doCallAndCheckForCompletion(new Function<Void, Void>() {
             @Override
             public Void apply(@Nullable final Void input) {
                 try {
-                    paymentApi.createRefund(account, payment.getId(), payment.getPaidAmount(), PLUGIN_PROPERTIES, callContext);
+                    paymentApi.createRefund(account, payment.getId(), payment.getCapturedAmount() /* TODO [PAYMENT] payment.getPaidAmount() */, PLUGIN_PROPERTIES, callContext);
                 } catch (final PaymentApiException e) {
                     fail(e.toString());
                 }
@@ -419,12 +419,12 @@ public class TestIntegrationBase extends BeatrixTestSuiteWithEmbeddedDB {
         }, events);
     }
 
-    protected void refundPaymentWithAdjustmenttAndCheckForCompletion(final Account account, final Payment payment, final NextEvent... events) {
+    protected void refundPaymentWithAdjustmenttAndCheckForCompletion(final Account account, final DirectPayment payment, final NextEvent... events) {
         doCallAndCheckForCompletion(new Function<Void, Void>() {
             @Override
             public Void apply(@Nullable final Void input) {
                 try {
-                    paymentApi.createRefundWithAdjustment(account, payment.getId(), payment.getPaidAmount(), PLUGIN_PROPERTIES, callContext);
+                    paymentApi.createRefundWithAdjustment(account, payment.getId(), payment.getCapturedAmount() /* TODO [PAYMENT] payment.getPaidAmount() */, PLUGIN_PROPERTIES, callContext);
                 } catch (final PaymentApiException e) {
                     fail(e.toString());
                 }
@@ -433,7 +433,7 @@ public class TestIntegrationBase extends BeatrixTestSuiteWithEmbeddedDB {
         }, events);
     }
 
-    protected void refundPaymentWithInvoiceItemAdjAndCheckForCompletion(final Account account, final Payment payment, final Set<UUID> invoiceItems, final NextEvent... events) {
+    protected void refundPaymentWithInvoiceItemAdjAndCheckForCompletion(final Account account, final DirectPayment payment, final Set<UUID> invoiceItems, final NextEvent... events) {
         doCallAndCheckForCompletion(new Function<Void, Void>() {
             @Override
             public Void apply(@Nullable final Void input) {
