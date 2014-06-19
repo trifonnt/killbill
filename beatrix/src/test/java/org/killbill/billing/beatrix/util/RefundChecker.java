@@ -24,6 +24,9 @@ import java.util.UUID;
 import javax.annotation.Nullable;
 
 import org.joda.time.LocalDate;
+import org.killbill.billing.payment.api.DirectPayment;
+import org.killbill.billing.payment.api.DirectPaymentTransaction;
+import org.killbill.billing.payment.api.TransactionType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testng.Assert;
@@ -40,6 +43,7 @@ import org.killbill.billing.util.callcontext.CallContext;
 
 import com.google.common.base.Predicate;
 import com.google.common.collect.Collections2;
+import com.google.common.collect.Iterables;
 import com.google.inject.Inject;
 
 public class RefundChecker {
@@ -59,19 +63,20 @@ public class RefundChecker {
         this.invoiceUserApi = invoiceApi;
     }
 
-    public Refund checkRefund(final UUID paymentId, final CallContext context, ExpectedRefundCheck expected) throws PaymentApiException {
+    public DirectPayment checkRefund(final UUID paymentId, final CallContext context, ExpectedRefundCheck expected) throws PaymentApiException {
 
-        final List<Refund> refunds = paymentApi.getPaymentRefunds(paymentId, context);
+        final List<DirectPayment> refunds = paymentApi.getPaymentRefunds(paymentId, context);
         Assert.assertEquals(refunds.size(), 1);
 
         final InvoicePayment refundInvoicePayment = getInvoicePaymentEntry(paymentId, InvoicePaymentType.REFUND, context);
         final InvoicePayment invoicePayment = getInvoicePaymentEntry(paymentId, InvoicePaymentType.ATTEMPT, context);
 
-        final Refund refund = refunds.get(0);
-        Assert.assertEquals(refund.getPaymentId(), expected.getPaymentId());
+        final DirectPayment refund = refunds.get(0);
+        final DirectPaymentTransaction refundTransaction = getRefundTransaction(refund);
+
+        Assert.assertEquals(refundTransaction.getDirectPaymentId(), expected.getPaymentId());
         Assert.assertEquals(refund.getCurrency(), expected.getCurrency());
-        Assert.assertEquals(refund.isAdjusted(), expected.isAdjusted);
-        Assert.assertEquals(refund.getRefundAmount().compareTo(expected.getRefundAmount()), 0);
+        Assert.assertEquals(refundTransaction.getAmount().compareTo(expected.getRefundAmount()), 0);
 
         Assert.assertEquals(refundInvoicePayment.getPaymentId(), paymentId);
         Assert.assertEquals(refundInvoicePayment.getLinkedInvoicePaymentId(), invoicePayment.getId());
@@ -81,6 +86,15 @@ public class RefundChecker {
         Assert.assertEquals(refundInvoicePayment.getCurrency(), expected.getCurrency());
 
         return refund;
+    }
+
+    private DirectPaymentTransaction getRefundTransaction(final DirectPayment payment) {
+        return Iterables.tryFind(payment.getTransactions(), new Predicate<DirectPaymentTransaction>() {
+            @Override
+            public boolean apply(final DirectPaymentTransaction input) {
+                return input.getTransactionType() == TransactionType.REFUND;
+            }
+        }).get();
     }
 
     private InvoicePayment getInvoicePaymentEntry(final UUID paymentId, final InvoicePaymentType type, final CallContext context) {
