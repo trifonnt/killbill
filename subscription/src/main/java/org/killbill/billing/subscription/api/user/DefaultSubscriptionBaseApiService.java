@@ -64,6 +64,7 @@ import org.killbill.billing.subscription.exceptions.SubscriptionBaseError;
 import org.killbill.billing.util.callcontext.CallContext;
 import org.killbill.billing.util.callcontext.InternalCallContextFactory;
 
+import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
 
 public class DefaultSubscriptionBaseApiService implements SubscriptionBaseApiService {
@@ -406,7 +407,7 @@ public class DefaultSubscriptionBaseApiService implements SubscriptionBaseApiSer
 
         final Product baseProduct = (baseSubscription.getState() == EntitlementState.CANCELLED) ? null : baseSubscription.getCurrentPlan().getProduct();
 
-        final List<SubscriptionBase> subscriptions = dao.getSubscriptions(baseSubscription.getBundleId(), context);
+        final List<SubscriptionBase> subscriptions = dao.getSubscriptions(baseSubscription.getBundleId(), ImmutableList.<SubscriptionBaseEvent>of(), context);
 
         final List<DefaultSubscriptionBase> subscriptionsToBeCancelled = new LinkedList<DefaultSubscriptionBase>();
         final List<SubscriptionBaseEvent> cancelEvents = new LinkedList<SubscriptionBaseEvent>();

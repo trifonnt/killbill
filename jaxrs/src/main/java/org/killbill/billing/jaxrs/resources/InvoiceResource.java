@@ -51,8 +51,11 @@ import org.killbill.billing.ObjectType;
 import org.killbill.billing.account.api.Account;
 import org.killbill.billing.account.api.AccountApiException;
 import org.killbill.billing.account.api.AccountUserApi;
+import org.killbill.billing.catalog.api.BillingPeriod;
 import org.killbill.billing.catalog.api.Currency;
 import org.killbill.billing.entitlement.api.SubscriptionApiException;
+import org.killbill.billing.entitlement.api.SubscriptionEventType;
+import org.killbill.billing.invoice.api.DryRunArguments;
 import org.killbill.billing.invoice.api.Invoice;
 import org.killbill.billing.invoice.api.InvoiceApiException;
 import org.killbill.billing.invoice.api.InvoiceItem;
@@ -263,7 +266,8 @@ public class InvoiceResource extends JaxRsResourceBase {
         final CallContext callContext = context.createContext(createdBy, reason, comment, request);
         final LocalDate inputDate = toLocalDate(UUID.fromString(accountId), targetDateTime, callContext);
 
-        final Invoice generatedInvoice = invoiceApi.triggerInvoiceGeneration(UUID.fromString(accountId), inputDate, dryRun,
+        final DryRunArguments dryRunArguments = dryRun ? new DefaultDryRunArguments() : null;
+        final Invoice generatedInvoice = invoiceApi.triggerInvoiceGeneration(UUID.fromString(accountId), inputDate, dryRunArguments,
                                                                              callContext);
         if (dryRun) {
             return Response.status(Status.OK).entity(new InvoiceJson(generatedInvoice)).build();
@@ -603,4 +607,46 @@ public class InvoiceResource extends JaxRsResourceBase {
     protected ObjectType getObjectType() {
         return ObjectType.INVOICE;
     }
+
+    private class DefaultDryRunArguments implements DryRunArguments {
+
+        private final SubscriptionEventType action;
+        private final UUID subscriptionId;
+        private final BillingPeriod billingPeriod;
+        private final String priceList;
+        private final String productName;
+
+        public DefaultDryRunArguments() {
+            this(null, null, null, null, null);
+        }
+
+        public DefaultDryRunArguments(final SubscriptionEventType action, final UUID subscriptionId, final BillingPeriod billingPeriod, final String priceList, final String productName) {
+            this.action = action;
+            this.subscriptionId = subscriptionId;
+            this.billingPeriod = billingPeriod;
+            this.priceList = priceList;
+            this.productName = productName;
+        }
+
+        public SubscriptionEventType getAction() {
+            return action;
+        }
+
+        public UUID getSubscriptionId() {
+            return subscriptionId;
+        }
+
+        public BillingPeriod getBillingPeriod() {
+            return billingPeriod;
+        }
+
+        public String getPriceList() {
+            return priceList;
+        }
+
+        public String getProductName() {
+            return productName;
+        }
+    }
+
 }

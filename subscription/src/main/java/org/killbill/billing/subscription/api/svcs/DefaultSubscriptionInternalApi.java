@@ -25,11 +25,6 @@ import java.util.UUID;
 import javax.annotation.Nullable;
 
 import org.joda.time.DateTime;
-import org.killbill.billing.util.cache.Cachable.CacheType;
-import org.killbill.billing.util.cache.CacheControllerDispatcher;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import org.killbill.billing.ErrorCode;
 import org.killbill.billing.ObjectType;
 import org.killbill.billing.callcontext.InternalCallContext;
@@ -42,12 +37,11 @@ import org.killbill.billing.catalog.api.PlanPhase;
 import org.killbill.billing.catalog.api.PlanPhaseSpecifier;
 import org.killbill.billing.catalog.api.PriceListSet;
 import org.killbill.billing.catalog.api.ProductCategory;
-import org.killbill.clock.Clock;
-import org.killbill.clock.DefaultClock;
 import org.killbill.billing.entitlement.api.Entitlement.EntitlementState;
 import org.killbill.billing.entitlement.api.EntitlementAOStatusDryRun;
 import org.killbill.billing.entitlement.api.EntitlementAOStatusDryRun.DryRunChangeReason;
 import org.killbill.billing.events.EffectiveSubscriptionInternalEvent;
+import org.killbill.billing.invoice.api.DryRunArguments;
 import org.killbill.billing.subscription.api.SubscriptionApiBase;
 import org.killbill.billing.subscription.api.SubscriptionBase;
 import org.killbill.billing.subscription.api.SubscriptionBaseInternalApi;
@@ -64,10 +58,17 @@ import org.killbill.billing.subscription.api.user.SubscriptionBuilder;
 import org.killbill.billing.subscription.engine.addon.AddonUtils;
 import org.killbill.billing.subscription.engine.dao.SubscriptionDao;
 import org.killbill.billing.subscription.engine.dao.model.SubscriptionBundleModelDao;
+import org.killbill.billing.subscription.events.SubscriptionBaseEvent;
 import org.killbill.billing.subscription.exceptions.SubscriptionBaseError;
+import org.killbill.billing.util.cache.Cachable.CacheType;
+import org.killbill.billing.util.cache.CacheControllerDispatcher;
 import org.killbill.billing.util.dao.NonEntityDao;
 import org.killbill.billing.util.entity.Pagination;
 import org.killbill.billing.util.entity.dao.DefaultPaginationHelper.SourcePaginationBuilder;
+import org.killbill.clock.Clock;
+import org.killbill.clock.DefaultClock;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Function;
 import com.google.common.collect.Collections2;
@@ -240,7 +241,7 @@ public class DefaultSubscriptionInternalApi extends SubscriptionApiBase implemen
 
     public static SubscriptionBaseBundle getActiveBundleForKeyNotException(final List<SubscriptionBaseBundle> existingBundles, final SubscriptionDao dao, final Clock clock, final InternalTenantContext context) {
         for (SubscriptionBaseBundle cur : existingBundles) {
-            final List<SubscriptionBase> subscriptions = dao.getSubscriptions(cur.getId(), context);
+            final List<SubscriptionBase> subscriptions = dao.getSubscriptions(cur.getId(), ImmutableList.<SubscriptionBaseEvent>of(), context);
             for (SubscriptionBase s : subscriptions) {
                 if (s.getCategory() == ProductCategory.ADD_ON) {
                     continue;
@@ -255,8 +256,12 @@ public class DefaultSubscriptionInternalApi extends SubscriptionApiBase implemen
 
     @Override
     public List<SubscriptionBase> getSubscriptionsForBundle(UUID bundleId,
+                                                            @Nullable final DryRunArguments dryRunArguments,
                                                             InternalTenantContext context) {
-        final List<SubscriptionBase> internalSubscriptions = dao.getSubscriptions(bundleId, context);
+
+        // STEPH TODO complete missing part here: dryRunArguments -> dryRunEvents
+        final List<SubscriptionBaseEvent> dryRunEvents = null;
+        final List<SubscriptionBase> internalSubscriptions = dao.getSubscriptions(bundleId, dryRunEvents, context);
         return createSubscriptionsForApiUse(internalSubscriptions);
     }
 
@@ -332,7 +337,8 @@ public class DefaultSubscriptionInternalApi extends SubscriptionApiBase implemen
         final List<SubscriptionBaseBundle> bundles = getBundlesForAccount(accountId, context);
         DateTime result = null;
         for (final SubscriptionBaseBundle bundle : bundles) {
-            final List<SubscriptionBase> subscriptions = getSubscriptionsForBundle(bundle.getId(), context);
+            // STEPH maybe it would be nice as well to privide the next future billing date for when we do dryRun
+            final List<SubscriptionBase> subscriptions = getSubscriptionsForBundle(bundle.getId(), null, context);
             for (final SubscriptionBase subscription : subscriptions) {
                 final DateTime chargedThruDate = subscription.getChargedThroughDate();
                 if (result == null ||
@@ -356,7 +362,7 @@ public class DefaultSubscriptionInternalApi extends SubscriptionApiBase implemen
 
         final List<EntitlementAOStatusDryRun> result = new LinkedList<EntitlementAOStatusDryRun>();
 
-        final List<SubscriptionBase> bundleSubscriptions = dao.getSubscriptions(subscription.getBundleId(), context);
+        final List<SubscriptionBase> bundleSubscriptions = dao.getSubscriptions(subscription.getBundleId(), ImmutableList.<SubscriptionBaseEvent>of(), context);
         for (final SubscriptionBase cur : bundleSubscriptions) {
             if (cur.getId().equals(subscriptionId)) {
                 continue;
