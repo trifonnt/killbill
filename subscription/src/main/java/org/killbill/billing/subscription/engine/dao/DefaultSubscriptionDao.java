@@ -929,7 +929,7 @@ public class DefaultSubscriptionDao extends EntityDaoBase<SubscriptionBundleMode
         final Iterator<SubscriptionBaseEvent> it = dryRunEvents.iterator();
         while (it.hasNext()) {
             final SubscriptionBaseEvent dryRunEvent = it.next();
-            if (dryRunEvent.getSubscriptionId().equals(subscriptionId)) {
+            if (dryRunEvent.getSubscriptionId() != null && dryRunEvent.getSubscriptionId().equals(subscriptionId)) {
                 // STEPH let's assume that there is no future events after that new dryRun event; maybe something we can ensure at API level
                 events.add(dryRunEvent);
                 it.remove();

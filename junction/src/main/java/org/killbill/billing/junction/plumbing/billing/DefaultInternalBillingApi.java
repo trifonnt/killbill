@@ -37,6 +37,7 @@ import org.killbill.billing.junction.BillingEventSet;
 import org.killbill.billing.junction.BillingInternalApi;
 import org.killbill.billing.subscription.api.SubscriptionBase;
 import org.killbill.billing.subscription.api.SubscriptionBaseInternalApi;
+import org.killbill.billing.subscription.api.user.SubscriptionBaseApiException;
 import org.killbill.billing.subscription.api.user.SubscriptionBaseBundle;
 import org.killbill.billing.tag.TagInternalApi;
 import org.killbill.billing.util.tag.ControlTagType;
@@ -97,6 +98,8 @@ public class DefaultInternalBillingApi implements BillingInternalApi {
             addBillingEventsForBundles(bundles, account, dryRunArguments, context, result);
         } catch (AccountApiException e) {
             log.warn("Failed while getting BillingEvent", e);
+        } catch (SubscriptionBaseApiException e) {
+            log.warn("Failed while getting BillingEvent", e);
         }
 
         // Pretty-print the events, before and after the blocking calculator does its magic
@@ -117,7 +120,7 @@ public class DefaultInternalBillingApi implements BillingInternalApi {
     }
 
     private void addBillingEventsForBundles(final List<SubscriptionBaseBundle> bundles, final Account account, final DryRunArguments dryRunArguments, final InternalCallContext context,
-                                            final DefaultBillingEventSet result) {
+                                            final DefaultBillingEventSet result) throws SubscriptionBaseApiException {
         for (final SubscriptionBaseBundle bundle : bundles) {
             final List<SubscriptionBase> subscriptions = subscriptionApi.getSubscriptionsForBundle(bundle.getId(), dryRunArguments, context);
 

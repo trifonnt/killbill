@@ -55,7 +55,8 @@ public interface SubscriptionBaseInternalApi {
 
     public Iterable<UUID> getNonAOSubscriptionIdsForKey(String bundleKey, InternalTenantContext context);
 
-    public List<SubscriptionBase> getSubscriptionsForBundle(UUID bundleId, DryRunArguments dryRunArguments, InternalTenantContext context);
+    public List<SubscriptionBase> getSubscriptionsForBundle(UUID bundleId, DryRunArguments dryRunArguments, InternalTenantContext context)
+            throws SubscriptionBaseApiException;
 
     public Map<UUID, List<SubscriptionBase>> getSubscriptionsForAccount(InternalTenantContext context);
 
@@ -72,8 +73,6 @@ public interface SubscriptionBaseInternalApi {
     public List<EffectiveSubscriptionInternalEvent> getAllTransitions(SubscriptionBase subscription, InternalTenantContext context);
 
     public List<EffectiveSubscriptionInternalEvent> getBillingTransitions(SubscriptionBase subscription, InternalTenantContext context);
-
-    public DateTime getNextBillingDate(UUID accountId, InternalTenantContext context);
 
     public List<EntitlementAOStatusDryRun> getDryRunChangePlanStatus(UUID subscriptionId, @Nullable String baseProductName,
                                                                      DateTime requestedDate, InternalTenantContext context) throws SubscriptionBaseApiException;

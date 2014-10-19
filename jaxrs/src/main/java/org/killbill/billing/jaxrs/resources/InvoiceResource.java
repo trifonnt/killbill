@@ -30,6 +30,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
 
+import javax.annotation.Nullable;
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
@@ -54,6 +55,10 @@ import org.killbill.billing.account.api.AccountApiException;
 import org.killbill.billing.account.api.AccountUserApi;
 import org.killbill.billing.catalog.api.BillingPeriod;
 import org.killbill.billing.catalog.api.Currency;
+import org.killbill.billing.catalog.api.PhaseType;
+import org.killbill.billing.catalog.api.PlanPhaseSpecifier;
+import org.killbill.billing.catalog.api.ProductCategory;
+import org.killbill.billing.entitlement.api.Entitlement.EntitlementActionPolicy;
 import org.killbill.billing.entitlement.api.SubscriptionApiException;
 import org.killbill.billing.entitlement.api.SubscriptionEventType;
 import org.killbill.billing.invoice.api.DryRunArguments;
@@ -64,6 +69,7 @@ import org.killbill.billing.invoice.api.InvoiceNotifier;
 import org.killbill.billing.invoice.api.InvoicePayment;
 import org.killbill.billing.invoice.api.InvoiceUserApi;
 import org.killbill.billing.jaxrs.json.CustomFieldJson;
+import org.killbill.billing.jaxrs.json.InvoiceDryRunJson;
 import org.killbill.billing.jaxrs.json.InvoiceItemJson;
 import org.killbill.billing.jaxrs.json.InvoiceJson;
 import org.killbill.billing.jaxrs.json.InvoicePaymentJson;
@@ -90,6 +96,7 @@ import org.slf4j.LoggerFactory;
 
 import com.codahale.metrics.annotation.Timed;
 import com.google.common.base.Function;
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
@@ -256,7 +263,8 @@ public class InvoiceResource extends JaxRsResourceBase {
     @Produces(APPLICATION_JSON)
     @ApiOperation(value = "Trigger an invoice generation", response = InvoiceJson.class)
     @ApiResponses(value = {@ApiResponse(code = 400, message = "Invalid account id or target datetime supplied")})
-    public Response createFutureInvoice(@QueryParam(QUERY_ACCOUNT_ID) final String accountId,
+    public Response createFutureInvoice(@Nullable final InvoiceDryRunJson dryRunSubscriptionSpec,
+                                        @QueryParam(QUERY_ACCOUNT_ID) final String accountId,
                                         @QueryParam(QUERY_TARGET_DATE) final String targetDateTime,
                                         @QueryParam(QUERY_DRY_RUN) @DefaultValue("false") final Boolean dryRun,
                                         @HeaderParam(HDR_CREATED_BY) final String createdBy,
@@ -267,7 +275,20 @@ public class InvoiceResource extends JaxRsResourceBase {
         final CallContext callContext = context.createContext(createdBy, reason, comment, request);
         final LocalDate inputDate = toLocalDate(UUID.fromString(accountId), targetDateTime, callContext);
 
-        final DryRunArguments dryRunArguments = dryRun ? new DefaultDryRunArguments() : null;
+        if (dryRunSubscriptionSpec != null) {
+            Preconditions.checkArgument(dryRun, "Query parameter dryRun should be true when specifying a subscription dryRun body");
+            verifyNonNullOrEmpty(dryRunSubscriptionSpec.getDryRunAction(), "DryRun subscription action should be specified",
+                                 dryRunSubscriptionSpec.getBillingPeriod(), "DryRun subscription billingPeriod should be specified",
+                                 dryRunSubscriptionSpec.getProductCategory(), "DryRun subscription product category should be specified",
+                                 dryRunSubscriptionSpec.getProductName(), "DryRun subscription product should be specified",
+                                 dryRunSubscriptionSpec.getEffectiveDate(), "DryRun subscription effectiveDate should be specified");
+            if (!dryRunSubscriptionSpec.getDryRunAction().equals(SubscriptionEventType.START_BILLING.toString())) {
+                verifyNonNullOrEmpty(dryRunSubscriptionSpec.getSubscriptionId(), "DryRun subscriptionID should be specified");
+            }
+        }
+
+        // STEPH_DRY_RUN api signature is a bit confusing, between null object, empty object, partially populated object...
+        final DryRunArguments dryRunArguments = dryRun ? new DefaultDryRunArguments(dryRunSubscriptionSpec) : null;
         final Invoice generatedInvoice = invoiceApi.triggerInvoiceGeneration(UUID.fromString(accountId), inputDate, dryRunArguments,
                                                                              callContext);
         if (dryRun) {
@@ -609,49 +630,54 @@ public class InvoiceResource extends JaxRsResourceBase {
         return ObjectType.INVOICE;
     }
 
-    // STEPH_DRY_RUN combine with PlanPahseSpec
-    private class DefaultDryRunArguments implements DryRunArguments {
+    private static class DefaultDryRunArguments implements DryRunArguments {
 
         private final SubscriptionEventType action;
         private final UUID subscriptionId;
-        private final BillingPeriod billingPeriod;
-        private final String priceList;
-        private final String productName;
         private final DateTime effectiveDate;
+        private final PlanPhaseSpecifier specifier;
 
-        public DefaultDryRunArguments() {
-            this(null, null, null, null, null, null);
-        }
-
-        public DefaultDryRunArguments(final SubscriptionEventType action, final UUID subscriptionId, final BillingPeriod billingPeriod,
-                                      final String priceList, final String productName, final DateTime effectiveDate) {
+        public DefaultDryRunArguments(final SubscriptionEventType action, final UUID subscriptionId, final PlanPhaseSpecifier specifier, final DateTime effectiveDate) {
             this.action = action;
             this.subscriptionId = subscriptionId;
-            this.billingPeriod = billingPeriod;
-            this.priceList = priceList;
-            this.productName = productName;
             this.effectiveDate = effectiveDate;
+            this.specifier = specifier;
         }
 
+        public DefaultDryRunArguments(final InvoiceDryRunJson input) {
+            if (input == null) {
+                this.action = null;
+                this.subscriptionId = null;
+                this.effectiveDate = null;
+                this.specifier = null;
+            } else {
+                this.action = SubscriptionEventType.valueOf(input.getDryRunAction());
+                this.subscriptionId = input.getSubscriptionId() != null ? UUID.fromString(input.getSubscriptionId()) : null;
+                // STEPH_DRY_RUN we need the same logic that we have in entitlement to convert localDate to DateTime. extract in Clock
+                this.effectiveDate = input.getEffectiveDate().toDateTimeAtCurrentTime();
+                this.specifier = new PlanPhaseSpecifier(input.getProductName(),
+                                                        ProductCategory.valueOf(input.getProductCategory()),
+                                                        BillingPeriod.valueOf(input.getBillingPeriod()),
+                                                        input.getPriceListName(),
+                                                        input.getPhaseType() != null ? PhaseType.valueOf(input.getPhaseType()) : null);
+            }
+        }
+
+        @Override
+        public PlanPhaseSpecifier getPlanPhaseSpecifier() {
+            return specifier;
+        }
+
+        @Override
         public SubscriptionEventType getAction() {
             return action;
         }
 
+        @Override
         public UUID getSubscriptionId() {
             return subscriptionId;
         }
 
-        public BillingPeriod getBillingPeriod() {
-            return billingPeriod;
-        }
-
-        public String getPriceList() {
-            return priceList;
-        }
-
-        public String getProductName() {
-            return productName;
-        }
 
         @Override
         public DateTime getEffectiveDate() {

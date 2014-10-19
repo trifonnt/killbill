@@ -43,6 +43,7 @@ import org.killbill.billing.catalog.api.BillingPeriod;
 import org.killbill.billing.catalog.api.Currency;
 import org.killbill.billing.catalog.api.Plan;
 import org.killbill.billing.catalog.api.PlanPhase;
+import org.killbill.billing.catalog.api.PlanPhaseSpecifier;
 import org.killbill.billing.catalog.api.Usage;
 import org.killbill.billing.entitlement.api.SubscriptionEventType;
 import org.killbill.billing.entity.EntityPersistenceException;
@@ -426,23 +427,15 @@ public class TestInvoiceHelper {
         public DryRunFutureDateArguments() {
         }
         @Override
+        public PlanPhaseSpecifier getPlanPhaseSpecifier() {
+            return null;
+        }
+        @Override
         public SubscriptionEventType getAction() {
             return null;
         }
         @Override
         public UUID getSubscriptionId() {
-            return null;
-        }
-        @Override
-        public BillingPeriod getBillingPeriod() {
-            return null;
-        }
-        @Override
-        public String getPriceList() {
-            return null;
-        }
-        @Override
-        public String getProductName() {
             return null;
         }
         @Override
