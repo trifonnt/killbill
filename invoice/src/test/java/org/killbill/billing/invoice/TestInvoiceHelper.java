@@ -445,5 +445,9 @@ public class TestInvoiceHelper {
         public String getProductName() {
             return null;
         }
+        @Override
+        public DateTime getEffectiveDate() {
+            return null;
+        }
     }
 }

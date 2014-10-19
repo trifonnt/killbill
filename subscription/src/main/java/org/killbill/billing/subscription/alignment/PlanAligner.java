@@ -74,14 +74,15 @@ public class PlanAligner extends BaseAligner {
      * @throws CatalogApiException         for catalog errors
      * @throws org.killbill.billing.subscription.api.user.SubscriptionBaseApiException for subscription errors
      */
-    public TimedPhase[] getCurrentAndNextTimedPhaseOnCreate(final DefaultSubscriptionBase subscription,
+    public TimedPhase[] getCurrentAndNextTimedPhaseOnCreate(final DateTime alignStartDate,
+                                                            final DateTime bundleStartDate,
                                                             final Plan plan,
-                                                            final PhaseType initialPhase,
+                                                            @Nullable final PhaseType initialPhase,
                                                             final String priceList,
                                                             final DateTime requestedDate,
                                                             final DateTime effectiveDate) throws CatalogApiException, SubscriptionBaseApiException {
-        final List<TimedPhase> timedPhases = getTimedPhaseOnCreate(subscription.getAlignStartDate(),
-                                                                   subscription.getBundleStartDate(),
+        final List<TimedPhase> timedPhases = getTimedPhaseOnCreate(alignStartDate,
+                                                                   bundleStartDate,
                                                                    plan,
                                                                    initialPhase,
                                                                    priceList,
@@ -187,7 +188,7 @@ public class PlanAligner extends BaseAligner {
     private List<TimedPhase> getTimedPhaseOnCreate(final DateTime subscriptionStartDate,
                                                    final DateTime bundleStartDate,
                                                    final Plan plan,
-                                                   final PhaseType initialPhase,
+                                                   @Nullable final PhaseType initialPhase,
                                                    final String priceList,
                                                    final DateTime requestedDate)
             throws CatalogApiException, SubscriptionBaseApiException {

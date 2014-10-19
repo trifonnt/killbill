@@ -45,6 +45,7 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
 import javax.ws.rs.core.UriInfo;
 
+import org.joda.time.DateTime;
 import org.joda.time.LocalDate;
 import org.killbill.billing.ErrorCode;
 import org.killbill.billing.ObjectType;
@@ -608,6 +609,7 @@ public class InvoiceResource extends JaxRsResourceBase {
         return ObjectType.INVOICE;
     }
 
+    // STEPH_DRY_RUN combine with PlanPahseSpec
     private class DefaultDryRunArguments implements DryRunArguments {
 
         private final SubscriptionEventType action;
@@ -615,17 +617,20 @@ public class InvoiceResource extends JaxRsResourceBase {
         private final BillingPeriod billingPeriod;
         private final String priceList;
         private final String productName;
+        private final DateTime effectiveDate;
 
         public DefaultDryRunArguments() {
-            this(null, null, null, null, null);
+            this(null, null, null, null, null, null);
         }
 
-        public DefaultDryRunArguments(final SubscriptionEventType action, final UUID subscriptionId, final BillingPeriod billingPeriod, final String priceList, final String productName) {
+        public DefaultDryRunArguments(final SubscriptionEventType action, final UUID subscriptionId, final BillingPeriod billingPeriod,
+                                      final String priceList, final String productName, final DateTime effectiveDate) {
             this.action = action;
             this.subscriptionId = subscriptionId;
             this.billingPeriod = billingPeriod;
             this.priceList = priceList;
             this.productName = productName;
+            this.effectiveDate = effectiveDate;
         }
 
         public SubscriptionEventType getAction() {
@@ -646,6 +651,11 @@ public class InvoiceResource extends JaxRsResourceBase {
 
         public String getProductName() {
             return productName;
+        }
+
+        @Override
+        public DateTime getEffectiveDate() {
+            return effectiveDate;
         }
     }
 
