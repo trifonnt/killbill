@@ -38,6 +38,7 @@ import org.killbill.billing.callcontext.InternalCallContext;
 import org.killbill.billing.callcontext.InternalTenantContext;
 import org.killbill.billing.catalog.MockPlan;
 import org.killbill.billing.catalog.MockPlanPhase;
+import org.killbill.billing.catalog.api.BillingActionPolicy;
 import org.killbill.billing.catalog.api.BillingMode;
 import org.killbill.billing.catalog.api.BillingPeriod;
 import org.killbill.billing.catalog.api.Currency;
@@ -440,6 +441,16 @@ public class TestInvoiceHelper {
         }
         @Override
         public DateTime getEffectiveDate() {
+            return null;
+        }
+
+        @Override
+        public UUID getBundleId() {
+            return null;
+        }
+
+        @Override
+        public BillingActionPolicy getBillingActionPolicy() {
             return null;
         }
     }

@@ -16,8 +16,11 @@
 
 package org.killbill.billing.subscription.api.timeline;
 
+import java.util.UUID;
+
 import org.joda.time.DateTime;
 import org.killbill.billing.catalog.api.CatalogService;
+import org.killbill.billing.catalog.api.Product;
 import org.killbill.billing.subscription.alignment.PlanAligner;
 import org.killbill.billing.subscription.api.SubscriptionBaseApiService;
 import org.killbill.billing.subscription.api.user.DefaultSubscriptionBase;
@@ -46,7 +49,7 @@ public class RepairSubscriptionApiService extends DefaultSubscriptionBaseApiServ
 
     // Nothing to do for repair as we pass all the repair events in the stream
     @Override
-    public int cancelAddOnsIfRequired(final DefaultSubscriptionBase baseSubscription, final DateTime effectiveDate, final CallContext context) {
+    public int cancelAddOnsIfRequired(final Product baseProduct, final UUID bundleId, final DateTime effectiveDate, final CallContext context) {
         return 0;
     }
 }

@@ -18,6 +18,7 @@
 package org.killbill.billing.jaxrs.json;
 
 import org.joda.time.LocalDate;
+import org.killbill.billing.catalog.api.BillingActionPolicy;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -32,6 +33,8 @@ public class InvoiceDryRunJson {
     private final String priceListName;
     private final LocalDate effectiveDate;
     private final String subscriptionId;
+    private final String bundleId;
+    private final String billingPolicy;
 
     @JsonCreator
     public InvoiceDryRunJson(@JsonProperty("dryRunAction") final String dryRunAction,
@@ -41,7 +44,9 @@ public class InvoiceDryRunJson {
                              @JsonProperty("billingPeriod") final String billingPeriod,
                              @JsonProperty("priceListName") final String priceListName,
                              @JsonProperty("subscriptionId") final String subscriptionId,
-                             @JsonProperty("effectiveDate") final LocalDate effectiveDate) {
+                             @JsonProperty("bundleId") final String bundleId,
+                             @JsonProperty("effectiveDate") final LocalDate effectiveDate,
+                             @JsonProperty("billingPolicy") final String billingPolicy) {
         this.dryRunAction = dryRunAction;
         this.phaseType = phaseType;
         this.productName = productName;
@@ -49,7 +54,9 @@ public class InvoiceDryRunJson {
         this.billingPeriod = billingPeriod;
         this.priceListName = priceListName;
         this.subscriptionId = subscriptionId;
+        this.bundleId = bundleId;
         this.effectiveDate = effectiveDate;
+        this.billingPolicy = billingPolicy;
     }
 
     public String getDryRunAction() {
@@ -82,5 +89,13 @@ public class InvoiceDryRunJson {
 
     public LocalDate getEffectiveDate() {
         return effectiveDate;
+    }
+
+    public String getBundleId() {
+        return bundleId;
+    }
+
+    public String getBillingPolicy() {
+        return billingPolicy;
     }
 }

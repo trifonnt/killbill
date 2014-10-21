@@ -25,7 +25,9 @@ import org.killbill.billing.catalog.api.BillingPeriod;
 import org.killbill.billing.catalog.api.CatalogApiException;
 import org.killbill.billing.catalog.api.PhaseType;
 import org.killbill.billing.catalog.api.Plan;
+import org.killbill.billing.catalog.api.PlanChangeResult;
 import org.killbill.billing.catalog.api.PlanPhaseSpecifier;
+import org.killbill.billing.catalog.api.Product;
 import org.killbill.billing.subscription.api.user.DefaultSubscriptionBase;
 import org.killbill.billing.subscription.api.user.SubscriptionBaseApiException;
 import org.killbill.billing.subscription.api.user.SubscriptionBuilder;
@@ -71,9 +73,12 @@ public interface SubscriptionBaseApiService {
                                          String priceList, BillingActionPolicy policy, CallContext context)
             throws SubscriptionBaseApiException;
 
-    public int cancelAddOnsIfRequired(DefaultSubscriptionBase baseSubscription, DateTime effectiveDate, CallContext context);
+    public int cancelAddOnsIfRequired(final Product baseProduct, final UUID bundleId, final DateTime effectiveDate, final CallContext context);
 
-    //
+    public PlanChangeResult getPlanChangeResult(final DefaultSubscriptionBase subscription, final String productName,
+                                                final BillingPeriod term, final String priceList, final DateTime effectiveDate) throws SubscriptionBaseApiException;
+
+        //
     // Lower level APIs for dryRun functionality
     //
     public List<SubscriptionBaseEvent> getEventsOnCreation(UUID subscriptionId, DateTime alignStartDate, DateTime bundleStartDate, long activeVersion,

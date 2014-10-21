@@ -64,12 +64,13 @@ public class PlanAligner extends BaseAligner {
     /**
      * Returns the current and next phase for the subscription in creation
      *
-     * @param subscription  the subscription in creation (only the start date and the bundle start date are looked at)
-     * @param plan          the current Plan
-     * @param initialPhase  the initialPhase on which we should create that subscription. can be null
-     * @param priceList     the priceList
-     * @param requestedDate the requested date (only used to load the catalog)
-     * @param effectiveDate the effective creation date (driven by the catalog policy, i.e. when the creation occurs)
+     * @param alignStartDate  the subscription (align) startDate for the subscription
+     * @param bundleStartDate the bundle startDate used alignment
+     * @param plan            the current Plan
+     * @param initialPhase    the initialPhase on which we should create that subscription. can be null
+     * @param priceList       the priceList
+     * @param requestedDate   the requested date (only used to load the catalog)
+     * @param effectiveDate   the effective creation date (driven by the catalog policy, i.e. when the creation occurs)
      * @return the current and next phases
      * @throws CatalogApiException         for catalog errors
      * @throws org.killbill.billing.subscription.api.user.SubscriptionBaseApiException for subscription errors

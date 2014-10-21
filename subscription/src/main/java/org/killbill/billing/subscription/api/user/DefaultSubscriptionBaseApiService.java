@@ -209,7 +209,8 @@ public class DefaultSubscriptionBaseApiService implements SubscriptionBaseApiSer
         subscription.rebuildTransitions(dao.getEventsForSubscription(subscription.getId(), internalCallContext), catalogService.getFullCatalog());
 
         if (subscription.getCategory() == ProductCategory.BASE) {
-            cancelAddOnsIfRequired(subscription, effectiveDate, context);
+            final Product baseProduct = (subscription.getState() == EntitlementState.CANCELLED) ? null : subscription.getCurrentPlan().getProduct();
+            cancelAddOnsIfRequired(baseProduct, subscription.getBundleId(), effectiveDate, context);
         }
 
         final boolean isImmediate = subscription.getState() == EntitlementState.CANCELLED;
@@ -268,6 +269,7 @@ public class DefaultSubscriptionBaseApiService implements SubscriptionBaseApiSer
         }
     }
 
+
     @Override
     public DateTime changePlanWithRequestedDate(final DefaultSubscriptionBase subscription, final String productName, final BillingPeriod term,
                                                 final String priceList, final DateTime requestedDateWithMs, final CallContext context) throws SubscriptionBaseApiException {
@@ -300,8 +302,9 @@ public class DefaultSubscriptionBaseApiService implements SubscriptionBaseApiSer
         }
     }
 
-    private PlanChangeResult getPlanChangeResult(final DefaultSubscriptionBase subscription, final String productName,
-                                                 final BillingPeriod term, final String priceList, final DateTime effectiveDate) throws SubscriptionBaseApiException {
+    @Override
+    public PlanChangeResult getPlanChangeResult(final DefaultSubscriptionBase subscription, final String productName,
+                                                final BillingPeriod term, final String priceList, final DateTime effectiveDate) throws SubscriptionBaseApiException {
         final PlanChangeResult planChangeResult;
         try {
             final Product destProduct = catalogService.getFullCatalog().findProduct(productName, effectiveDate);
@@ -341,7 +344,8 @@ public class DefaultSubscriptionBaseApiService implements SubscriptionBaseApiSer
         subscription.rebuildTransitions(dao.getEventsForSubscription(subscription.getId(), internalCallContext), catalogService.getFullCatalog());
 
         if (subscription.getCategory() == ProductCategory.BASE) {
-            cancelAddOnsIfRequired(subscription, effectiveDate, context);
+            final Product baseProduct = (subscription.getState() == EntitlementState.CANCELLED) ? null : subscription.getCurrentPlan().getProduct();
+            cancelAddOnsIfRequired(baseProduct, subscription.getBundleId(), effectiveDate, context);
         }
         return effectiveDate;
     }
@@ -411,7 +415,8 @@ public class DefaultSubscriptionBaseApiService implements SubscriptionBaseApiSer
         }
 
         if (subscription.getCategory() == ProductCategory.BASE && addCancellationAddOnForEventsIfRequired) {
-            addCancellationAddOnForEventsIfRequired(changeEvents, subscription, requestedDate, effectiveDate, processedDate, context);
+            final Product currentBaseProduct = changeEvent.getEffectiveDate().compareTo(clock.getUTCNow()) <= 0 ? newPlan.getProduct() : subscription.getCurrentPlan().getProduct();
+            addCancellationAddOnForEventsIfRequired(changeEvents, currentBaseProduct, subscription.getBundleId(), requestedDate, effectiveDate, processedDate, context);
         }
         return changeEvents;
     }
@@ -431,13 +436,14 @@ public class DefaultSubscriptionBaseApiService implements SubscriptionBaseApiSer
                                                                              .setFromDisk(true));
         cancelEvents.add(cancelEvent);
         if (subscription.getCategory() == ProductCategory.BASE && addCancellationAddOnForEventsIfRequired) {
-            addCancellationAddOnForEventsIfRequired(cancelEvents, subscription, requestedDate, effectiveDate, processedDate, context);
+            final Product currentBaseProduct = cancelEvent.getEffectiveDate().compareTo(clock.getUTCNow()) <= 0 ? null : subscription.getCurrentPlan().getProduct();
+            addCancellationAddOnForEventsIfRequired(cancelEvents, currentBaseProduct, subscription.getBundleId(), requestedDate, effectiveDate, processedDate, context);
         }
         return cancelEvents;
     }
 
 
-    public int cancelAddOnsIfRequired(final DefaultSubscriptionBase baseSubscription, final DateTime effectiveDate, final CallContext context) {
+    public int cancelAddOnsIfRequired(final Product baseProduct, final UUID bundleId, final DateTime effectiveDate, final CallContext context) {
 
         // If cancellation/change occur in the future, there is nothing to do
         final DateTime now = clock.getUTCNow();
@@ -446,22 +452,21 @@ public class DefaultSubscriptionBaseApiService implements SubscriptionBaseApiSer
         }
 
         final List<SubscriptionBaseEvent> cancelEvents = new LinkedList<SubscriptionBaseEvent>();
-        final List<DefaultSubscriptionBase> subscriptionsToBeCancelled = addCancellationAddOnForEventsIfRequired(cancelEvents, baseSubscription, now, effectiveDate, now, context);
+        final List<DefaultSubscriptionBase> subscriptionsToBeCancelled = addCancellationAddOnForEventsIfRequired(cancelEvents, baseProduct, bundleId, now, effectiveDate, now, context);
         if (!subscriptionsToBeCancelled.isEmpty()) {
-            final InternalCallContext internalCallContext = createCallContextFromBundleId(baseSubscription.getBundleId(), context);
+            final InternalCallContext internalCallContext = createCallContextFromBundleId(bundleId, context);
             dao.cancelSubscriptions(subscriptionsToBeCancelled, cancelEvents, internalCallContext);
         }
         return subscriptionsToBeCancelled.size();
     }
 
-    private List<DefaultSubscriptionBase> addCancellationAddOnForEventsIfRequired(final List<SubscriptionBaseEvent> events, final DefaultSubscriptionBase baseSubscription,
+    private List<DefaultSubscriptionBase> addCancellationAddOnForEventsIfRequired(final List<SubscriptionBaseEvent> events, final Product baseProduct, final UUID bundleId,
                                                                                   final DateTime requestedDate, final DateTime effectiveDate, final DateTime processedDate, final TenantContext context) {
 
         final List<DefaultSubscriptionBase> subscriptionsToBeCancelled = new ArrayList<DefaultSubscriptionBase>();
 
-        final Product baseProduct = (baseSubscription.getState() == EntitlementState.CANCELLED) ? null : baseSubscription.getCurrentPlan().getProduct();
-        final InternalTenantContext internalCallContext = createTenantContextFromBundleId(baseSubscription.getBundleId(), context);
-        final List<SubscriptionBase> subscriptions = dao.getSubscriptions(baseSubscription.getBundleId(), ImmutableList.<SubscriptionBaseEvent>of(), internalCallContext);
+        final InternalTenantContext internalCallContext = createTenantContextFromBundleId(bundleId, context);
+        final List<SubscriptionBase> subscriptions = dao.getSubscriptions(bundleId, ImmutableList.<SubscriptionBaseEvent>of(), internalCallContext);
 
         for (final SubscriptionBase subscription : subscriptions) {
             final DefaultSubscriptionBase cur = (DefaultSubscriptionBase) subscription;
