@@ -278,7 +278,7 @@ public class InvoiceResource extends JaxRsResourceBase {
             return uriBuilder.buildResponse(uriInfo, InvoiceResource.class, "getInvoice", generatedInvoice.getId());
         } catch (InvoiceApiException e) {
             if (e.getCode() == ErrorCode.INVOICE_NOTHING_TO_DO.getCode()) {
-                return Response.status(Status.OK).build();
+                return Response.status(Status.NOT_FOUND).build();
             }
             throw e;
         }
@@ -305,12 +305,18 @@ public class InvoiceResource extends JaxRsResourceBase {
         // Passing a null or empty body means we are trying to generate an invoice with a (future) targetDate
         // On the other hand if body is not null, we are attempting a dryRun subscription operation
         if (dryRunSubscriptionSpec != null && dryRunSubscriptionSpec.getDryRunAction() != null) {
-            verifyNonNullOrEmpty(dryRunSubscriptionSpec.getDryRunAction(), "DryRun subscription action should be specified",
-                                 dryRunSubscriptionSpec.getBillingPeriod(), "DryRun subscription billingPeriod should be specified",
-                                 dryRunSubscriptionSpec.getProductCategory(), "DryRun subscription product category should be specified",
-                                 dryRunSubscriptionSpec.getProductName(), "DryRun subscription product should be specified",
-                                 dryRunSubscriptionSpec.getEffectiveDate(), "DryRun subscription effectiveDate should be specified");
-            if (!SubscriptionEventType.START_BILLING.toString().equals(dryRunSubscriptionSpec.getDryRunAction())) {
+            if (SubscriptionEventType.START_BILLING.toString().equals(dryRunSubscriptionSpec.getDryRunAction())) {
+                verifyNonNullOrEmpty(dryRunSubscriptionSpec.getProductName(), "DryRun subscription product category should be specified");
+                verifyNonNullOrEmpty(dryRunSubscriptionSpec.getBillingPeriod(), "DryRun subscription billingPeriod should be specified");
+                verifyNonNullOrEmpty(dryRunSubscriptionSpec.getProductCategory(), "DryRun subscription product category should be specified");
+                if (dryRunSubscriptionSpec.getProductCategory().equals(ProductCategory.ADD_ON)) {
+                    verifyNonNullOrEmpty(dryRunSubscriptionSpec.getBundleId(), "DryRun bundle ID should be specified");
+                }
+            } else if (SubscriptionEventType.CHANGE.toString().equals(dryRunSubscriptionSpec.getDryRunAction())) {
+                verifyNonNullOrEmpty(dryRunSubscriptionSpec.getProductName(), "DryRun subscription product category should be specified");
+                verifyNonNullOrEmpty(dryRunSubscriptionSpec.getBillingPeriod(), "DryRun subscription billingPeriod should be specified");
+                verifyNonNullOrEmpty(dryRunSubscriptionSpec.getSubscriptionId(), "DryRun subscriptionID should be specified");
+            }  else if (SubscriptionEventType.STOP_BILLING.toString().equals(dryRunSubscriptionSpec.getDryRunAction())) {
                 verifyNonNullOrEmpty(dryRunSubscriptionSpec.getSubscriptionId(), "DryRun subscriptionID should be specified");
             }
         }
@@ -319,10 +325,10 @@ public class InvoiceResource extends JaxRsResourceBase {
         try {
             final Invoice generatedInvoice = invoiceApi.triggerInvoiceGeneration(UUID.fromString(accountId), inputDate, dryRunArguments,
                                                                                  callContext);
-            return Response.status(Status.OK).entity(new InvoiceJson(generatedInvoice)).build();
+            return Response.status(Status.OK).entity(new InvoiceJson(generatedInvoice, true, null)).build();
         } catch (InvoiceApiException e) {
             if (e.getCode() == ErrorCode.INVOICE_NOTHING_TO_DO.getCode()) {
-                return Response.status(Status.OK).build();
+                return Response.status(Status.NOT_FOUND).build();
             }
             throw e;
         }

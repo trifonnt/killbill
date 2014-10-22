@@ -355,7 +355,7 @@ public class DefaultSubscriptionInternalApi extends SubscriptionApiBase implemen
         dao.updateBundleExternalKey(bundleId, newExternalKey, context);
     }
 
-    private void populateDryRunEvents(final UUID bundleId,
+    private void populateDryRunEvents(@Nullable final UUID bundleId,
                                       @Nullable final DryRunArguments dryRunArguments,
                                       final List<SubscriptionBaseEvent> outputDryRunEvents,
                                       final List<SubscriptionBase> outputSubscriptions,
@@ -374,11 +374,11 @@ public class DefaultSubscriptionInternalApi extends SubscriptionApiBase implemen
                               catalog.findPlan(spec.getProductName(), spec.getBillingPeriod(), realPriceList, utcNow) : null;
             final UUID tenantId = nonEntityDao.retrieveIdFromObject(context.getTenantRecordId(), ObjectType.TENANT, controllerDispatcher.getCacheController(CacheType.OBJECT_ID));
 
-            final DefaultSubscriptionBase baseSubscription = (DefaultSubscriptionBase) dao.getBaseSubscription(bundleId, context);
             if (dryRunArguments != null) {
                 switch (dryRunArguments.getAction()) {
                     case START_BILLING:
 
+                        final DefaultSubscriptionBase baseSubscription = (DefaultSubscriptionBase) dao.getBaseSubscription(bundleId, context);
                         final DateTime startEffectiveDate = dryRunArguments.getEffectiveDate() != null ? dryRunArguments.getEffectiveDate() : utcNow;
                         final DateTime bundleStartDate = getBundleStartDateWithSanity(bundleId, baseSubscription, plan, startEffectiveDate, startEffectiveDate);
                         final UUID subscriptionId = UUID.randomUUID();
