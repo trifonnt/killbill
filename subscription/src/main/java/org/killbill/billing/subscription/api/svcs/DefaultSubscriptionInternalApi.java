@@ -367,11 +367,11 @@ public class DefaultSubscriptionInternalApi extends SubscriptionApiBase implemen
         final DateTime utcNow = clock.getUTCNow();
         List<SubscriptionBaseEvent> dryRunEvents = null;
         try {
-            final PlanPhaseSpecifier spec = dryRunArguments.getPlanPhaseSpecifier();
-            final String realPriceList = (spec.getPriceListName() == null) ? PriceListSet.DEFAULT_PRICELIST_NAME : spec.getPriceListName();
+            final PlanPhaseSpecifier inputSpec = dryRunArguments.getPlanPhaseSpecifier();
+            final String realPriceList = (inputSpec != null && inputSpec.getPriceListName() != null) ? inputSpec.getPriceListName() : PriceListSet.DEFAULT_PRICELIST_NAME;
             final Catalog catalog = catalogService.getFullCatalog();
-            final Plan plan = spec.getProductName() != null ?
-                              catalog.findPlan(spec.getProductName(), spec.getBillingPeriod(), realPriceList, utcNow) : null;
+            final Plan plan = (inputSpec != null && inputSpec.getProductName() != null && inputSpec.getBillingPeriod() != null) ?
+                              catalog.findPlan(inputSpec.getProductName(), inputSpec.getBillingPeriod(), realPriceList, utcNow) : null;
             final UUID tenantId = nonEntityDao.retrieveIdFromObject(context.getTenantRecordId(), ObjectType.TENANT, controllerDispatcher.getCacheController(CacheType.OBJECT_ID));
 
             if (dryRunArguments != null) {
@@ -382,7 +382,7 @@ public class DefaultSubscriptionInternalApi extends SubscriptionApiBase implemen
                         final DateTime startEffectiveDate = dryRunArguments.getEffectiveDate() != null ? dryRunArguments.getEffectiveDate() : utcNow;
                         final DateTime bundleStartDate = getBundleStartDateWithSanity(bundleId, baseSubscription, plan, startEffectiveDate, startEffectiveDate);
                         final UUID subscriptionId = UUID.randomUUID();
-                        dryRunEvents = apiService.getEventsOnCreation(subscriptionId, startEffectiveDate, bundleStartDate, 1L, plan, spec.getPhaseType(), realPriceList,
+                        dryRunEvents = apiService.getEventsOnCreation(subscriptionId, startEffectiveDate, bundleStartDate, 1L, plan, inputSpec.getPhaseType(), realPriceList,
                                                                       utcNow, startEffectiveDate, utcNow, false, context.toTenantContext(tenantId));
                         final SubscriptionBuilder builder = new SubscriptionBuilder()
                                 .setId(subscriptionId)
@@ -418,6 +418,13 @@ public class DefaultSubscriptionInternalApi extends SubscriptionApiBase implemen
                         if (dryRunArguments.getEffectiveDate() == null) {
                             BillingActionPolicy policy = dryRunArguments.getBillingActionPolicy();
                             if (policy == null) {
+
+                                final Plan currentPlan = subscriptionForCancellation.getCurrentPlan();
+                                final PlanPhaseSpecifier spec = new PlanPhaseSpecifier(currentPlan.getProduct().getName(),
+                                                                                            currentPlan.getProduct().getCategory(),
+                                                                                            subscriptionForCancellation.getCurrentPlan().getRecurringBillingPeriod(),
+                                                                                            subscriptionForCancellation.getCurrentPriceList().getName(),
+                                                                                            subscriptionForCancellation.getCurrentPhase().getPhaseType());
                                 policy = catalogService.getFullCatalog().planCancelPolicy(spec, utcNow);
                             }
                             cancelEffectiveDate = subscriptionForCancellation.getPlanChangeEffectiveDate(policy);
