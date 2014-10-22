@@ -425,7 +425,7 @@ public class DefaultSubscriptionBaseApiService implements SubscriptionBaseApiSer
     public List<SubscriptionBaseEvent> getEventsOnCancelPlan(final DefaultSubscriptionBase subscription,
                                                              final DateTime requestedDate, final DateTime effectiveDate, final DateTime processedDate,
                                                              final boolean addCancellationAddOnForEventsIfRequired, final TenantContext context) {
-        // STEPH_DRY_RUN setFromDisk
+
         final List<SubscriptionBaseEvent> cancelEvents = new ArrayList<SubscriptionBaseEvent>();
         final SubscriptionBaseEvent cancelEvent = new ApiEventCancel(new ApiEventBuilder()
                                                                              .setSubscriptionId(subscription.getId())

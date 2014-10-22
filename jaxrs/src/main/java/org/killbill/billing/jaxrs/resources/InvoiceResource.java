@@ -47,6 +47,7 @@ import javax.ws.rs.core.Response.Status;
 import javax.ws.rs.core.UriInfo;
 
 import org.joda.time.DateTime;
+import org.joda.time.DateTimeZone;
 import org.joda.time.LocalDate;
 import org.killbill.billing.ErrorCode;
 import org.killbill.billing.ObjectType;
@@ -91,6 +92,7 @@ import org.killbill.billing.util.callcontext.CallContext;
 import org.killbill.billing.util.callcontext.TenantContext;
 import org.killbill.billing.util.entity.Pagination;
 import org.killbill.clock.Clock;
+import org.killbill.clock.ClockUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -321,7 +323,9 @@ public class InvoiceResource extends JaxRsResourceBase {
             }
         }
 
-        final DryRunArguments dryRunArguments = new DefaultDryRunArguments(dryRunSubscriptionSpec);
+        final Account account = accountUserApi.getAccountById(UUID.fromString(accountId), callContext);
+
+        final DryRunArguments dryRunArguments = new DefaultDryRunArguments(dryRunSubscriptionSpec, account.getTimeZone(), clock);
         try {
             final Invoice generatedInvoice = invoiceApi.triggerInvoiceGeneration(UUID.fromString(accountId), inputDate, dryRunArguments,
                                                                                  callContext);
@@ -685,7 +689,7 @@ public class InvoiceResource extends JaxRsResourceBase {
             this.specifier = specifier;
         }
 
-        public DefaultDryRunArguments(final InvoiceDryRunJson input) {
+        public DefaultDryRunArguments(final InvoiceDryRunJson input, final DateTimeZone accountTimeZone, final Clock clock) {
             if (input == null) {
                 this.action = null;
                 this.subscriptionId = null;
@@ -697,8 +701,7 @@ public class InvoiceResource extends JaxRsResourceBase {
                 this.action = input.getDryRunAction() != null ? SubscriptionEventType.valueOf(input.getDryRunAction()) : null;
                 this.subscriptionId = input.getSubscriptionId() != null ? UUID.fromString(input.getSubscriptionId()) : null;
                 this.bundleId = input.getBundleId() != null ? UUID.fromString(input.getBundleId()) : null;
-                // STEPH_DRY_RUN we need the same logic that we have in entitlement to convert localDate to DateTime. extract in Clock
-                this.effectiveDate = input.getEffectiveDate() != null ? input.getEffectiveDate().toDateTimeAtCurrentTime() : null;
+                this.effectiveDate = input.getEffectiveDate() != null ? ClockUtil.computeDateTimeWithUTCReferenceTime(input.getEffectiveDate(), clock.getUTCNow().toLocalTime(), accountTimeZone, clock) : null;
                 this.billingPolicy = input.getBillingPolicy() != null ? BillingActionPolicy.valueOf(input.getBillingPolicy()) : null;
                 this.specifier = (input.getProductName() != null &&
                                   input.getProductCategory() != null &&
