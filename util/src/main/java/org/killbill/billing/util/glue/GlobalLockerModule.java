@@ -21,6 +21,9 @@ package org.killbill.billing.util.glue;
 import org.killbill.billing.platform.api.KillbillConfigSource;
 import org.killbill.commons.embeddeddb.EmbeddedDB;
 import org.killbill.commons.embeddeddb.EmbeddedDB.DBEngine;
+import org.killbill.commons.locker.GlobalLock;
+import org.killbill.commons.locker.GlobalLocker;
+import org.killbill.commons.locker.LockFailedException;
 
 public class GlobalLockerModule extends KillBillModule {
 
@@ -33,10 +36,29 @@ public class GlobalLockerModule extends KillBillModule {
 
     @Override
     protected void configure() {
+        /*
         if (EmbeddedDB.DBEngine.MYSQL.equals(engine)) {
             install(new MySqlGlobalLockerModule(configSource));
         } else {
             install(new MemoryGlobalLockerModule(configSource));
+        }
+        */
+        bind(GlobalLocker.class).to(NoopGlobalLocker.class).asEagerSingleton();
+    }
+
+
+    public static class NoopGlobalLocker implements GlobalLocker {
+        @Override
+        public GlobalLock lockWithNumberOfTries(final String service, final String lockKey, final int retry) throws LockFailedException {
+            return new GlobalLock() {
+                @Override
+                public void release() {
+                }
+            };
+        }
+        @Override
+        public boolean isFree(final String service, final String lockKey) {
+            return true;
         }
     }
 }
