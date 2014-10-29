@@ -732,14 +732,14 @@ public class AccountResource extends JaxRsResourceBase {
         final Payment result;
         switch (transactionType) {
             case AUTHORIZE:
-                result = paymentApi.createAuthorization(account, paymentMethodId, paymentId, json.getAmount(), currency,
+                result = paymentApi.createAuthorizationWithPaymentControl(account, paymentMethodId, paymentId, json.getAmount(), currency,
                                                         json.getPaymentExternalKey(), json.getTransactionExternalKey(),
-                                                        pluginProperties, callContext);
+                                                        pluginProperties, createInvoicePaymentControlPluginApiPaymentOptions(true), callContext);
                 break;
             case PURCHASE:
-                result = paymentApi.createPurchase(account, paymentMethodId, paymentId, json.getAmount(), currency,
+                result = paymentApi.createPurchaseWithPaymentControl(account, paymentMethodId, paymentId, json.getAmount(), currency,
                                                    json.getPaymentExternalKey(), json.getTransactionExternalKey(),
-                                                   pluginProperties, callContext);
+                                                   pluginProperties, createInvoicePaymentControlPluginApiPaymentOptions(true), callContext);
                 break;
             case CREDIT:
                 result = paymentApi.createCredit(account, paymentMethodId, paymentId, json.getAmount(), currency,
