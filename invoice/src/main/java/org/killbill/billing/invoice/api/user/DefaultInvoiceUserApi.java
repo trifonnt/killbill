@@ -1,7 +1,9 @@
 /*
  * Copyright 2010-2013 Ning, Inc.
+ * Copyright 2014-2015 Groupon, Inc
+ * Copyright 2014-2015 The Billing Project, LLC
  *
- * Ning licenses this file to you under the Apache License, version 2.0
+ * The Billing Project licenses this file to you under the Apache License, version 2.0
  * (the "License"); you may not use this file except in compliance with the
  * License.  You may obtain a copy of the License at:
  *
@@ -18,7 +20,11 @@ package org.killbill.billing.invoice.api.user;
 
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import javax.annotation.Nullable;
@@ -34,6 +40,7 @@ import org.killbill.billing.callcontext.InternalCallContext;
 import org.killbill.billing.callcontext.InternalTenantContext;
 import org.killbill.billing.catalog.api.Currency;
 import org.killbill.billing.invoice.InvoiceDispatcher;
+import org.killbill.billing.invoice.InvoicePluginDispatcher;
 import org.killbill.billing.invoice.api.DryRunArguments;
 import org.killbill.billing.invoice.api.Invoice;
 import org.killbill.billing.invoice.api.InvoiceApiException;
@@ -55,18 +62,22 @@ import org.killbill.billing.util.callcontext.InternalCallContextFactory;
 import org.killbill.billing.util.callcontext.TenantContext;
 import org.killbill.billing.util.entity.Pagination;
 import org.killbill.billing.util.entity.dao.DefaultPaginationHelper.SourcePaginationBuilder;
+import org.killbill.billing.util.globallocker.LockerType;
 import org.killbill.billing.util.tag.ControlTagType;
 import org.killbill.billing.util.tag.Tag;
 import org.killbill.bus.api.PersistentBus;
 import org.killbill.bus.api.PersistentBus.EventBusException;
+import org.killbill.commons.locker.GlobalLock;
+import org.killbill.commons.locker.GlobalLocker;
+import org.killbill.commons.locker.LockFailedException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Function;
+import com.google.common.base.Preconditions;
 import com.google.common.collect.Collections2;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
-import com.google.common.collect.Lists;
 import com.google.inject.Inject;
 
 import static org.killbill.billing.util.entity.dao.DefaultPaginationHelper.getEntityPaginationNoException;
@@ -75,23 +86,30 @@ public class DefaultInvoiceUserApi implements InvoiceUserApi {
 
     private static final Logger log = LoggerFactory.getLogger(DefaultInvoiceUserApi.class);
 
+    private static final int NB_LOCK_TRY = 5;
+
     private final InvoiceDao dao;
     private final InvoiceDispatcher dispatcher;
+    private final InvoicePluginDispatcher invoicePluginDispatcher;
     private final AccountInternalApi accountUserApi;
     private final TagInternalApi tagApi;
     private final HtmlInvoiceGenerator generator;
     private final InternalCallContextFactory internalCallContextFactory;
+    private final GlobalLocker locker;
     private final PersistentBus eventBus;
 
     @Inject
-    public DefaultInvoiceUserApi(final InvoiceDao dao, final InvoiceDispatcher dispatcher, final AccountInternalApi accountUserApi, final PersistentBus eventBus,
+    public DefaultInvoiceUserApi(final InvoiceDao dao, final InvoiceDispatcher dispatcher, final InvoicePluginDispatcher invoicePluginDispatcher, final AccountInternalApi accountUserApi,
+                                 final GlobalLocker locker, final PersistentBus eventBus,
                                  final TagInternalApi tagApi, final HtmlInvoiceGenerator generator, final InternalCallContextFactory internalCallContextFactory) {
         this.dao = dao;
         this.dispatcher = dispatcher;
+        this.invoicePluginDispatcher = invoicePluginDispatcher;
         this.accountUserApi = accountUserApi;
         this.tagApi = tagApi;
         this.generator = generator;
         this.internalCallContextFactory = internalCallContextFactory;
+        this.locker = locker;
         this.eventBus = eventBus;
     }
 
@@ -200,7 +218,6 @@ public class DefaultInvoiceUserApi implements InvoiceUserApi {
                                                                     }));
     }
 
-
     @Override
     public Invoice triggerInvoiceGeneration(final UUID accountId, final LocalDate targetDate, final DryRunArguments dryRunArguments,
                                             final CallContext context) throws InvoiceApiException {
@@ -266,26 +283,64 @@ public class DefaultInvoiceUserApi implements InvoiceUserApi {
             }
         }
 
-        final Iterable<InvoiceItemModelDao> chargesModelDao = Iterables.<InvoiceItem, InvoiceItemModelDao>transform(charges,
-                                                                                                                    new Function<InvoiceItem, InvoiceItemModelDao>() {
-                                                                                                                        @Nullable
-                                                                                                                        @Override
-                                                                                                                        public InvoiceItemModelDao apply(final InvoiceItem externalCharge) {
-                                                                                                                            return new InvoiceItemModelDao(externalCharge);
-                                                                                                                        }
-                                                                                                                    }
-                                                                                                                   );
-        final List<InvoiceItemModelDao> externalCharges = dao.insertExternalCharges(accountId, effectiveDate, chargesModelDao, internalCallContextFactory.createInternalCallContext(accountId, context));
+        final WithAccountLock<List<InvoiceItem>> bar = new WithAccountLock<List<InvoiceItem>>() {
+            private final Collection<InvoiceItem> createdExternalCharges = new LinkedList<InvoiceItem>();
 
-        return Lists.<InvoiceItemModelDao, InvoiceItem>transform(externalCharges,
-                                                                 new Function<InvoiceItemModelDao, InvoiceItem>() {
-                                                                     @Nullable
-                                                                     @Override
-                                                                     public InvoiceItem apply(@Nullable final InvoiceItemModelDao externalCharge) {
-                                                                         return InvoiceItemFactory.fromModelDao(externalCharge);
-                                                                     }
-                                                                 }
-                                                                );
+            @Override
+            public Iterable<Invoice> doA() throws InvoiceApiException {
+                // Group all new external charges on the same invoice (per currency)
+                final Map<Currency, Invoice> newInvoicesForExternalCharges = new HashMap<Currency, Invoice>();
+                final Map<UUID, Invoice> existingInvoicesForExternalCharges = new HashMap<UUID, Invoice>();
+
+                for (final InvoiceItem charge : charges) {
+                    final Invoice invoiceForExternalCharge;
+                    final UUID invoiceIdForExternalCharge = charge.getInvoiceId();
+                    // Create an invoice for that external charge if it doesn't exist
+                    if (invoiceIdForExternalCharge == null) {
+                        final Currency currency = charge.getCurrency();
+                        if (newInvoicesForExternalCharges.get(currency) == null) {
+                            final Invoice newInvoiceForExternalCharge = new DefaultInvoice(accountId, effectiveDate, effectiveDate, currency);
+                            newInvoicesForExternalCharges.put(currency, newInvoiceForExternalCharge);
+                        }
+                        invoiceForExternalCharge = newInvoicesForExternalCharges.get(currency);
+                    } else {
+                        if (existingInvoicesForExternalCharges.get(invoiceIdForExternalCharge) == null) {
+                            final Invoice existingInvoiceForExternalCharge = getInvoice(invoiceIdForExternalCharge, context);
+                            existingInvoicesForExternalCharges.put(invoiceIdForExternalCharge, existingInvoiceForExternalCharge);
+                        }
+                        invoiceForExternalCharge = existingInvoicesForExternalCharges.get(invoiceIdForExternalCharge);
+                    }
+
+                    final InvoiceItem externalCharge = new ExternalChargeInvoiceItem(UUID.randomUUID(),
+                                                                                     context.getCreatedDate(),
+                                                                                     invoiceForExternalCharge.getId(),
+                                                                                     accountId,
+                                                                                     charge.getBundleId(),
+                                                                                     charge.getDescription(),
+                                                                                     effectiveDate,
+                                                                                     charge.getAmount(),
+                                                                                     charge.getCurrency());
+                    invoiceForExternalCharge.addInvoiceItem(externalCharge);
+
+                    createdExternalCharges.add(externalCharge);
+                }
+
+                return Iterables.<Invoice>concat(newInvoicesForExternalCharges.values(), existingInvoicesForExternalCharges.values());
+            }
+
+            @Override
+            public List<InvoiceItem> doB(final List<InvoiceModelDao> invoiceModelDaos, final LocalDate effectiveDate, final InternalCallContext internalCallContext) throws InvoiceApiException {
+                dao.createInvoices(invoiceModelDaos, internalCallContext);
+
+                final List<InvoiceItem> reHydratedExternalCharges = new LinkedList<InvoiceItem>();
+                for (final InvoiceItem externalCharge : createdExternalCharges) {
+                    reHydratedExternalCharges.add(getExternalChargeById(externalCharge.getId(), context));
+                }
+                return reHydratedExternalCharges;
+            }
+        };
+
+        return foo(accountId, effectiveDate, bar, context);
     }
 
     @Override
@@ -305,6 +360,54 @@ public class DefaultInvoiceUserApi implements InvoiceUserApi {
         return insertCreditForInvoice(accountId, null, amount, effectiveDate, currency, context);
     }
 
+    public interface WithAccountLock<T> {
+
+        public Iterable<Invoice> doA() throws InvoiceApiException;
+
+        public T doB(final List<InvoiceModelDao> invoiceModelDaos, final LocalDate effectiveDate, final InternalCallContext internalCallContext) throws InvoiceApiException;
+    }
+
+    private <T> T foo(final UUID accountId, final LocalDate effectiveDate, final WithAccountLock<T> withAccountLock, final CallContext context) throws InvoiceApiException {
+        GlobalLock lock = null;
+        try {
+            lock = locker.lockWithNumberOfTries(LockerType.ACCOUNT_FOR_INVOICE_PAYMENTS.toString(), accountId.toString(), NB_LOCK_TRY);
+
+            final Iterable<Invoice> invoicesForPlugins = withAccountLock.doA();
+
+            final List<InvoiceModelDao> invoiceModelDaos = new LinkedList<InvoiceModelDao>();
+            for (final Invoice invoiceForPlugin : invoicesForPlugins) {
+                // Call plugin
+                final List<InvoiceItem> additionalInvoiceItems = invoicePluginDispatcher.getAdditionalInvoiceItems(invoiceForPlugin, context);
+                invoiceForPlugin.addInvoiceItems(additionalInvoiceItems);
+
+                // Transformation to InvoiceModelDao
+                final InvoiceModelDao invoiceModelDao = new InvoiceModelDao(invoiceForPlugin);
+                final List<InvoiceItemModelDao> invoiceItemModelDaos = ImmutableList.copyOf(Collections2.transform(invoiceForPlugin.getInvoiceItems(),
+                                                                                                                   new Function<InvoiceItem, InvoiceItemModelDao>() {
+                                                                                                                       @Override
+                                                                                                                       public InvoiceItemModelDao apply(final InvoiceItem input) {
+                                                                                                                           return new InvoiceItemModelDao(input);
+                                                                                                                       }
+                                                                                                                   }));
+                invoiceModelDao.addInvoiceItems(invoiceItemModelDaos);
+
+                // Keep track of modified invoices
+                invoiceModelDaos.add(invoiceModelDao);
+            }
+
+            return withAccountLock.doB(invoiceModelDaos, effectiveDate, internalCallContextFactory.createInternalCallContext(accountId, context));
+        } catch (final LockFailedException e) {
+            // Not good!
+            log.error(String.format("Failed to process invoice items for account %s", accountId.toString()), e);
+            // TODO
+            return null;
+        } finally {
+            if (lock != null) {
+                lock.release();
+            }
+        }
+    }
+
     @Override
     public InvoiceItem insertCreditForInvoice(final UUID accountId, final UUID invoiceId, final BigDecimal amount,
                                               final LocalDate effectiveDate, final Currency currency, final CallContext context) throws InvoiceApiException {
@@ -312,8 +415,49 @@ public class DefaultInvoiceUserApi implements InvoiceUserApi {
             throw new InvoiceApiException(ErrorCode.CREDIT_AMOUNT_INVALID, amount);
         }
 
-        final InvoiceItemModelDao credit = dao.insertCredit(accountId, invoiceId, amount, effectiveDate, currency, internalCallContextFactory.createInternalCallContext(accountId, context));
-        return InvoiceItemFactory.fromModelDao(credit);
+        final WithAccountLock<InvoiceItem> bar = new WithAccountLock<InvoiceItem>() {
+
+            private InvoiceItem creditItem;
+
+            @Override
+            public List<Invoice> doA() throws InvoiceApiException {
+                // Create an invoice for that credit if it doesn't exist
+                final Invoice invoiceForCredit;
+                if (invoiceId == null) {
+                    invoiceForCredit = new DefaultInvoice(accountId, effectiveDate, effectiveDate, currency);
+                } else {
+                    invoiceForCredit = getInvoice(invoiceId, context);
+                    // Check the specified currency matches the one of the existing invoice
+                    if (invoiceForCredit.getCurrency() != currency) {
+                        throw new InvoiceApiException(ErrorCode.EXTERNAL_CHARGE_CURRENCY_INVALID, currency);
+                    }
+                }
+
+                // Create the new credit
+                creditItem = new CreditAdjInvoiceItem(UUID.randomUUID(),
+                                                      context.getCreatedDate(),
+                                                      invoiceForCredit.getId(),
+                                                      accountId,
+                                                      effectiveDate,
+                                                      // Note! The amount is negated here!
+                                                      amount.negate(),
+                                                      currency);
+                invoiceForCredit.addInvoiceItem(creditItem);
+
+                return ImmutableList.<Invoice>of(invoiceForCredit);
+            }
+
+            @Override
+            public InvoiceItem doB(final List<InvoiceModelDao> invoiceModelDaos, final LocalDate effectiveDate, final InternalCallContext internalCallContext) throws InvoiceApiException {
+                Preconditions.checkState(invoiceModelDaos.size() == 1, "Should have created a single invoice: " + invoiceModelDaos);
+
+                dao.insertCredit(invoiceModelDaos.get(0), effectiveDate, internalCallContextFactory.createInternalCallContext(accountId, context));
+
+                return getCreditById(creditItem.getId(), context);
+            }
+        };
+
+        return foo(accountId, effectiveDate, bar, context);
     }
 
     @Override
@@ -330,6 +474,7 @@ public class DefaultInvoiceUserApi implements InvoiceUserApi {
             throw new InvoiceApiException(ErrorCode.INVOICE_ITEM_ADJUSTMENT_AMOUNT_SHOULD_BE_POSITIVE, amount);
         }
 
+        // TODO
         final InvoiceItemModelDao adjustment = dao.insertInvoiceItemAdjustment(accountId, invoiceId, invoiceItemId, effectiveDate, amount, currency, internalCallContextFactory.createInternalCallContext(accountId, context));
         return InvoiceItemFactory.fromModelDao(adjustment);
     }
