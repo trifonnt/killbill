@@ -49,7 +49,7 @@ public interface InvoiceDao extends EntityDao<InvoiceModelDao, Invoice, InvoiceA
 
     List<InvoiceModelDao> getInvoicesBySubscription(UUID subscriptionId, InternalTenantContext context);
 
-    public Pagination<InvoiceModelDao> searchInvoices(String searchKey, Long offset, Long limit, InternalTenantContext context);
+    Pagination<InvoiceModelDao> searchInvoices(String searchKey, Long offset, Long limit, InternalTenantContext context);
 
     UUID getInvoiceIdByPaymentId(UUID paymentId, InternalTenantContext context);
 
@@ -59,7 +59,7 @@ public interface InvoiceDao extends EntityDao<InvoiceModelDao, Invoice, InvoiceA
 
     BigDecimal getAccountBalance(UUID accountId, InternalTenantContext context);
 
-    public BigDecimal getAccountCBA(UUID accountId, InternalTenantContext context);
+    BigDecimal getAccountCBA(UUID accountId, InternalTenantContext context);
 
     List<InvoiceModelDao> getUnpaidInvoicesByAccountId(UUID accountId, @Nullable LocalDate upToDate, InternalTenantContext context);
 
@@ -105,17 +105,6 @@ public interface InvoiceDao extends EntityDao<InvoiceModelDao, Invoice, InvoiceA
     InvoiceItemModelDao getExternalChargeById(UUID externalChargeId, InternalTenantContext context) throws InvoiceApiException;
 
     /**
-     * Add one or more external charges to a given account.
-     *
-     * @param accountId     the account id
-     * @param effectiveDate the effective date for newly created invoices (in the account timezone)
-     * @param charges       the external charges
-     * @param context       the call context
-     * @return the newly created external charges invoice items
-     */
-    List<InvoiceItemModelDao> insertExternalCharges(UUID accountId, LocalDate effectiveDate, Iterable<InvoiceItemModelDao> charges, InternalCallContext context) throws InvoiceApiException;
-
-    /**
      * Retrieve a credit by id.
      *
      * @param creditId the credit id
@@ -123,15 +112,6 @@ public interface InvoiceDao extends EntityDao<InvoiceModelDao, Invoice, InvoiceA
      * @throws InvoiceApiException
      */
     InvoiceItemModelDao getCreditById(UUID creditId, InternalTenantContext context) throws InvoiceApiException;
-
-    /**
-     * Add a credit. If the invoice doesn't exist, it will be created.
-     *
-     * @param invoiceModelDao the invoice for that credit item
-     * @param effectiveDate   the day to grant the credit, in the account timezone
-     * @param context         the call callcontext
-     */
-    void insertCredit(InvoiceModelDao invoiceModelDao, LocalDate effectiveDate, InternalCallContext context);
 
     /**
      * Adjust an invoice item.
@@ -145,6 +125,7 @@ public interface InvoiceDao extends EntityDao<InvoiceModelDao, Invoice, InvoiceA
      * @param context       the call callcontext
      * @return the newly created adjustment item
      */
+    // TODO Needed?
     InvoiceItemModelDao insertInvoiceItemAdjustment(UUID accountId, UUID invoiceId, UUID invoiceItemId, LocalDate effectiveDate,
                                                     @Nullable BigDecimal amount, @Nullable Currency currency, InternalCallContext context);
 

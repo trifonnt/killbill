@@ -226,7 +226,7 @@ public class DefaultInvoiceUserApi implements InvoiceUserApi {
         final Account account;
         try {
             account = accountUserApi.getAccountById(accountId, internalContext);
-        } catch (AccountApiException e) {
+        } catch (final AccountApiException e) {
             throw new InvoiceApiException(e, ErrorCode.ACCOUNT_DOES_NOT_EXIST_FOR_ID, e.toString());
         }
 
@@ -451,7 +451,7 @@ public class DefaultInvoiceUserApi implements InvoiceUserApi {
             public InvoiceItem doB(final List<InvoiceModelDao> invoiceModelDaos, final LocalDate effectiveDate, final InternalCallContext internalCallContext) throws InvoiceApiException {
                 Preconditions.checkState(invoiceModelDaos.size() == 1, "Should have created a single invoice: " + invoiceModelDaos);
 
-                dao.insertCredit(invoiceModelDaos.get(0), effectiveDate, internalCallContextFactory.createInternalCallContext(accountId, context));
+                dao.createInvoices(invoiceModelDaos, internalCallContext);
 
                 return getCreditById(creditItem.getId(), context);
             }
@@ -504,7 +504,7 @@ public class DefaultInvoiceUserApi implements InvoiceUserApi {
             }
         }
 
-        HtmlInvoice htmlInvoice = generator.generateInvoice(account, invoice, manualPay, internalContext);
+        final HtmlInvoice htmlInvoice = generator.generateInvoice(account, invoice, manualPay, internalContext);
         return htmlInvoice.getBody();
     }
 
@@ -516,7 +516,7 @@ public class DefaultInvoiceUserApi implements InvoiceUserApi {
     private void notifyBusOfInvoiceAdjustment(final UUID invoiceId, final UUID accountId, final InternalCallContext context) {
         try {
             eventBus.post(new DefaultInvoiceAdjustmentEvent(invoiceId, accountId, context.getAccountRecordId(), context.getTenantRecordId(), context.getUserToken()));
-        } catch (EventBusException e) {
+        } catch (final EventBusException e) {
             log.warn("Failed to post adjustment event for invoice " + invoiceId, e);
         }
     }
