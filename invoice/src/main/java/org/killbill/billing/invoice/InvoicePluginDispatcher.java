@@ -26,6 +26,7 @@ import javax.inject.Inject;
 import org.killbill.billing.invoice.api.Invoice;
 import org.killbill.billing.invoice.api.InvoiceItem;
 import org.killbill.billing.invoice.api.InvoiceItemType;
+import org.killbill.billing.invoice.model.DefaultInvoice;
 import org.killbill.billing.invoice.plugin.api.InvoicePluginApi;
 import org.killbill.billing.osgi.api.OSGIServiceRegistration;
 import org.killbill.billing.payment.api.PluginProperty;
@@ -46,14 +47,18 @@ public class InvoicePluginDispatcher {
         this.pluginRegistry = pluginRegistry;
     }
 
+    //
+    // If we have multiple plugins there is a question of plugin ordering and also a 'product' questions to decide whether
+    // subsequent plugins should have access to items added by previous plugins
+    //
     public List<InvoiceItem> getAdditionalInvoiceItems(final Invoice originalInvoice, final CallContext callContext) {
-        // TODO immutable invoice
-        final Invoice immutableInvoice = originalInvoice;
 
+        // We clone the original invoice so plugins don't remove/add items
+        final Invoice clonedInvoice = (Invoice) ((DefaultInvoice) originalInvoice).clone();
         final List<InvoiceItem> additionalInvoiceItems = new LinkedList<InvoiceItem>();
         final List<InvoicePluginApi> invoicePlugins = getInvoicePlugins();
         for (final InvoicePluginApi invoicePlugin : invoicePlugins) {
-            final List<InvoiceItem> items = invoicePlugin.getAdditionalInvoiceItems(immutableInvoice, ImmutableList.<PluginProperty>of(), callContext);
+            final List<InvoiceItem> items = invoicePlugin.getAdditionalInvoiceItems(clonedInvoice, ImmutableList.<PluginProperty>of(), callContext);
             if (items != null) {
                 for (final InvoiceItem item : items) {
                     if (item.getInvoiceItemType() != InvoiceItemType.FIXED &&

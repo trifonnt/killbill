@@ -287,7 +287,7 @@ public class DefaultInvoiceUserApi implements InvoiceUserApi {
             private final Collection<InvoiceItem> createdExternalCharges = new LinkedList<InvoiceItem>();
 
             @Override
-            public Iterable<Invoice> doA() throws InvoiceApiException {
+            public Iterable<Invoice> prepareInvoices() throws InvoiceApiException {
                 // Group all new external charges on the same invoice (per currency)
                 final Map<Currency, Invoice> newInvoicesForExternalCharges = new HashMap<Currency, Invoice>();
                 final Map<UUID, Invoice> existingInvoicesForExternalCharges = new HashMap<UUID, Invoice>();
@@ -340,7 +340,7 @@ public class DefaultInvoiceUserApi implements InvoiceUserApi {
             }
         };
 
-        return foo(accountId, effectiveDate, bar, context);
+        return dispatchToInvoicePluginsAndInsertItems(accountId, effectiveDate, bar, context);
     }
 
     @Override
@@ -362,17 +362,17 @@ public class DefaultInvoiceUserApi implements InvoiceUserApi {
 
     public interface WithAccountLock<T> {
 
-        public Iterable<Invoice> doA() throws InvoiceApiException;
+        public Iterable<Invoice> prepareInvoices() throws InvoiceApiException;
 
         public T doB(final List<InvoiceModelDao> invoiceModelDaos, final LocalDate effectiveDate, final InternalCallContext internalCallContext) throws InvoiceApiException;
     }
 
-    private <T> T foo(final UUID accountId, final LocalDate effectiveDate, final WithAccountLock<T> withAccountLock, final CallContext context) throws InvoiceApiException {
+    private <T> T dispatchToInvoicePluginsAndInsertItems(final UUID accountId, final LocalDate effectiveDate, final WithAccountLock<T> withAccountLock, final CallContext context) throws InvoiceApiException {
         GlobalLock lock = null;
         try {
             lock = locker.lockWithNumberOfTries(LockerType.ACCOUNT_FOR_INVOICE_PAYMENTS.toString(), accountId.toString(), NB_LOCK_TRY);
 
-            final Iterable<Invoice> invoicesForPlugins = withAccountLock.doA();
+            final Iterable<Invoice> invoicesForPlugins = withAccountLock.prepareInvoices();
 
             final List<InvoiceModelDao> invoiceModelDaos = new LinkedList<InvoiceModelDao>();
             for (final Invoice invoiceForPlugin : invoicesForPlugins) {
@@ -420,7 +420,7 @@ public class DefaultInvoiceUserApi implements InvoiceUserApi {
             private InvoiceItem creditItem;
 
             @Override
-            public List<Invoice> doA() throws InvoiceApiException {
+            public List<Invoice> prepareInvoices() throws InvoiceApiException {
                 // Create an invoice for that credit if it doesn't exist
                 final Invoice invoiceForCredit;
                 if (invoiceId == null) {
@@ -429,7 +429,7 @@ public class DefaultInvoiceUserApi implements InvoiceUserApi {
                     invoiceForCredit = getInvoice(invoiceId, context);
                     // Check the specified currency matches the one of the existing invoice
                     if (invoiceForCredit.getCurrency() != currency) {
-                        throw new InvoiceApiException(ErrorCode.EXTERNAL_CHARGE_CURRENCY_INVALID, currency);
+                        throw new InvoiceApiException(ErrorCode.CURRENCY_INVALID, currency, invoiceForCredit.getCurrency());
                     }
                 }
 
@@ -457,7 +457,7 @@ public class DefaultInvoiceUserApi implements InvoiceUserApi {
             }
         };
 
-        return foo(accountId, effectiveDate, bar, context);
+        return dispatchToInvoicePluginsAndInsertItems(accountId, effectiveDate, bar, context);
     }
 
     @Override

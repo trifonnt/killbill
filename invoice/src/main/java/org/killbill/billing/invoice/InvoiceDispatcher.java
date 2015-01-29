@@ -113,7 +113,8 @@ public class InvoiceDispatcher {
                              final InvoiceDao invoiceDao,
                              final InternalCallContextFactory internalCallContextFactory,
                              final InvoiceNotifier invoiceNotifier,
-                             final InvoicePluginDispatcher invoicePluginDispatcher, final GlobalLocker locker,
+                             final InvoicePluginDispatcher invoicePluginDispatcher,
+                             final GlobalLocker locker,
                              final PersistentBus eventBus,
                              final Clock clock) {
         this.generator = generator;
