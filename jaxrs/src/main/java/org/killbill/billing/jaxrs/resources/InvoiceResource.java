@@ -455,7 +455,7 @@ public class InvoiceResource extends JaxRsResourceBase {
                                                                                                           }
                                                                                                          ));
         if (currencies.size() != 1 || !currencies.iterator().next().equals(account.getCurrency())) {
-            throw new InvoiceApiException(ErrorCode.EXTERNAL_CHARGE_CURRENCY_INVALID, account.getCurrency());
+            throw new InvoiceApiException(ErrorCode.CURRENCY_INVALID, currencies.iterator().next(), account.getCurrency());
         }
 
         // Get the effective date of the external charge, in the account timezone
@@ -778,9 +778,6 @@ public class InvoiceResource extends JaxRsResourceBase {
         final List<String> result = tenantApi.getTenantValueForKey(tenantKeyStr, tenantContext);
         return result.isEmpty() ? Response.status(Status.NOT_FOUND).build() : Response.status(Status.OK).entity(result.get(0)).build();
     }
-
-
-
 
     @Timed
     @GET
