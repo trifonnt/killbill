@@ -69,10 +69,10 @@ public class TenantFilter implements Filter {
 
     @Override
     public void init(final FilterConfig filterConfig) throws ServletException {
-        final Realm killbillJdbcRealm = new KillbillJdbcTenantRealm(dataSource);
+        final Realm killbillJdbcTenantRealm = new KillbillJdbcTenantRealm(dataSource);
         // We use Shiro to verify the api credentials - but the Shiro Subject is only used for RBAC
         modularRealmAuthenticator = new ModularRealmAuthenticator();
-        modularRealmAuthenticator.setRealms(ImmutableList.<Realm>of(killbillJdbcRealm));
+        modularRealmAuthenticator.setRealms(ImmutableList.<Realm>of(killbillJdbcTenantRealm));
     }
 
     @Override

@@ -48,6 +48,7 @@ getByRecordId() ::= <<
 select <allTableFields()>
 from <tableName()>
 where record_id = :recordId
+and is_active
 ;
 >>
 
@@ -55,5 +56,15 @@ getByUsername() ::= <<
 select <allTableFields()>
 from <tableName()>
 where username = :username
+and is_active
+;
+>>
+
+invalidate() ::= <<
+update <tableName()>
+set is_active = 0
+where
+username = :username
+and role_name = :roleName
 ;
 >>

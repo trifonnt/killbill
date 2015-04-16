@@ -17,6 +17,8 @@
 
 package org.killbill.billing.util.security.shiro.dao;
 
+import java.util.Date;
+
 import org.killbill.commons.jdbi.binder.SmartBindBean;
 import org.skife.jdbi.v2.sqlobject.Bind;
 import org.skife.jdbi.v2.sqlobject.SqlQuery;
@@ -24,18 +26,27 @@ import org.skife.jdbi.v2.sqlobject.SqlUpdate;
 import org.skife.jdbi.v2.sqlobject.mixins.Transactional;
 import org.skife.jdbi.v2.sqlobject.stringtemplate.UseStringTemplate3StatementLocator;
 
-
-
 @UseStringTemplate3StatementLocator
-public interface UsersSqlDao  extends Transactional<UsersSqlDao> {
+public interface UsersSqlDao extends Transactional<UsersSqlDao> {
 
     @SqlQuery
-    public UserModelDao getByRecordId(@Bind("recordId") final Long recordId);
+    public UserModelDao getByRecordId(@Bind("recordId") Long recordId);
 
     @SqlQuery
-    public UserModelDao getByUsername(@Bind("username") final String username);
+    public UserModelDao getByUsername(@Bind("username") String username);
 
     @SqlUpdate
-    public void create(@SmartBindBean final UserModelDao userModelDao);
+    public void create(@SmartBindBean UserModelDao userModelDao);
 
+    @SqlUpdate
+    public void updatePassword(@Bind("username") String username,
+                               @Bind("password") String password,
+                               @Bind("passwordSalt") String passwordSalt,
+                               @Bind("updatedDate") Date updatedDate,
+                               @Bind("updatedBy") String updatedBy);
+
+    @SqlUpdate
+    public void invalidate(@Bind("username") String username,
+                           @Bind("updatedDate") Date updatedDate,
+                           @Bind("updatedBy") String updatedBy);
 }

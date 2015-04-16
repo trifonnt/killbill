@@ -23,12 +23,17 @@ import org.killbill.billing.security.SecurityApiException;
 
 public interface UserDao {
 
-    public void insertUser(final String username, final String password, final List<String> roles, final String createdBy) throws SecurityApiException;
+    public void insertUser(String username, String password, List<String> roles, String createdBy) throws SecurityApiException;
 
-    public List<UserRolesModelDao> getUserRoles(final String username);
+    public List<UserRolesModelDao> getUserRoles(String username);
 
-    public void addRoleDefinition(final String role, final List<String> permissions, final String createdBy);
+    public void addRoleDefinition(String role, List<String> permissions, String createdBy);
 
-    public List<RolesPermissionsModelDao> getRoleDefinition(final String role);
+    public List<RolesPermissionsModelDao> getRoleDefinition(String role);
 
+    public void updateUserPassword(String username, String password, String createdBy) throws SecurityApiException;
+
+    public void updateUserRoles(String username, List<String> roles, String createdBy) throws SecurityApiException;
+
+    public void invalidateUser(String username, String createdBy) throws SecurityApiException;
 }

@@ -17,6 +17,7 @@
 package org.killbill.billing.util.security.api;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -29,6 +30,11 @@ import org.apache.shiro.SecurityUtils;
 import org.apache.shiro.authc.AuthenticationToken;
 import org.apache.shiro.authc.UsernamePasswordToken;
 import org.apache.shiro.authz.AuthorizationException;
+import org.apache.shiro.mgt.DefaultSecurityManager;
+import org.apache.shiro.realm.Realm;
+import org.apache.shiro.realm.jdbc.JdbcRealm;
+import org.apache.shiro.subject.PrincipalCollection;
+import org.apache.shiro.subject.SimplePrincipalCollection;
 import org.apache.shiro.subject.Subject;
 import org.killbill.billing.ErrorCode;
 import org.killbill.billing.security.Logical;
@@ -40,9 +46,11 @@ import org.killbill.billing.util.callcontext.TenantContext;
 import org.killbill.billing.util.security.shiro.dao.RolesPermissionsModelDao;
 import org.killbill.billing.util.security.shiro.dao.UserDao;
 import org.killbill.billing.util.security.shiro.dao.UserRolesModelDao;
+import org.killbill.billing.util.security.shiro.realm.KillBillJdbcRealm;
 
 import com.google.common.base.Function;
 import com.google.common.base.Functions;
+import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
@@ -149,6 +157,23 @@ public class DefaultSecurityApi implements SecurityApi {
     }
 
     @Override
+    public void updateUserPassword(final String username, final String password, final CallContext callContext) throws SecurityApiException {
+        userDao.updateUserPassword(username, password, callContext.getUserName());
+    }
+
+    @Override
+    public void updateUserRoles(final String username, final List<String> roles, final CallContext callContext) throws SecurityApiException {
+        userDao.updateUserRoles(username, roles, callContext.getUserName());
+        invalidateJDBCAuthorizationCache(username);
+    }
+
+
+    @Override
+    public void invalidateUser(final String username, final CallContext callContext) throws SecurityApiException {
+        userDao.invalidateUser(username, callContext.getUserName());
+    }
+
+    @Override
     public List<String> getUserRoles(final String username, final TenantContext tenantContext) {
         final List<UserRolesModelDao> permissionsModelDao = userDao.getUserRoles(username);
         return ImmutableList.copyOf(Iterables.transform(permissionsModelDao, new Function<UserRolesModelDao, String>() {
@@ -165,7 +190,6 @@ public class DefaultSecurityApi implements SecurityApi {
         final List<String> sanitizedPermissions = sanitizeAndValidatePermissions(permissions);
         userDao.addRoleDefinition(role, sanitizedPermissions, callContext.getUserName());
     }
-
 
     @Override
     public List<String> getRoleDefinition(final String role, final TenantContext tenantContext) {
@@ -251,5 +275,21 @@ public class DefaultSecurityApi implements SecurityApi {
             }
         }
         return allPermissions;
+    }
+
+    private void invalidateJDBCAuthorizationCache(final String username) {
+        final Collection<Realm> realms = ((DefaultSecurityManager) SecurityUtils.getSecurityManager()).getRealms();
+        final KillBillJdbcRealm killBillJdbcRealm = (KillBillJdbcRealm) Iterables.tryFind(realms, new Predicate<Realm>() {
+            @Override
+            public boolean apply(@Nullable final Realm input) {
+                return (input instanceof KillBillJdbcRealm);
+            }
+        }).orNull();
+
+        if (killBillJdbcRealm != null) {
+            SimplePrincipalCollection principals = new SimplePrincipalCollection();
+            principals.add(username, killBillJdbcRealm.getName());
+            killBillJdbcRealm.clearCachedAuthorizationInfo(principals);
+        }
     }
 }

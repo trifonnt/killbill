@@ -22,10 +22,13 @@ import java.util.Set;
 import javax.inject.Singleton;
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.Consumes;
+import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
 import javax.ws.rs.HeaderParam;
 import javax.ws.rs.POST;
+import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
@@ -124,6 +127,59 @@ public class SecurityResource extends JaxRsResourceBase {
     }
 
     @Timed
+    @PUT
+    @Consumes(APPLICATION_JSON)
+    @Produces(APPLICATION_JSON)
+    @Path("/users/{username:" + ANYTHING_PATTERN + "}/password")
+    @ApiOperation(value = "Update a user password")
+    public Response updateUserPassword(final UserRolesJson json,
+                                       @PathParam("username") final String username,
+                                       @HeaderParam(HDR_CREATED_BY) final String createdBy,
+                                       @HeaderParam(HDR_REASON) final String reason,
+                                       @HeaderParam(HDR_COMMENT) final String comment,
+                                       @javax.ws.rs.core.Context final HttpServletRequest request,
+                                       @javax.ws.rs.core.Context final UriInfo uriInfo) throws SecurityApiException {
+        securityApi.updateUserPassword(username, json.getPassword(), context.createContext(createdBy, reason, comment, request));
+        return Response.status(Status.OK).build();
+    }
+
+
+    @Timed
+    @PUT
+    @Consumes(APPLICATION_JSON)
+    @Produces(APPLICATION_JSON)
+    @Path("/users/{username:" + ANYTHING_PATTERN + "}/roles")
+    @ApiOperation(value = "Update roles associated to a user")
+    public Response updateUserRoles(final UserRolesJson json,
+                                    @PathParam("username") final String username,
+                                    @HeaderParam(HDR_CREATED_BY) final String createdBy,
+                                    @HeaderParam(HDR_REASON) final String reason,
+                                    @HeaderParam(HDR_COMMENT) final String comment,
+                                    @javax.ws.rs.core.Context final HttpServletRequest request,
+                                    @javax.ws.rs.core.Context final UriInfo uriInfo) throws SecurityApiException {
+        securityApi.updateUserRoles(username, json.getRoles(), context.createContext(createdBy, reason, comment, request));
+        return Response.status(Status.OK).build();
+    }
+
+    @Timed
+    @DELETE
+    @Consumes(APPLICATION_JSON)
+    @Produces(APPLICATION_JSON)
+    @Path("/users/{username:" + ANYTHING_PATTERN + "}")
+    @ApiOperation(value = "Invalidate an existing user")
+    public Response invalidateUser(@PathParam("username") final String username,
+                                    @HeaderParam(HDR_CREATED_BY) final String createdBy,
+                                    @HeaderParam(HDR_REASON) final String reason,
+                                    @HeaderParam(HDR_COMMENT) final String comment,
+                                    @javax.ws.rs.core.Context final HttpServletRequest request,
+                                    @javax.ws.rs.core.Context final UriInfo uriInfo) throws SecurityApiException {
+        securityApi.invalidateUser(username, context.createContext(createdBy, reason, comment, request));
+        return Response.status(Status.NO_CONTENT).build();
+    }
+
+
+
+    @Timed
     @POST
     @Path("/roles")
     @Consumes(APPLICATION_JSON)
@@ -138,5 +194,4 @@ public class SecurityResource extends JaxRsResourceBase {
         securityApi.addRoleDefinition(json.getRole(), json.getPermissions(), context.createContext(createdBy, reason, comment, request));
         return Response.status(Status.CREATED).build();
     }
-
 }

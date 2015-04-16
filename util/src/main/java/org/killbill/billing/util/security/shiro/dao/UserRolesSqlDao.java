@@ -17,6 +17,7 @@
 
 package org.killbill.billing.util.security.shiro.dao;
 
+import java.util.Date;
 import java.util.List;
 
 import org.killbill.commons.jdbi.binder.SmartBindBean;
@@ -26,17 +27,21 @@ import org.skife.jdbi.v2.sqlobject.SqlUpdate;
 import org.skife.jdbi.v2.sqlobject.mixins.Transactional;
 import org.skife.jdbi.v2.sqlobject.stringtemplate.UseStringTemplate3StatementLocator;
 
-
 @UseStringTemplate3StatementLocator
 public interface UserRolesSqlDao extends Transactional<UserRolesSqlDao> {
 
     @SqlQuery
-    public UserRolesModelDao getByRecordId(@Bind("recordId") final Long recordId);
+    public UserRolesModelDao getByRecordId(@Bind("recordId") Long recordId);
 
     @SqlQuery
-    public List<UserRolesModelDao> getByUsername(@Bind("username") final String username);
+    public List<UserRolesModelDao> getByUsername(@Bind("username") String username);
 
     @SqlUpdate
-    public void create(@SmartBindBean final UserRolesModelDao userRolesModelDao);
+    public void create(@SmartBindBean UserRolesModelDao userRolesModelDao);
 
+    @SqlUpdate
+    public void invalidate(@Bind("username") String username,
+                           @Bind("roleName") String roleName,
+                           @Bind("updatedDate") final Date updatedDate,
+                           @Bind("updatedBy") final String updatedBy);
 }

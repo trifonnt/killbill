@@ -35,7 +35,6 @@ import org.killbill.billing.security.SecurityApiException;
 import org.killbill.billing.util.UtilTestSuiteWithEmbeddedDB;
 import org.testng.Assert;
 import org.testng.annotations.AfterMethod;
-import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
@@ -48,7 +47,6 @@ import com.jolbox.bonecp.BoneCPDataSource;
 public class TestKillBillJdbcRealm extends UtilTestSuiteWithEmbeddedDB {
 
     private SecurityManager securityManager;
-
 
     @Override
     @BeforeMethod(groups = "slow")
@@ -70,8 +68,7 @@ public class TestKillBillJdbcRealm extends UtilTestSuiteWithEmbeddedDB {
 
     }
 
-
-        @Test(groups = "slow")
+    @Test(groups = "slow")
     public void testAuthentication() throws SecurityApiException {
 
         final String username = "toto";
@@ -89,10 +86,38 @@ public class TestKillBillJdbcRealm extends UtilTestSuiteWithEmbeddedDB {
             final AuthenticationToken badToken = new UsernamePasswordToken(username, "somethingelse");
             securityManager.login(subject, badToken);
             Assert.assertTrue(true);
+            securityManager.logout(subject);
             securityManager.login(subject, badToken);
             Assert.fail("Should not succeed to login with an incorrect password");
         } catch (final AuthenticationException e) {
         }
+
+        // Update password and try again
+        final String newPassword = "suppersimple";
+        securityApi.updateUserPassword(username, newPassword, callContext);
+
+        try {
+            final AuthenticationToken notGoodTokenAnyLonger = goodToken;
+            securityManager.login(subject, notGoodTokenAnyLonger);
+            Assert.fail("Should not succeed to login with an incorrect password");
+        } catch (final AuthenticationException e) {
+        }
+
+
+        final AuthenticationToken newGoodToken = new UsernamePasswordToken(username, newPassword);
+        securityManager.login(subject, newGoodToken);
+        Assert.assertTrue(true);
+
+        securityManager.logout(subject);
+        securityApi.invalidateUser(username, callContext);
+
+        try {
+            final AuthenticationToken notGoodTokenAnyLonger = goodToken;
+            securityManager.login(subject, notGoodTokenAnyLonger);
+            Assert.fail("Should not succeed to login with an incorrect password");
+        } catch (final AuthenticationException e) {
+        }
+
     }
 
     @Test(groups = "slow")
@@ -127,7 +152,6 @@ public class TestKillBillJdbcRealm extends UtilTestSuiteWithEmbeddedDB {
         securityApi.addUserRoles(username, password, ImmutableList.of("restricted"), callContext);
 
         final AuthenticationToken goodToken = new UsernamePasswordToken(username, password);
-        final DelegatingSubject delegatingSubject  = new DelegatingSubject(securityManager);
         final Subject subject = securityManager.login(null, goodToken);
 
         subject.checkPermission(Permission.ACCOUNT_CAN_CHARGE.toString());
@@ -139,6 +163,23 @@ public class TestKillBillJdbcRealm extends UtilTestSuiteWithEmbeddedDB {
             Assert.fail("Subject should not have rights to delete tag definitions");
         } catch (AuthorizationException e) {
         }
+        subject.logout();
+
+        securityApi.addRoleDefinition("newRestricted", ImmutableList.of("account:*", "invoice", "tag:delete_tag_definition"), callContext);
+        securityApi.updateUserRoles(username, ImmutableList.of("newRestricted"), callContext);
+
+
+        final Subject newSubject = securityManager.login(null, goodToken);
+        newSubject.checkPermission(Permission.ACCOUNT_CAN_CHARGE.toString());
+        newSubject.checkPermission(Permission.INVOICE_CAN_CREDIT.toString());
+        newSubject.checkPermission(Permission.TAG_CAN_DELETE_TAG_DEFINITION.toString());
+
+        try {
+            newSubject.checkPermission(Permission.TAG_CAN_CREATE_TAG_DEFINITION.toString());
+            Assert.fail("Subject should not have rights to create tag definitions");
+        } catch (AuthorizationException e) {
+        }
+
     }
 
     private void testInvalidPermissionScenario(final List<String> permissions) {

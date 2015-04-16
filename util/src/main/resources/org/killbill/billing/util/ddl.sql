@@ -253,6 +253,8 @@ CREATE TABLE users (
     updated_by varchar(50) DEFAULT NULL,
     PRIMARY KEY(record_id)
 ) /*! CHARACTER SET utf8 COLLATE utf8_bin */;
+CREATE INDEX users_username ON users(username);
+
 
 DROP TABLE IF EXISTS user_roles;
 CREATE TABLE user_roles (
@@ -266,6 +268,7 @@ CREATE TABLE user_roles (
     updated_by varchar(50) DEFAULT NULL,
     PRIMARY KEY(record_id)
 ) /*! CHARACTER SET utf8 COLLATE utf8_bin */;
+CREATE INDEX user_roles_idx ON user_roles(username, role_name);
 
 
 DROP TABLE IF EXISTS roles_permissions;
@@ -280,3 +283,4 @@ CREATE TABLE roles_permissions (
     updated_by varchar(50) DEFAULT NULL,
     PRIMARY KEY(record_id)
 ) /*! CHARACTER SET utf8 COLLATE utf8_bin */;
+CREATE INDEX roles_permissions_idx ON roles_permissions(role_name, permission);

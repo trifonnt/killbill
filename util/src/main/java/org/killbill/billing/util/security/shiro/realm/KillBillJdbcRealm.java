@@ -22,10 +22,15 @@ import javax.inject.Named;
 import javax.sql.DataSource;
 
 import org.apache.shiro.realm.jdbc.JdbcRealm;
+import org.apache.shiro.subject.PrincipalCollection;
 import org.killbill.billing.platform.glue.KillBillPlatformModuleBase;
 import org.killbill.billing.util.security.shiro.KillbillCredentialsMatcher;
 
 public class KillBillJdbcRealm extends JdbcRealm {
+
+    protected static final String KILLBILL_SALTED_AUTHENTICATION_QUERY = "select password, password_salt from users where username = ? and is_active";
+    protected static final String KILLBILL_USER_ROLES_QUERY = "select role_name from user_roles where username = ? and is_active";
+    protected static final String KILLBILL_PERMISSIONS_QUERY = "select permission from roles_permissions where role_name = ? and is_active";
 
     private final DataSource dataSource;
 
@@ -34,9 +39,20 @@ public class KillBillJdbcRealm extends JdbcRealm {
 
         super();
         this.dataSource = dataSource;
+
+        // Tweak JdbcRealm defaults
+        setPermissionsLookupEnabled(true);
+        setAuthenticationQuery(KILLBILL_SALTED_AUTHENTICATION_QUERY);
+        setUserRolesQuery(KILLBILL_USER_ROLES_QUERY);
+        setPermissionsQuery(KILLBILL_PERMISSIONS_QUERY);
+
         configureSecurity();
         configureDataSource();
-        setPermissionsLookupEnabled(true);
+    }
+
+    @Override
+    public void clearCachedAuthorizationInfo(PrincipalCollection principals) {
+        super.clearCachedAuthorizationInfo(principals);
     }
 
     private void configureSecurity() {
