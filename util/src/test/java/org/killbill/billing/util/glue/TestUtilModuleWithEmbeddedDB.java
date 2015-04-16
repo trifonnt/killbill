@@ -22,6 +22,10 @@ import org.killbill.billing.DBTestingHelper;
 import org.killbill.billing.GuicyKillbillTestWithEmbeddedDBModule;
 import org.killbill.billing.api.TestApiListener;
 import org.killbill.billing.platform.api.KillbillConfigSource;
+import org.killbill.billing.util.security.api.DefaultSecurityService;
+import org.killbill.billing.util.security.api.SecurityService;
+import org.killbill.billing.util.security.shiro.dao.DefaultUserDao;
+import org.killbill.billing.util.security.shiro.dao.UserDao;
 
 public class TestUtilModuleWithEmbeddedDB extends TestUtilModule {
 
@@ -38,8 +42,19 @@ public class TestUtilModuleWithEmbeddedDB extends TestUtilModule {
         install(new TagStoreModule(configSource));
         install(new CustomFieldModule(configSource));
         install(new NonEntityDaoModule(configSource));
+        install(new SecurityModuleWithNoSecurityManager(configSource));
         install(new GlobalLockerModule(DBTestingHelper.get().getInstance().getDBEngine(), configSource));
-
         bind(TestApiListener.class).asEagerSingleton();
+    }
+
+    private final class SecurityModuleWithNoSecurityManager extends SecurityModule {
+
+        public SecurityModuleWithNoSecurityManager(final KillbillConfigSource configSource) {
+            super(configSource);
+        }
+
+        protected void installSecurityService() {
+        }
+
     }
 }

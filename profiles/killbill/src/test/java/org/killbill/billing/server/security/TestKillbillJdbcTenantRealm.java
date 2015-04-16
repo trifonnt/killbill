@@ -38,7 +38,7 @@ import org.testng.annotations.Test;
 import com.jolbox.bonecp.BoneCPConfig;
 import com.jolbox.bonecp.BoneCPDataSource;
 
-public class TestKillbillJdbcRealm extends TestJaxrsBase {
+public class TestKillbillJdbcTenantRealm extends TestJaxrsBase {
 
     private SecurityManager securityManager;
     private DefaultTenant tenant;
@@ -60,10 +60,7 @@ public class TestKillbillJdbcRealm extends TestJaxrsBase {
         dbConfig.setUsername(helper.getUsername());
         dbConfig.setPassword(helper.getPassword());
 
-        final KillbillJdbcRealm jdbcRealm;
-        jdbcRealm = new KillbillJdbcRealm(daoConfig);
-        jdbcRealm.setDataSource(new BoneCPDataSource(dbConfig));
-
+        final KillbillJdbcTenantRealm jdbcRealm = new KillbillJdbcTenantRealm(new BoneCPDataSource(dbConfig));
         securityManager = new DefaultSecurityManager(jdbcRealm);
     }
 

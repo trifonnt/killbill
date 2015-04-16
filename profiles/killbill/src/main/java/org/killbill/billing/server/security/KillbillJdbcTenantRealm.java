@@ -28,25 +28,23 @@ import org.apache.shiro.codec.Base64;
 import org.apache.shiro.realm.jdbc.JdbcRealm;
 import org.apache.shiro.util.ByteSource;
 import org.killbill.billing.platform.jndi.ReferenceableDataSourceSpy;
-import org.killbill.billing.tenant.security.KillbillCredentialsMatcher;
+import org.killbill.billing.util.security.shiro.KillbillCredentialsMatcher;
 import org.killbill.commons.jdbi.guice.DaoConfig;
 import org.killbill.commons.jdbi.guice.DataSourceProvider;
 
 /**
  * @see {shiro.ini}
  */
-public class KillbillJdbcRealm extends JdbcRealm {
+public class KillbillJdbcTenantRealm extends JdbcRealm {
 
     private static final String KILLBILL_AUTHENTICATION_QUERY = "select api_secret, api_salt from tenants where api_key = ?";
     private static final String SHIRO_DATA_SOURCE_ID = "shiro";
 
-    private final DaoConfig config;
+    private final DataSource dataSource;
 
-    public KillbillJdbcRealm(final DaoConfig config) {
+    public KillbillJdbcTenantRealm(final DataSource dataSource) {
         super();
-
-        this.config = config;
-
+        this.dataSource = dataSource;
         configureSecurity();
         configureQueries();
         configureDataSource();
@@ -73,8 +71,6 @@ public class KillbillJdbcRealm extends JdbcRealm {
     }
 
     private void configureDataSource() {
-        final DataSource realDataSource = new DataSourceProvider(config, SHIRO_DATA_SOURCE_ID).get();
-        final DataSource dataSource = new ReferenceableDataSourceSpy(realDataSource, SHIRO_DATA_SOURCE_ID);
         setDataSource(dataSource);
     }
 }
