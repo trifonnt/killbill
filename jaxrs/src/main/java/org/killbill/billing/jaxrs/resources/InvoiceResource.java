@@ -313,14 +313,14 @@ public class InvoiceResource extends JaxRsResourceBase {
     @ApiResponses(value = {@ApiResponse(code = 400, message = "Invalid account id or target datetime supplied")})
     public Response generateDryRunInvoice(@Nullable final InvoiceDryRunJson dryRunSubscriptionSpec,
                                           @QueryParam(QUERY_ACCOUNT_ID) final String accountId,
-                                          @QueryParam(QUERY_TARGET_DATE) final String targetDateTime,
+                                          @Nullable @QueryParam(QUERY_TARGET_DATE) final String targetDateTime,
                                           @HeaderParam(HDR_CREATED_BY) final String createdBy,
                                           @HeaderParam(HDR_REASON) final String reason,
                                           @HeaderParam(HDR_COMMENT) final String comment,
                                           @javax.ws.rs.core.Context final HttpServletRequest request,
                                           @javax.ws.rs.core.Context final UriInfo uriInfo) throws AccountApiException, InvoiceApiException {
         final CallContext callContext = context.createContext(createdBy, reason, comment, request);
-        final LocalDate inputDate = toLocalDate(UUID.fromString(accountId), targetDateTime, callContext);
+        final LocalDate inputDate = targetDateTime != null ? toLocalDate(UUID.fromString(accountId), targetDateTime, callContext) : null;
 
         // Passing a null or empty body means we are trying to generate an invoice with a (future) targetDate
         // On the other hand if body is not null, we are attempting a dryRun subscription operation

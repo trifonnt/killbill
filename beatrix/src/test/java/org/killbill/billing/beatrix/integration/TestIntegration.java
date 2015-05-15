@@ -111,6 +111,7 @@ public class TestIntegration extends TestIntegrationBase {
         expectedInvoices.add(new ExpectedInvoiceItemCheck(new LocalDate(2012, 4, 1), new LocalDate(2012, 4, 1), InvoiceItemType.CBA_ADJ, new BigDecimal("399.95"),
                                                           false /* Avoid checking dates for CBA because code is using context and context createdDate is wrong  in the test as we reset the clock too late, bummer... */ ));
         invoiceChecker.checkInvoiceNoAudits(dryRunInvoice, callContext, expectedInvoices);
+        expectedInvoices.clear();
 
 
         cancelEntitlementAndCheckForCompletion(bpSubscription, clock.getUTCNow(), NextEvent.BLOCK, NextEvent.BLOCK, NextEvent.CANCEL, NextEvent.CANCEL, NextEvent.INVOICE);
@@ -120,6 +121,7 @@ public class TestIntegration extends TestIntegrationBase {
                                     expectedInvoices);
 
         checkNoMoreInvoiceToGenerate(account);
+
     }
 
     @Test(groups = "slow")
@@ -170,9 +172,16 @@ public class TestIntegration extends TestIntegrationBase {
 
         DateTime nextDate = clock.getUTCNow().plusDays(1);
         dryRun = new TestDryRunArguments();
-        dryRunInvoice = invoiceUserApi.triggerInvoiceGeneration(account.getId(), new LocalDate(nextDate, testTimeZone), dryRun, callContext);
+
+
         expectedInvoices.add(new ExpectedInvoiceItemCheck(new LocalDate(2012, 3, 2), new LocalDate(2012, 3, 31), InvoiceItemType.RECURRING, new BigDecimal("561.24")));
 
+        // Verify first with no date: System should figure out the correct targetDate to use
+        dryRunInvoice = invoiceUserApi.triggerInvoiceGeneration(account.getId(), null, dryRun, callContext);
+        invoiceChecker.checkInvoiceNoAudits(dryRunInvoice, callContext, expectedInvoices);
+
+        // Verify first next targetDate
+        dryRunInvoice = invoiceUserApi.triggerInvoiceGeneration(account.getId(), new LocalDate(nextDate, testTimeZone), dryRun, callContext);
         invoiceChecker.checkInvoiceNoAudits(dryRunInvoice, callContext, expectedInvoices);
 
 
