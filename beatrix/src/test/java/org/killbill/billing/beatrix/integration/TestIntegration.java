@@ -175,11 +175,7 @@ public class TestIntegration extends TestIntegrationBase {
 
         expectedInvoices.add(new ExpectedInvoiceItemCheck(new LocalDate(2012, 3, 2), new LocalDate(2012, 3, 31), InvoiceItemType.RECURRING, new BigDecimal("561.24")));
 
-        // Verify first with no date: System should figure out the correct targetDate to use
-        dryRunInvoice = invoiceUserApi.triggerInvoiceGeneration(account.getId(), null, dryRun, callContext);
-        invoiceChecker.checkInvoiceNoAudits(dryRunInvoice, callContext, expectedInvoices);
-
-        // Verify first next targetDate
+        // Verify first next targetDate 
         dryRunInvoice = invoiceUserApi.triggerInvoiceGeneration(account.getId(), new LocalDate(nextDate, testTimeZone), dryRun, callContext);
         invoiceChecker.checkInvoiceNoAudits(dryRunInvoice, callContext, expectedInvoices);
 
