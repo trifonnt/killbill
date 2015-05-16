@@ -104,12 +104,15 @@ import com.google.common.base.Predicate;
 import com.google.common.collect.Collections2;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
+import com.google.common.collect.Ordering;
 import com.google.inject.Inject;
 
 public class InvoiceDispatcher {
 
     private static final Logger log = LoggerFactory.getLogger(InvoiceDispatcher.class);
     private static final int NB_LOCK_TRY = 5;
+
+    private static final Ordering<DateTime> UPCOMING_NOTIFICATION_DATE_ORDERING = Ordering.natural();
 
     private static final NullDryRunArguments NULL_DRY_RUN_ARGUMENTS = new NullDryRunArguments();
 
@@ -177,7 +180,6 @@ public class InvoiceDispatcher {
         }
     }
 
-
     private Invoice processSubscriptionInternal(final UUID subscriptionId, final DateTime targetDate, final boolean dryRunForNotification, final InternalCallContext context) throws InvoiceApiException {
         try {
             if (subscriptionId == null) {
@@ -194,7 +196,6 @@ public class InvoiceDispatcher {
             return null;
         }
     }
-
 
     public Invoice processAccount(final UUID accountId, final DateTime targetDate,
                                   @Nullable final DryRunArguments dryRunArguments, final InternalCallContext context) throws InvoiceApiException {
@@ -215,15 +216,38 @@ public class InvoiceDispatcher {
         return null;
     }
 
-
     private Invoice processAccountWithLock(final UUID accountId, @Nullable final DateTime inputTargetDateTime,
                                            @Nullable final DryRunArguments dryRunArguments, final InternalCallContext context) throws InvoiceApiException {
 
+
         final boolean isDryRun = dryRunArguments != null;
 
-        // The inputTargetDateTime is only allowed to be null in dryRun scenario, and in that case we fetch the date for the next scheduled invoice.
         Preconditions.checkArgument(inputTargetDateTime != null || isDryRun);
-        final DateTime targetDateTime = inputTargetDateTime != null ? inputTargetDateTime : getNextScheduledInvoiceEffectiveDate(context);
+
+        final List<DateTime> candidateDateTimes;
+        if (inputTargetDateTime != null) {
+            candidateDateTimes = ImmutableList.of(inputTargetDateTime);
+        } else {
+            candidateDateTimes = getUpcomingInvoiceCandidateDates(context);
+        }
+
+        Preconditions.checkState(isDryRun || candidateDateTimes.size() == 1);
+        for (final DateTime curTargetDateTime : candidateDateTimes) {
+            final Invoice invoice = processAccountWithLockAndInputTargetDate(accountId, curTargetDateTime, dryRunArguments, context);
+            if (invoice != null) {
+                return invoice;
+            }
+        }
+        return null;
+    }
+
+
+
+
+    private Invoice processAccountWithLockAndInputTargetDate(final UUID accountId, final DateTime targetDateTime,
+                                                             @Nullable final DryRunArguments dryRunArguments, final InternalCallContext context) throws InvoiceApiException {
+
+        final boolean isDryRun = dryRunArguments != null;
 
         try {
 
@@ -388,7 +412,6 @@ public class InvoiceDispatcher {
         return internalCallContextFactory.createCallContext(context);
     }
 
-
     @VisibleForTesting
     FutureAccountNotifications createNextFutureNotificationDate(final Iterable<InvoiceItemModelDao> invoiceItems, final BillingEventSet billingEvents, final DateAndTimeZoneContext dateAndTimeZoneContext) {
 
@@ -446,9 +469,8 @@ public class InvoiceDispatcher {
 
     private DateTime getNextUsageBillingDate(final UUID subscriptionId, final String usageName, final LocalDate chargedThroughDate, final DateAndTimeZoneContext dateAndTimeZoneContext, final BillingEventSet billingEvents) {
 
-
         final Usage usage = billingEvents.getUsages().get(usageName);
-        final  BillingEvent billingEventSubscription = Iterables.tryFind(billingEvents, new Predicate<BillingEvent>() {
+        final BillingEvent billingEventSubscription = Iterables.tryFind(billingEvents, new Predicate<BillingEvent>() {
             @Override
             public boolean apply(@Nullable final BillingEvent input) {
                 return input.getSubscription().getId().equals(subscriptionId);
@@ -503,6 +525,7 @@ public class InvoiceDispatcher {
     }
 
     public static class FutureAccountNotifications {
+
         private final DateAndTimeZoneContext accountDateAndTimeZoneContext;
         private final Map<UUID, List<DateTime>> notifications;
 
@@ -520,13 +543,20 @@ public class InvoiceDispatcher {
         }
     }
 
-    private DateTime getNextScheduledInvoiceEffectiveDate(final InternalCallContext internalCallContext){
+    private List<DateTime> getUpcomingInvoiceCandidateDates(final InternalCallContext internalCallContext) {
+        final Iterable<DateTime> nextScheduledInvoiceDates = getNextScheduledInvoiceEffectiveDate(internalCallContext);
+        final Iterable<DateTime> nextScheduledSubscriptionsEventDates = subscriptionApi.getFutureNotificationsForAccount(internalCallContext);
+        Iterables.concat(nextScheduledInvoiceDates, nextScheduledSubscriptionsEventDates);
+        return UPCOMING_NOTIFICATION_DATE_ORDERING.sortedCopy(Iterables.concat(nextScheduledInvoiceDates, nextScheduledSubscriptionsEventDates));
+    }
+
+    private Iterable<DateTime> getNextScheduledInvoiceEffectiveDate(final InternalCallContext internalCallContext) {
         try {
             final NotificationQueue notificationQueue = notificationQueueService.getNotificationQueue(DefaultInvoiceService.INVOICE_SERVICE_NAME,
                                                                                                       DefaultNextBillingDateNotifier.NEXT_BILLING_DATE_NOTIFIER_QUEUE);
-            final List<NotificationEventWithMetadata<NextBillingDateNotificationKey>> futureNotifications =  notificationQueue.getFutureNotificationForSearchKeys(internalCallContext.getAccountRecordId(), internalCallContext.getTenantRecordId());
+            final List<NotificationEventWithMetadata<NextBillingDateNotificationKey>> futureNotifications = notificationQueue.getFutureNotificationForSearchKeys(internalCallContext.getAccountRecordId(), internalCallContext.getTenantRecordId());
 
-            final NotificationEventWithMetadata<NextBillingDateNotificationKey> result = Iterables.tryFind(futureNotifications, new Predicate<NotificationEventWithMetadata<NextBillingDateNotificationKey>>() {
+            final Iterable<NotificationEventWithMetadata<NextBillingDateNotificationKey>> filtered = Iterables.filter(futureNotifications, new Predicate<NotificationEventWithMetadata<NextBillingDateNotificationKey>>() {
                 @Override
                 public boolean apply(@Nullable final NotificationEventWithMetadata<NextBillingDateNotificationKey> input) {
 
@@ -534,39 +564,52 @@ public class InvoiceDispatcher {
                                                                   input.getEvent().isDryRunForInvoiceNotification() : false;
                     return !isEventDryRunForNotifications;
                 }
-            }).orNull();
-            return result != null ? result.getEffectiveDate() : null;
+            });
+
+            return Iterables.transform(filtered, new Function<NotificationEventWithMetadata<NextBillingDateNotificationKey>, DateTime>() {
+                @Nullable
+                @Override
+                public DateTime apply(@Nullable final NotificationEventWithMetadata<NextBillingDateNotificationKey> input) {
+                    return input.getEffectiveDate();
+                }
+            });
         } catch (final NoSuchNotificationQueue noSuchNotificationQueue) {
             throw new IllegalStateException(noSuchNotificationQueue);
         }
     }
 
-
     private final static class NullDryRunArguments implements DryRunArguments {
+
         @Override
         public PlanPhaseSpecifier getPlanPhaseSpecifier() {
             return null;
         }
+
         @Override
         public SubscriptionEventType getAction() {
             return null;
         }
+
         @Override
         public UUID getSubscriptionId() {
             return null;
         }
+
         @Override
         public DateTime getEffectiveDate() {
             return null;
         }
+
         @Override
         public UUID getBundleId() {
             return null;
         }
+
         @Override
         public BillingActionPolicy getBillingActionPolicy() {
             return null;
         }
+
         @Override
         public List<PlanPhasePriceOverride> getPlanPhasePriceoverrides() {
             return null;
