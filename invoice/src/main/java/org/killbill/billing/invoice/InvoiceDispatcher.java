@@ -220,21 +220,14 @@ public class InvoiceDispatcher {
                                            @Nullable final DryRunArguments dryRunArguments, final InternalCallContext context) throws InvoiceApiException {
 
         final boolean isDryRun = dryRunArguments != null;
-
+        // inputTargetDateTime is only allowed in dryRun mode to have the system compute it
         Preconditions.checkArgument(inputTargetDateTime != null || isDryRun);
 
         try {
             // Make sure to first set the BCD if needed then get the account object (to have the BCD set)
             final BillingEventSet billingEvents = billingApi.getBillingEventsForAccountAndUpdateAccountBCD(accountId, dryRunArguments, context);
 
-            final List<DateTime> candidateDateTimes;
-            if (inputTargetDateTime != null) {
-                candidateDateTimes = ImmutableList.of(inputTargetDateTime);
-            } else {
-                candidateDateTimes = getUpcomingInvoiceCandidateDates(context);
-            }
-
-            Preconditions.checkState(isDryRun || candidateDateTimes.size() == 1);
+            final List<DateTime> candidateDateTimes = (inputTargetDateTime != null) ? ImmutableList.of(inputTargetDateTime) : getUpcomingInvoiceCandidateDates(context);
             for (final DateTime curTargetDateTime : candidateDateTimes) {
                 final Invoice invoice = processAccountWithLockAndInputTargetDate(accountId, curTargetDateTime, billingEvents, isDryRun, context);
                 if (invoice != null) {
@@ -246,7 +239,6 @@ public class InvoiceDispatcher {
             log.error("Failed handling SubscriptionBase change.", e);
             return null;
         }
-
     }
 
     private Invoice processAccountWithLockAndInputTargetDate(final UUID accountId, final DateTime targetDateTime,
@@ -265,7 +257,7 @@ public class InvoiceDispatcher {
                                                                                                     public Invoice apply(final InvoiceModelDao input) {
                                                                                                         return new DefaultInvoice(input);
                                                                                                     }
-                                                                                                })); //no need
+                                                                                                }));
 
             final Currency targetCurrency = account.getCurrency();
 
@@ -296,7 +288,7 @@ public class InvoiceDispatcher {
             final CallContext callContext = buildCallContext(context);
             invoice.addInvoiceItems(invoicePluginDispatcher.getAdditionalInvoiceItems(invoice, callContext));
             if (!isDryRun) {
-                commitInvoiceStateAndNotify(account, invoice, billingEvents, dateAndTimeZoneContext, targetDate, context);
+                commitInvoiceStateAndNotifyAccountIfConfugured(account, invoice, billingEvents, dateAndTimeZoneContext, targetDate, context);
             }
             return invoice;
         } catch (final AccountApiException e) {
@@ -308,7 +300,7 @@ public class InvoiceDispatcher {
         }
     }
 
-    private void commitInvoiceStateAndNotify(final Account account, final Invoice invoice, final BillingEventSet billingEvents, final DateAndTimeZoneContext dateAndTimeZoneContext, final LocalDate targetDate, final InternalCallContext context) throws SubscriptionBaseApiException, InvoiceApiException {
+    private void commitInvoiceStateAndNotifyAccountIfConfugured(final Account account, final Invoice invoice, final BillingEventSet billingEvents, final DateAndTimeZoneContext dateAndTimeZoneContext, final LocalDate targetDate, final InternalCallContext context) throws SubscriptionBaseApiException, InvoiceApiException {
         boolean isRealInvoiceWithNonEmptyItems = false;
         // Extract the set of invoiceId for which we see items that don't belong to current generated invoice
         final Set<UUID> adjustedUniqueOtherInvoiceId = new TreeSet<UUID>();
@@ -383,7 +375,6 @@ public class InvoiceDispatcher {
             // API_FIX InvoiceNotifier public API?
             invoiceNotifier.notify(account, new DefaultInvoice(invoiceDao.getById(invoice.getId(), context)), buildTenantContext(context));
         }
-
     }
 
     private InvoiceItem computeCBAOnExistingInvoice(final Invoice invoice, final InternalCallContext context) throws InvoiceApiException {
