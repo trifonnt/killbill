@@ -469,6 +469,7 @@ public class InvoiceDispatcher {
                     resultValue = new ArrayList<SubscriptionNotification>();
                 }
                 resultValue.add(new SubscriptionNotification(curDate, false));
+                result.put(cur, resultValue);
             }
         }
         return new FutureAccountNotifications(dateAndTimeZoneContext, result);

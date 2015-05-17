@@ -216,7 +216,7 @@ public class TestInvoiceDispatcher extends InvoiceTestSuiteWithEmbeddedDB {
         final List<SubscriptionNotification> receivedDates = futureAccountNotifications.getNotifications().get(item.getSubscriptionId());
         Assert.assertEquals(receivedDates.size(), 1);
 
-        final LocalDate receivedTargetDate = new LocalDate(receivedDates.get(0), DateTimeZone.forID("Pacific/Pitcairn"));
+        final LocalDate receivedTargetDate = new LocalDate(receivedDates.get(0).getEffectiveDate(), DateTimeZone.forID("Pacific/Pitcairn"));
         Assert.assertEquals(receivedTargetDate, endDate);
 
         Assert.assertTrue(receivedDates.get(0).getEffectiveDate().compareTo(new DateTime(2012, 11, 27, 1, 12, 23, DateTimeZone.UTC)) <= 0);
