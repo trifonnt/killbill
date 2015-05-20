@@ -801,7 +801,7 @@ public class DefaultInvoiceDao extends EntityDaoBase<InvoiceModelDao, Invoice, I
                     final DateTime effectiveCurDryRunNotificationTime = (curDryRunNotificationTime.isAfter(clock.getUTCNow())) ? curDryRunNotificationTime : clock.getUTCNow();
                     nextBillingDatePoster.insertNextBillingDryRunNotificationFromTransaction(entitySqlDaoWrapperFactory, accountId, subscriptionId, effectiveCurDryRunNotificationTime, cur.getEffectiveDate(), callbackDateTimePerSubscriptions.getAccountDateAndTimeZoneContext(), internalCallContext);
                 }
-                if (cur.isActive()) {
+                if (cur.isForInvoiceNotificationTrigger()) {
                     nextBillingDatePoster.insertNextBillingNotificationFromTransaction(entitySqlDaoWrapperFactory, accountId, subscriptionId, cur.getEffectiveDate(), callbackDateTimePerSubscriptions.getAccountDateAndTimeZoneContext(), internalCallContext);
                 }
             }

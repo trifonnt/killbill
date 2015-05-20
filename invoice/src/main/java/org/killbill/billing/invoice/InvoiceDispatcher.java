@@ -227,7 +227,7 @@ public class InvoiceDispatcher {
 
         final boolean isDryRun = dryRunArguments != null;
         // inputTargetDateTime is only allowed in dryRun mode to have the system compute it
-        Preconditions.checkArgument(inputTargetDateTime != null || isDryRun);
+        Preconditions.checkArgument(inputTargetDateTime != null || isDryRun, "inputTargetDateTime is required in non dryRun mode");
 
         try {
             // Make sure to first set the BCD if needed then get the account object (to have the BCD set)
@@ -267,7 +267,7 @@ public class InvoiceDispatcher {
 
             final Currency targetCurrency = account.getCurrency();
 
-            final LocalDate targetDate = (dateAndTimeZoneContext != null && targetDateTime != null) ? dateAndTimeZoneContext.computeTargetDate(targetDateTime) : null;
+            final LocalDate targetDate = dateAndTimeZoneContext != null ? dateAndTimeZoneContext.computeTargetDate(targetDateTime) : null;
             final Invoice invoice = targetDate != null ? generator.generateInvoice(account, billingEvents, invoices, targetDate, targetCurrency, context) : null;
             //
             // If invoice comes back null, there is nothing new to generate, we can bail early
@@ -294,7 +294,7 @@ public class InvoiceDispatcher {
             final CallContext callContext = buildCallContext(context);
             invoice.addInvoiceItems(invoicePluginDispatcher.getAdditionalInvoiceItems(invoice, callContext));
             if (!isDryRun) {
-                commitInvoiceStateAndNotifyAccountIfConfugured(account, invoice, billingEvents, dateAndTimeZoneContext, targetDate, context);
+                commitInvoiceStateAndNotifyAccountIfConfigured(account, invoice, billingEvents, dateAndTimeZoneContext, targetDate, context);
             }
             return invoice;
         } catch (final AccountApiException e) {
@@ -306,7 +306,7 @@ public class InvoiceDispatcher {
         }
     }
 
-    private void commitInvoiceStateAndNotifyAccountIfConfugured(final Account account, final Invoice invoice, final BillingEventSet billingEvents, final DateAndTimeZoneContext dateAndTimeZoneContext, final LocalDate targetDate, final InternalCallContext context) throws SubscriptionBaseApiException, InvoiceApiException {
+    private void commitInvoiceStateAndNotifyAccountIfConfigured(final Account account, final Invoice invoice, final BillingEventSet billingEvents, final DateAndTimeZoneContext dateAndTimeZoneContext, final LocalDate targetDate, final InternalCallContext context) throws SubscriptionBaseApiException, InvoiceApiException {
         boolean isRealInvoiceWithNonEmptyItems = false;
         // Extract the set of invoiceId for which we see items that don't belong to current generated invoice
         final Set<UUID> adjustedUniqueOtherInvoiceId = new TreeSet<UUID>();
@@ -458,7 +458,7 @@ public class InvoiceDispatcher {
             perSubscriptionCallback.add(new SubscriptionNotification(subscriptionUsageCallbackDate, true));
         }
 
-        // If dryRunNotification is enabled we also need to fetch the upcoming PHASE dates (we add SubscriptionNotification with isActive = false)
+        // If dryRunNotification is enabled we also need to fetch the upcoming PHASE dates (we add SubscriptionNotification with isForInvoiceNotificationTrigger = false)
         final boolean isInvoiceNotificationEnabled = invoiceConfig.getDryRunNotificationSchedule().getMillis() > 0;
         if (isInvoiceNotificationEnabled) {
             final Map<UUID, DateTime> upcomingPhasesForSubscriptions = subscriptionApi.getNextFutureEventForSubscriptions(SubscriptionBaseTransitionType.PHASE, context);
@@ -553,19 +553,20 @@ public class InvoiceDispatcher {
         public static class SubscriptionNotification {
 
             private final DateTime effectiveDate;
-            private final boolean isActive;
+            private final boolean isForNotificationTrigger;
 
-            public SubscriptionNotification(final DateTime effectiveDate, final boolean isActive) {
+
+            public SubscriptionNotification(final DateTime effectiveDate, final boolean isForNotificationTrigger) {
                 this.effectiveDate = effectiveDate;
-                this.isActive = isActive;
+                this.isForNotificationTrigger = isForNotificationTrigger;
             }
 
             public DateTime getEffectiveDate() {
                 return effectiveDate;
             }
 
-            public boolean isActive() {
-                return isActive;
+            public boolean isForInvoiceNotificationTrigger() {
+                return isForNotificationTrigger;
             }
         }
     }
