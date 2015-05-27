@@ -1,0 +1,264 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<catalog xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="CatalogSchema.xsd">
+
+	<effectiveDate>2015-04-01T00:00:00+00:00</effectiveDate>
+	<catalogName>StartAppBasic</catalogName>
+
+	<recurringBillingMode>IN_ADVANCE</recurringBillingMode>
+
+	<currencies>
+		<currency>BGN</currency>
+		<!--currency>EUR</currency-->
+	</currencies>
+
+	<units>
+		<unit name="GB"/>
+	</units>
+
+	<products>
+		<product name="dev.subscr">
+			<category>BASE</category>
+			<available>
+				<addonProduct>dev.gear</addonProduct>
+			</available>
+		</product>
+		<product name="dev_plus.subscr">
+			<category>BASE</category>
+			<available>
+				<addonProduct>dev.gear</addonProduct>
+			</available>
+		</product>
+		<product name="startup.subscr">
+			<category>BASE</category>
+			<available>
+				<addonProduct>dev.gear</addonProduct>
+				<addonProduct>tiny.gear</addonProduct>
+			</available>
+		</product>
+		<product name="startup_plus.subscr">
+			<category>BASE</category>
+			<available>
+				<addonProduct>dev.gear</addonProduct>
+				<addonProduct>tiny.gear</addonProduct>
+			</available>
+		</product>
+		<product name="business.subscr">
+			<category>BASE</category>
+			<available>
+				<addonProduct>dev.gear</addonProduct>
+				<addonProduct>tiny.gear</addonProduct>
+				<addonProduct>small.gear</addonProduct>
+			</available>
+		</product>
+		<product name="business_plus.subscr">
+			<category>BASE</category>
+			<available>
+				<addonProduct>dev.gear</addonProduct>
+				<addonProduct>tiny.gear</addonProduct>
+				<addonProduct>small.gear</addonProduct>
+			</available>
+		</product>
+
+		<product name="dev.gear">
+			<category>ADD_ON</category>
+		</product>
+		<product name="tiny.gear">
+			<category>ADD_ON</category>
+		</product>
+		<product name="small.gear">
+			<category>ADD_ON</category>
+		</product>
+		<product name="medium.gear">
+			<category>ADD_ON</category>
+		</product>
+		<product name="big.gear">
+			<category>ADD_ON</category>
+		</product>
+		<product name="jumbo.gear">
+			<category>ADD_ON</category>
+		</product>
+
+		<product name="hdd.1gb">
+			<category>ADD_ON</category><!-- BASE, ADD_ON, STANDALONE -->
+			<!-- Inclusion/Exclusion lists (optional) - these determine which addons can be purchased with a given base plan. -->
+		</product>
+	</products>
+
+	<rules>
+		<changePolicy>
+			<changePolicyCase>
+				<policy>IMMEDIATE</policy>
+			</changePolicyCase>
+		</changePolicy>
+		<changeAlignment>
+			<changeAlignmentCase>
+				<alignment>START_OF_BUNDLE</alignment>
+			</changeAlignmentCase>
+		</changeAlignment>
+		<cancelPolicy>
+			<cancelPolicyCase>
+				<policy>IMMEDIATE</policy>
+			</cancelPolicyCase>
+		</cancelPolicy>
+		<createAlignment>
+			<createAlignmentCase>
+				<alignment>START_OF_BUNDLE</alignment>
+			</createAlignmentCase>
+		</createAlignment>
+		<billingAlignment>
+			<billingAlignmentCase>
+				<alignment>ACCOUNT</alignment>
+			</billingAlignmentCase>
+		</billingAlignment>
+		<priceList>
+			<priceListCase>
+				<toPriceList>DEFAULT</toPriceList>
+			</priceListCase>
+		</priceList>
+	</rules>
+
+	<plans>
+		<plan name="developer-monthly">
+			<product>dev.subscr</product>
+			<finalPhase type="EVERGREEN"><!-- TRIAL, DISCOUNT, FIXEDTERM, EVERGREEN -->
+				<duration>
+					<unit>UNLIMITED</unit>
+				</duration>
+				<recurring>
+					<billingPeriod>MONTHLY</billingPeriod><!-- MONTHLY, QUARTERLY, ANNUAL or NO_BILLING_PERIOD -->
+					<recurringPrice>
+						<price>
+							<currency>BGN</currency>
+							<value>0.00</value><!--empty price implies $0-->
+						</price>
+					</recurringPrice>
+				</recurring>
+			</finalPhase>
+		</plan>
+		<plan name="developer_plus-monthly">
+			<product>dev_plus.subscr</product>
+			<finalPhase type="EVERGREEN"><!-- TRIAL, DISCOUNT, FIXEDTERM, EVERGREEN -->
+				<duration>
+					<unit>UNLIMITED</unit>
+				</duration>
+				<recurring>
+					<billingPeriod>MONTHLY</billingPeriod><!-- MONTHLY, QUARTERLY, ANNUAL or NO_BILLING_PERIOD -->
+					<recurringPrice>
+						<price>
+							<currency>BGN</currency>
+							<value>0.00</value><!--empty price implies $0-->
+						</price>
+					</recurringPrice>
+				</recurring>
+			</finalPhase>
+		</plan>
+		<plan name="startup-monthly">
+			<product>startup.subscr</product>
+			<finalPhase type="EVERGREEN">
+				<duration>
+					<unit>UNLIMITED</unit>
+				</duration>
+				<recurring>
+					<billingPeriod>MONTHLY</billingPeriod>
+					<recurringPrice>
+						<price>
+							<currency>BGN</currency>
+							<value>30.00</value>
+						</price>
+					</recurringPrice>
+				</recurring>
+			</finalPhase>
+		</plan>
+		<plan name="startup_plus-monthly">
+			<product>startup_plus.subscr</product>
+			<finalPhase type="EVERGREEN">
+				<duration>
+					<unit>UNLIMITED</unit>
+				</duration>
+				<recurring>
+					<billingPeriod>MONTHLY</billingPeriod>
+					<recurringPrice>
+						<price>
+							<currency>BGN</currency>
+							<value>30.00</value>
+						</price>
+					</recurringPrice>
+				</recurring>
+			</finalPhase>
+		</plan>
+		<plan name="business-monthly">
+			<product>business.subscr</product>
+			<finalPhase type="EVERGREEN">
+				<duration>
+					<unit>UNLIMITED</unit>
+				</duration>
+				<recurring>
+					<billingPeriod>MONTHLY</billingPeriod>
+					<recurringPrice>
+						<price>
+							<currency>BGN</currency>
+							<value>150.00</value>
+						</price>
+					</recurringPrice>
+				</recurring>
+			</finalPhase>
+		</plan>
+		<plan name="business_plus-monthly">
+			<product>business_plus.subscr</product>
+			<finalPhase type="EVERGREEN">
+				<duration>
+					<unit>UNLIMITED</unit>
+				</duration>
+				<recurring>
+					<billingPeriod>MONTHLY</billingPeriod>
+					<recurringPrice>
+						<price>
+							<currency>BGN</currency>
+							<value>150.00</value>
+						</price>
+					</recurringPrice>
+				</recurring>
+			</finalPhase>
+		</plan>
+		<plan name="hdd-monthly">
+			<product>hdd.1gb</product>
+			<finalPhase type="EVERGREEN">
+				<duration>
+					<unit>UNLIMITED</unit>
+				</duration>
+				<usages>
+					<usage name="hdd-monthly-in-arrear" billingMode="IN_ARREAR" usageType="CONSUMABLE">
+						<billingPeriod>MONTHLY</billingPeriod>
+						<tiers>
+							<tier>
+								<blocks>
+									<tieredBlock>
+										<unit>GB</unit>
+										<size>1</size>
+										<prices>
+											<price>
+												<currency>BGN</currency>
+												<value>1</value>
+											</price>
+										</prices>
+										<max>100</max>
+									</tieredBlock>
+								</blocks>
+							</tier>
+						</tiers>
+					</usage>
+				</usages>
+			</finalPhase>
+		</plan>
+	</plans>
+
+	<priceLists>
+		<defaultPriceList name="DEFAULT">
+			<plans>
+				<plan>developer-monthly</plan>
+				<plan>startup-monthly</plan>
+				<plan>business-monthly</plan>
+			</plans>
+		</defaultPriceList>
+	</priceLists>
+</catalog>

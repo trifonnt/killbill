@@ -1,0 +1,19 @@
+#!/bin/bash
+JAVA_OPTS_EXT=" -Dorg.killbill.dao.url=jdbc:mysql://${OPENSHIFT_MYSQL_DB_HOST}:${OPENSHIFT_MYSQL_DB_PORT}/${OPENSHIFT_APP_NAME}"
+JAVA_OPTS_EXT=" $JAVA_OPTS_EXT -Dorg.killbill.dao.user=${OPENSHIFT_MYSQL_DB_USERNAME}"
+JAVA_OPTS_EXT=" $JAVA_OPTS_EXT -Dorg.killbill.dao.password=${OPENSHIFT_MYSQL_DB_PASSWORD}"
+JAVA_OPTS_EXT=" $JAVA_OPTS_EXT -Dorg.killbill.dao.driverClassName=com.mysql.jdbc.Driver"
+JAVA_OPTS_EXT=" $JAVA_OPTS_EXT -DANTLR_USE_DIRECT_CLASS_LOADING=true"
+
+#JAVA_OPTS_EXT=" $JAVA_OPTS_EXT -Dorg.killbill.server.properties=file:///${OPENSHIFT_REPO_DIR}.openshift/config/killbill-server.properties"
+JAVA_OPTS_EXT=" $JAVA_OPTS_EXT -Dorg.killbill.security.shiroResourcePath=file:///${OPENSHIFT_REPO_DIR}.openshift/config/killbill-shiro.ini"
+JAVA_OPTS_EXT=" $JAVA_OPTS_EXT -Dorg.killbill.catalog.uri=file:///${OPENSHIFT_REPO_DIR}.openshift/config/killbill-catalog-StartAppBasic.xml"
+JAVA_OPTS_EXT=" $JAVA_OPTS_EXT -Dorg.killbill.server.baseUrl=https://${OPENSHIFT_APP_DNS}"
+export JAVA_OPTS_EXT
+
+echo "JAVA_OPTS_EXT = " $JAVA_OPTS_EXT
+echo ""
+echo "===================================="
+echo "Trifon - PRE_START_JBOSSEWS-2.0 - OK"
+echo "===================================="
+echo ""
