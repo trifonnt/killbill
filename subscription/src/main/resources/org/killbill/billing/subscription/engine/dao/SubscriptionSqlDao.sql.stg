@@ -1,0 +1,74 @@
+group SubscriptionSqlDao: EntitySqlDao;
+
+tableName() ::= "subscriptions"
+
+tableFields(prefix) ::= <<
+  <prefix>bundle_id
+, <prefix>category
+, <prefix>start_date
+, <prefix>bundle_start_date
+, <prefix>active_version
+, <prefix>charged_through_date
+, <prefix>created_by
+, <prefix>created_date
+, <prefix>updated_by
+, <prefix>updated_date
+>>
+
+tableValues() ::= <<
+  :bundleId
+, :category
+, :startDate
+, :bundleStartDate
+, :activeVersion
+, :chargedThroughDate
+, :createdBy
+, :createdDate
+, :updatedBy
+, :updatedDate
+>>
+
+
+getSubscriptionsFromBundleId() ::= <<
+select
+<allTableFields()>
+from <tableName()>
+where bundle_id = :bundleId
+<AND_CHECK_TENANT()>
+<defaultOrderBy()>
+;
+>>
+
+updateChargedThroughDate() ::= <<
+update <tableName()>
+set
+charged_through_date = :chargedThroughDate
+, updated_by = :createdBy
+, updated_date = :createdDate
+where id = :id
+<AND_CHECK_TENANT()>
+;
+>>
+
+updateActiveVersion() ::= <<
+update <tableName()>
+set
+active_version = :activeVersion
+, updated_by = :createdBy
+, updated_date = :createdDate
+where id = :id
+;
+>>
+
+updateForRepair() ::= <<
+update <tableName()>
+set
+active_version = :activeVersion
+, start_date = :startDate
+, bundle_start_date = :bundleStartDate
+, updated_by = :createdBy
+, updated_date = :createdDate
+where id = :id
+<AND_CHECK_TENANT()>
+;
+>>
